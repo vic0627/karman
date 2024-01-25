@@ -1,0 +1,52 @@
+{
+  "name": "karman",
+  "version": "0.0.1",
+  "description": "",
+  "main": "dist/index.d.ts",
+  "scripts": {
+    "test": "jest",
+    "lint": "eslint lib",
+    "lint:ts": "tsc --strict --noEmit",
+    "lint:fix": "eslint lib --fix",
+    "format": "prettier . --write",
+    "dev": "rollup -c scripts/rollup/rollupConfig.js --watch",
+    "dev:browser": "node scripts/browserServer.js",
+    "build": "node scripts/rollup/rollupBundle.js --manual",
+    "prepare": "husky install"
+  },
+  "keywords": [],
+  "author": "VICTOR HSU",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/core": "^7.23.2",
+    "@babel/preset-env": "^7.23.2",
+    "@babel/preset-typescript": "^7.23.2",
+    "@jest/globals": "^29.7.0",
+    "@rollup/plugin-babel": "^6.0.4",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^11.1.5",
+    "@stylistic/eslint-plugin": "^1.4.1",
+    "@types/jest": "^29.5.7",
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^6.9.1",
+    "@typescript-eslint/parser": "^6.9.1",
+    "babel-jest": "^29.7.0",
+    "eslint": "^8.53.0",
+    "husky": "^8.0.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "prettier": "3.1.0",
+    "rollup": "^4.3.0",
+    "rollup-plugin-cleanup": "^3.2.1",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "chokidar": "^3.5.3",
+    "form-data": "^4.0.0",
+    "reflect-metadata": "^0.1.13",
+    "socket.io": "^4.7.2",
+    "tslib": "^2.6.2"
+  }
+}
