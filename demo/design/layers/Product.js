@@ -1,66 +1,59 @@
+import idModel from "../model/idModel";
+import limitAndSortDef from "../model/limitAndSortModel";
+import productModel  from "../model/productModel";
 import { Karman } from "../super/karman";
 
-const productIdDef = (required) => {
-    const def = {
-        path: 1,
-        rules: ['number','min=0']
-    }
-
-    if (required) def.rules.push('required')
-
-    return def
-}
-
-const limitAndSortDef = {
-    limit: {
-        query: true,
-        rules: ['number', 'min=0']
-    },
-    sort: {
-        query: true,
-        rules: ['string', (value) => {
-            if (!['desc', 'asc'].includes(value)) throw new Error('parameter "sort" should be "asc" or "desc"')
-        }]
-    }
-}
-
-const productModelDef = () => {
-    const body = true
-    const def = {
-        title: {
-            body,
-            rules: []
-        }
-    }
-}
-
 export default class extends Karman {
-    constructor(url) {
-        super(url, 'products')
-    }
+  constructor(url) {
+    super(url, "products");
+  }
 
-    getAllProducts = this.$createAPI({
-        payloadDef: limitAndSortDef
-    })
+  getAllProducts = this.$createAPI({
+    payloadDef: limitAndSortDef,
+  });
 
-    getProductById = this.$createAPI({
-        payloadDef: {
-            id: productIdDef(true)
-        }
-    })
+  getProductById = this.$createAPI({
+    payloadDef: idModel(true),
+  });
 
-    getAllCategories = this.$createAPI({
-        endpoint: 'categories'
-    })
+  getAllCategories = this.$createAPI({
+    endpoint: "categories",
+  });
 
-    getProductByCategory = this.$createAPI({
-        endpoint: 'category',
-        payloadDef: {
-            ...limitAndSortDef,
-            category: {
-                path: 1,
-                rules: ['required', 'string']
-            }
-        }
-    })
+  getProductByCategory = this.$createAPI({
+    endpoint: "category",
+    payloadDef: {
+      ...limitAndSortDef,
+      category: {
+        path: 1,
+        rules: ["required", "string"],
+      },
+    },
+  });
+
+  addNewProduct = this.$createAPI({
+    method: "POST",
+    payloadDef: productModel({ required: true }),
+  });
+
+  updateProductById = this.$createAPI({
+    method: "PUT",
+    payloadDef: {
+      ...productModel(),
+      ...idModel(true),
+    },
+  });
+
+  modifyProductById = this.$createAPI({
+    method: "PATCH",
+    payloadDef: {
+      ...productModel(),
+      ...idModel(true),
+    },
+  });
+
+  deleteProductById = this.$createAPI({
+    method: "DELETE",
+    payloadDef: idModel(true),
+  });
 }

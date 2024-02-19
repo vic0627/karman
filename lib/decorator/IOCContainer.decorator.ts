@@ -81,6 +81,7 @@ export default function IOCContainer(options: IOCOptions = {}): ClassDecorator {
 
           if (!dep) {
             stop = true;
+
             break;
           }
 
@@ -109,6 +110,7 @@ export default function IOCContainer(options: IOCOptions = {}): ClassDecorator {
          * 跑到這裡代表有依賴沒被傳入 IoC
          */
         console.warn("Missing dependency.");
+        
         break;
       }
     }
