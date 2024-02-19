@@ -7,15 +7,17 @@ export type Type =
   | "nan"
   | "boolean"
   | "object"
+  | "null"
   | "function"
   | "array"
   | "object-literal"
-  | "null"
   | "undefined"
   | "bigint"
   | "symbol";
 
-export type Prototype = { new (...args: any[]): any }
+export type ObjectLiteral = { [x: string | number | symbol]: any };
+
+export type Prototype = { new (...args: any[]): any };
 
 export type RegExpWithMessage = { regexp: RegExp; errorMessage: string };
 
@@ -37,4 +39,4 @@ export interface ParameterDescriptor {
   required?: boolean;
 }
 
-export type ParamRules = (Type | Prototype | RegularExpression | CustomValidator | ParameterDescriptor)[];
+export type ParamRules = Type | Prototype | RegularExpression | CustomValidator | ParameterDescriptor;

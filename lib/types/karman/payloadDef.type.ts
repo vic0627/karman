@@ -7,7 +7,7 @@ export type ParamPosition = {
 };
 
 export interface ParamDef extends ParamPosition {
-  rules?: ParamRules;
+  rules?: ParamRules[];
 }
 
 export type ParamName = string;

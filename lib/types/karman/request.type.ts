@@ -5,7 +5,7 @@ interface PromiseHooks {
 }
 
 interface FinalAPIHooks extends PromiseHooks {
-    onBeforeValidate?(rules: PayloadRules, payload: any): void;
+    onBeforeValidate?(rules: PayloadRules[], payload: any): void;
     onBeforeRequest?<T = any>(payload: T): FormData | T;
 }
 
