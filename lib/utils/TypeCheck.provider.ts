@@ -1,7 +1,27 @@
 import { ObjectLiteral, Type } from "src/types/karman/rules.type";
 
 export default class TypeCheck {
-  get typeSet(): Type[] {
+  get CorrespondingMap(): Record<Type, keyof this> {
+    return {
+      char: "isChar",
+      string: "isString",
+      number: "isNumber",
+      int: "isInteger",
+      float: "isFloat",
+      nan: "isNaN",
+      boolean: "isBoolean",
+      object: "isObject",
+      null: "isNull",
+      function: "isFunction",
+      array: "isArray",
+      "object-literal": "isObjectLiteral",
+      undefined: "isUndefined",
+      bigint: "isBigInt",
+      symbol: "isSymbol",
+    };
+  }
+
+  get TypeSet(): Type[] {
     return [
       "char",
       "string",
