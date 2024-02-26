@@ -1,8 +1,9 @@
-import type { Task } from "src/types/scheduledTask.type";
-import { notNull } from "src/utils/common";
-import Service from "../../classes/Service";
+import type { Task } from "@/types/scheduledTask.type";
+import Injectable from "@/decorator/Injectable.decorator";
+import TypeCheck from "@/utils/type-check.provider";
 
 /** 排程管理器 */
+@Injectable()
 export default class ScheduledTask {
   /** 任務清單 */
   #tasks = new Map<string, Task>();
@@ -16,6 +17,8 @@ export default class ScheduledTask {
     return this.#interval;
   }
 
+  constructor(private readonly typeCheck: TypeCheck) {}
+
   execute() {
     this.#runTasks();
   }
@@ -25,8 +28,8 @@ export default class ScheduledTask {
    * @param interval 間隔時間
    * @param service Sevice 抽象層實例
    */
-  setInterval(interval?: number, service?: Service) {
-    if (!notNull(interval) || (interval as number) <= 0 || service?._parent) {
+  setInterval(interval?: number, service?: any) {
+    if (this.typeCheck.isUndefinedOrNull(interval) || (interval as number) <= 0 || service?._parent) {
       return;
     }
 
@@ -68,7 +71,7 @@ export default class ScheduledTask {
   /** 開始執行排程任務 */
   #startSchedule() {
     // 1. 當排程計時器運行中，就不初始化計時器
-    if (notNull(this.#timer)) {
+    if (!this.typeCheck.isUndefinedOrNull(this.#timer)) {
       return;
     }
 

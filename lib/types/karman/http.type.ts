@@ -70,14 +70,34 @@ export interface HttpConfig extends RequestConfig {
 
 export type HttpBody = Document | XMLHttpRequestBodyInit | null;
 
-export interface PromiseExecutor {
-  resolve(value: any): void;
+export interface PromiseExecutor<D> {
+  resolve(value: D): void;
   reject(reason?: unknown): void;
 }
 
-export type XhrHooksHandler = (
+export type XhrHooksHandler<D> = (
   e: ProgressEvent | Event,
   config: HttpConfig,
   xhr: XMLHttpRequest,
-  executer: PromiseExecutor,
+  executer: PromiseExecutor<D>,
 ) => void;
+
+export type RequestExecutor<D> = (onRequest?: () => void) => [requestPromise: Promise<D>, abortController: () => void];
+
+export interface XhrResponse<D> {
+  data: D;
+  status: number;
+  statusText: string;
+  headers: string | Record<string, string>;
+  config: HttpConfig | undefined;
+  request: XMLHttpRequest;
+  [x: string]: any;
+}
+
+export default interface RequestDetail<D> {
+  requestKey: string;
+  requestExecutor: RequestExecutor<D>;
+  promiseExecutor: PromiseExecutor<D>;
+  config: HttpConfig;
+// eslint-disable-next-line semi
+}

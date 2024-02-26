@@ -1,5 +1,5 @@
 import type { CacheData } from "src/types/requestPipe.type";
-import type { Task } from "src/types/scheduledTask.type";
+import type { Task } from "@/types/karman/scheduled-task.type";
 
 export default abstract class CacheStrategy {
   /** 設置快取 */

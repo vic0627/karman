@@ -1,24 +1,39 @@
+import RequestStrategy from "@/abstract/request-strategy.abstract";
 import Injectable from "@/decorator/Injectable.decorator";
-import {
+import RequestDetail, {
   HeadersConfig,
   HttpAuthentication,
   HttpBody,
   HttpConfig,
   PromiseExecutor,
+  RequestExecutor,
   XhrHooksHandler,
 } from "@/types/karman/http.type";
-import { HttpMethod } from "@/types/xhr.type";
 import TypeCheck from "@/utils/type-check.provider";
 import { cloneDeep } from "lodash";
 
 @Injectable()
-export default class Xhr {
+export default class Xhr implements RequestStrategy {
   constructor(private readonly typeCheck: TypeCheck) {}
 
-  public request<T extends HttpBody>(payload: T, config: HttpConfig) {
+  public request<D>(payload: HttpBody, config: HttpConfig): RequestDetail<D> {
     const { url = "", method = "GET" } = config;
     const [xhr, cleanup, requestKey] = this.initXhr({ method, url });
     this.setBasicSettings(xhr, config);
+    const [reqExecutor, promiseExecutor] = this.buildPromise<D>(xhr, cleanup, config);
+
+    const requestExecutor: RequestExecutor<D> = (onRequest) => {
+      if (xhr) xhr.send(payload ?? null);
+
+      return reqExecutor(onRequest);
+    };
+
+    return {
+      requestKey,
+      requestExecutor,
+      promiseExecutor,
+      config,
+    };
   }
 
   private initXhr(
@@ -51,9 +66,7 @@ export default class Xhr {
     let { password } = auth ?? {};
     const { username } = auth ?? {};
 
-    if (this.typeCheck.isUndefinedOrNull(username) || this.typeCheck.isUndefinedOrNull(password)) {
-      return;
-    }
+    if (this.typeCheck.isUndefinedOrNull(username) || this.typeCheck.isUndefinedOrNull(password)) return;
 
     password = decodeURIComponent(encodeURIComponent(password));
     const Authorization = "Basic " + btoa(username + ":" + password);
@@ -65,27 +78,29 @@ export default class Xhr {
     const _headers = headers ?? {};
 
     for (const key in _headers) {
-      if (!Object.prototype.hasOwnProperty.call(_headers, key)) {
-        continue;
-      }
+      if (!Object.prototype.hasOwnProperty.call(_headers, key)) continue;
 
       const value = _headers[key as keyof HeadersConfig] as string;
       xhr.setRequestHeader(key, value);
     }
   }
 
-  private buildPromise(xhr: XMLHttpRequest, cleanup: () => void, config: HttpConfig) {
-    let promiseExecutor: PromiseExecutor = { resolve: cleanup, reject: cleanup };
+  private buildPromise<D>(
+    xhr: XMLHttpRequest,
+    cleanup: () => void,
+    config: HttpConfig,
+  ): [requestExecuter: RequestExecutor<D>, promiseExecutor: PromiseExecutor<D>] {
+    let promiseExecutor: PromiseExecutor<D> = { resolve: cleanup, reject: cleanup };
 
-    const requestExecuter = (onRequest?: () => void) => {
+    const requestExecuter: RequestExecutor<D> = () => {
       let abortController = () => {
         console.warn("Failed to abort request.");
       };
 
-      const requestPromise = new Promise((_resolve, _reject) => {
-        const resolve = (value: any) => {
+      const requestPromise = new Promise<D>((_resolve, _reject) => {
+        const resolve = (value: D) => {
           cleanup();
-          _resolve(value);
+          _resolve(value as any);
         };
 
         const reject = (reason?: unknown) => {
@@ -99,6 +114,10 @@ export default class Xhr {
         };
 
         promiseExecutor = { resolve, reject };
+        xhr.onloadend = this.hooksHandlerFactory<D>(xhr, config, promiseExecutor, this.handleLoadend);
+        xhr.onabort = this.hooksHandlerFactory<D>(xhr, config, promiseExecutor, this.handleAbort);
+        xhr.ontimeout = this.hooksHandlerFactory<D>(xhr, config, promiseExecutor, this.handleTimeout);
+        xhr.onerror = this.hooksHandlerFactory<D>(xhr, config, promiseExecutor, this.handleError);
       });
 
       return [requestPromise, abortController];
@@ -107,43 +126,47 @@ export default class Xhr {
     return [requestExecuter, promiseExecutor];
   }
 
-  private hooksHandlerFactory(
+  private hooksHandlerFactory<D>(
     xhr: XMLHttpRequest,
     config: HttpConfig,
-    executer: PromiseExecutor,
-    handler: XhrHooksHandler,
+    executer: PromiseExecutor<D>,
+    handler: XhrHooksHandler<D>,
   ) {
     return (e: ProgressEvent | Event) => handler.call(this, e, config, xhr, executer);
   }
 
-  private handleAbort(_: ProgressEvent | Event, __: HttpConfig, xhr: XMLHttpRequest, { reject }: PromiseExecutor) {
+  private handleAbort<D>(
+    _: ProgressEvent | Event,
+    __: HttpConfig,
+    xhr: XMLHttpRequest,
+    { reject }: PromiseExecutor<D>,
+  ) {
     xhr && reject(new Error("Request aborted"));
   }
 
-  private handleTimeout(
+  private handleTimeout<D>(
     _: ProgressEvent | Event,
     config: HttpConfig,
     xhr: XMLHttpRequest,
-    { reject }: PromiseExecutor,
+    { reject }: PromiseExecutor<D>,
   ) {
-    if (!xhr) {
-      return;
-    }
+    if (!xhr) return;
 
     const { timeout, timeoutErrorMessage } = config ?? {};
     let errorMessage = timeout ? `time of ${timeout}ms exceeded` : "timeout exceeded";
 
-    if (timeoutErrorMessage) {
-      errorMessage = timeoutErrorMessage;
-    }
+    if (timeoutErrorMessage) errorMessage = timeoutErrorMessage;
 
     reject(new Error(errorMessage));
   }
 
-  private handleError(_: ProgressEvent | Event, config: HttpConfig, xhr: XMLHttpRequest, { reject }: PromiseExecutor) {
-    if (!xhr) {
-      return;
-    }
+  private handleError<D>(
+    _: ProgressEvent | Event,
+    config: HttpConfig,
+    xhr: XMLHttpRequest,
+    { reject }: PromiseExecutor<D>,
+  ) {
+    if (!xhr) return;
 
     const { url } = config ?? {};
     const { status } = xhr;
@@ -151,23 +174,19 @@ export default class Xhr {
     reject(new Error(`Network Error ${url} ${status}`));
   }
 
-  private handleLoadend(
+  private handleLoadend<D>(
     _: ProgressEvent | Event,
     config: HttpConfig,
     xhr: XMLHttpRequest,
-    { resolve }: PromiseExecutor,
+    { resolve }: PromiseExecutor<D>,
   ) {
-    if (!xhr) {
-      return;
-    }
+    if (!xhr) return;
 
     const { responseType, response, responseText, status, statusText } = xhr;
     const data = !responseType || responseType === "text" || responseType === "json" ? responseText : response;
     let headers: string | Record<string, string> = xhr.getAllResponseHeaders();
 
-    if (typeof headers === "string" && config?.headerMap) {
-      headers = this.getHeaderMap(headers);
-    }
+    if (typeof headers === "string" && config?.headerMap) headers = this.getHeaderMap(headers);
 
     const res = {
       data,
@@ -178,22 +197,18 @@ export default class Xhr {
       request: xhr,
     };
 
-    resolve(res);
+    resolve(res as D);
   }
 
   private getHeaderMap(headers: string) {
     const arr = headers.trim().split(/[\r\n]+/);
-
     const headerMap: Record<string, string> = {};
-
     arr.forEach((line) => {
       const parts = line.split(": ");
       const header = parts.shift();
       const value = parts.join(": ");
 
-      if (header) {
-        Object.defineProperty(headerMap, header, { value });
-      }
+      if (header) Object.defineProperty(headerMap, header, { value });
     });
 
     return headerMap;
