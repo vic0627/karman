@@ -1,7 +1,7 @@
 module.exports = {
-  extends: ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
+  extends: ["eslint:recommended", "plugin:@typescript-eslint/recommended", "plugin:jsdoc/recommended-typescript"],
   parser: "@typescript-eslint/parser",
-  plugins: ["@typescript-eslint", "@stylistic"],
+  plugins: ["@typescript-eslint", "@stylistic", "jsdoc"],
   root: true,
   env: {
     browser: true,
@@ -13,13 +13,14 @@ module.exports = {
     "rollup.config.cjs",
     "rollup.config.js",
     "dist",
+    "demo",
     "public",
     "example",
     "scripts",
   ],
   rules: {
     semi: 2,
-    curly: 2,
+    // curly: 2,
     quotes: [2, "double"],
     "no-console": [2, { allow: ["warn", "error", "table", "group", "groupEnd"] }],
     "no-var": 2,

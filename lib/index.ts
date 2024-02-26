@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import UserService from "./core/UserService.ioc";
-import ScheduledTask from "./core/scheduledTask/ScheduledTask.provider";
+import ScheduledTask from "./core/scheduled-task/scheduled-task.provider";
 import ServiceFactory from "./core/serviceLayer/ServiceFactory.injectable";
 import RuleArray from "./core/validationEngine/RuleArray.injectable";
 import RuleObject from "./core/validationEngine/RuleObject.injectable";

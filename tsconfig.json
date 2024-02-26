@@ -33,7 +33,7 @@
       "form-data": [
         "node_modules/form-data/index.d.ts"
       ],
-      "src/*": [
+      "@/*": [
         "lib/*"
       ]
     } /* Specify a set of entries that re-map imports to additional lookup locations. */,

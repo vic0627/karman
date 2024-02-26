@@ -6,10 +6,8 @@ import type {
   PromiseExecutor,
   RequestConfig,
   RequestExecutor,
-} from "src/types/xhr.type";
-import { symbolToken } from "src/utils/common";
-import RequestHandler from "src/abstract/RequestHandler.abstract";
-import RequestError from "../RequestError";
+} from "@/types/xhr.type";
+import RequestHandler from "@/abstract/RequestHandler.abstract";
 
 /**
  * # 處理請求的物件
@@ -175,7 +173,7 @@ export default class XHR implements RequestHandler {
         xhr.onerror = this.#handlerFactory(xhr, config, executor, this.#handleError);
       }).catch((error) => {
         if (typeof error === "string") {
-          throw new RequestError(error);
+          throw new Error(error);
         } else {
           throw error as Error;
         }
@@ -205,7 +203,7 @@ export default class XHR implements RequestHandler {
   }
 
   #handleAbort(_: ProgressEvent | Event, __: RequestConfig, xhr: XMLHttpRequest, { reject }: PromiseExecutor) {
-    xhr && reject(new RequestError("Request aborted"));
+    xhr && reject(new Error("Request aborted"));
   }
 
   #handleTimeout(_: ProgressEvent | Event, config: RequestConfig, xhr: XMLHttpRequest, { reject }: PromiseExecutor) {
@@ -221,7 +219,7 @@ export default class XHR implements RequestHandler {
       errMsg = timeoutErrorMessage;
     }
 
-    reject(new RequestError(errMsg));
+    reject(new Error(errMsg));
   }
 
   #handleError(_: ProgressEvent | Event, config: RequestConfig, xhr: XMLHttpRequest, { reject }: PromiseExecutor) {
@@ -232,7 +230,7 @@ export default class XHR implements RequestHandler {
     const { url } = config ?? {};
     const { status } = xhr;
 
-    reject(new RequestError(`Network Error ${url} ${status}`));
+    reject(new Error(`Network Error ${url} ${status}`));
   }
 
   #handleLoadend(_: ProgressEvent | Event, config: RequestConfig, xhr: XMLHttpRequest, { resolve }: PromiseExecutor) {

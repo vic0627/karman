@@ -11,7 +11,7 @@ import { notNull } from "src/utils/common";
 import Injectable from "src/decorator/Injectable.decorator";
 import WebStorage from "./cacheStrategy/WebStorage.provider";
 import CacheStrategy from "src/abstract/CacheStrategy.abstract";
-import ScheduledTask from "src/core/scheduledTask/ScheduledTask.provider";
+import ScheduledTask from "src/core/scheduled-task/scheduled-task.provider";
 
 /**
  * (pipe) 快取管理

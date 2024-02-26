@@ -1,3 +1,6 @@
+import { SyncHooks, AsyncHooks } from "./hooks.type";
+import { PayloadDef } from "./payload-def.type";
+
 export type HttpMethod =
   | "get"
   | "GET"
@@ -54,7 +57,27 @@ export interface RequestConfig {
   withCredentials?: boolean;
 }
 
-export interface ApiConfig extends RequestConfig {
+export interface ApiConfig extends RequestConfig, SyncHooks, AsyncHooks {
   endpoint?: string;
   method?: HttpMethod;
+  payloadDef?: PayloadDef;
 }
+
+export interface HttpConfig extends RequestConfig {
+  url: string;
+  method?: HttpMethod;
+}
+
+export type HttpBody = Document | XMLHttpRequestBodyInit | null;
+
+export interface PromiseExecutor {
+  resolve(value: any): void;
+  reject(reason?: unknown): void;
+}
+
+export type XhrHooksHandler = (
+  e: ProgressEvent | Event,
+  config: HttpConfig,
+  xhr: XMLHttpRequest,
+  executer: PromiseExecutor,
+) => void;
