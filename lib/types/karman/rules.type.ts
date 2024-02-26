@@ -19,15 +19,16 @@ export type ObjectLiteral = { [x: string | number | symbol]: any };
 
 export type Prototype = { new (...args: any[]): any };
 
-export type RegExpWithMessage = { regexp: RegExp; errorMessage: string };
+export type RegExpWithMessage = { regexp: RegExp; errorMessage?: string };
 
 export type RegularExpression = RegExp | RegExpWithMessage;
 
-export type CustomValidator = (value: any) => void;
+export type CustomValidator = ((param: string, value: any) => void) & { _karman: true };
 
 export interface ParameterDescriptor {
   min?: number;
   max?: number;
+  equality?: number;
   /**
    * - `"self"`: test the value itself
    * @default "length"
