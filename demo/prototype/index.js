@@ -1,8 +1,8 @@
-import { defineKarman } from "karman";
-import product from "./routes/product";
+const { defineKarman } = require("./karman/karman.js");
+const product = require("./routes/product");
 
 const karman = defineKarman({
-  baseURL: "https://fakestoreapi.com/",
+  url: "https://fakestoreapi.com/",
   routes: {
     product,
   },

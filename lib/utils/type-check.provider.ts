@@ -1,4 +1,4 @@
-import { ObjectLiteral, Type } from "src/types/karman/rules.type";
+import { ObjectLiteral, Type } from "@/types/karman/rules.type";
 
 export default class TypeCheck {
   get CorrespondingMap(): Record<Type, keyof this> {
@@ -105,3 +105,5 @@ export default class TypeCheck {
     return typeof value === "symbol";
   }
 }
+
+export const typeCheck = new TypeCheck();

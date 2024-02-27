@@ -1,5 +1,5 @@
-import type { ByteUnit, ByteString, ByteLib } from "src/types/byte.type";
-import type { NumOrString } from "src/types/common.type";
+import type { ByteUnit, ByteString, ByteLib } from "@/types/byte.type";
+import type { NumOrString } from "@/types/common.type";
 
 export class Byte {
   byteUnits: ByteUnit[] = ["b", "kb", "mb", "gb", "tb", "pb", "eb", "zb", "yb"];

@@ -1,4 +1,4 @@
-import { defineKarman, defineAPI, defineIntersection } from "karman";
+const { defineKarman, defineAPI, defineIntersection } = require("../karman/karman.js");
 
 const idRule = (descriptor = {}, ...rules) => defineIntersection("int", { ...descriptor, min: 1 }, ...rules);
 const titleRule = (descriptor = {}, ...rules) =>
@@ -14,7 +14,7 @@ const sort = {
   },
 };
 
-export default defineKarman({
+module.exports = defineKarman({
   route: "products",
   api: {
     getAll: defineAPI({

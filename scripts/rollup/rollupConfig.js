@@ -41,20 +41,20 @@ const babelPlugin = babel(babelOptions);
 const output = [
   {
     name: "us",
-    file: getPath("dist/user-service.esm.js"),
+    file: getPath("dist/karman.esm.js"),
     format: "es",
     exports: "named",
   },
   {
     name: "us",
-    file: getPath("dist/user-service.min.js"),
+    file: getPath("dist/karman.min.js"),
     format: "iife",
     exports: "named",
     plugins: [terser(terserOptions)],
   },
   {
     name: "us",
-    file: getPath("dist/user-service.cjs"),
+    file: getPath("dist/karman.cjs"),
     format: "commonjs",
     exports: "named",
   },
