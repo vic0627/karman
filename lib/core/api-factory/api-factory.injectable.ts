@@ -2,22 +2,17 @@ import RequestStrategy from "@/abstract/request-strategy.abstract";
 import Xhr from "../request-strategy/xhr.injectable";
 import TypeCheck from "@/utils/type-check.provider";
 import Template from "@/utils/template.provider";
-import { FinalAPI, RuntimeOptions } from "@/types/karman/final-api.type";
+import { RuntimeOptions } from "@/types/karman/final-api.type";
 import Karman from "../karman/karman";
 import { ApiConfig, HttpBody, ReqStrategyTypes, RequestConfig, XhrResponse } from "@/types/karman/http.type";
 import PathResolver from "@/utils/path-rosolver.provider";
-import { merge, cloneDeep, isEqual } from "lodash";
+import { cloneDeep, isEqual } from "lodash";
 import { CacheConfig, UtilConfig } from "@/types/karman/karman.type";
 import { AsyncHooks, SyncHooks } from "@/types/karman/hooks.type";
 import { configInherit } from "../out-of-paradigm/config-inherit";
 import ValidationEngine from "../validation-engine/validation-engine.injectable";
-import { PayloadDef } from "@/types/karman/payload-def.type";
 
 export type ApiReturns<D> = [resPromise: Promise<D>, abortControler: () => void];
-
-export interface IApiFactory {
-  request<D>(payload: Record<string, any>, runtimeOptions: RuntimeOptions): [];
-}
 
 export interface ParsedRuntimeOptions {
   $$$requestConfig: RequestConfig;
@@ -97,10 +92,9 @@ export default class ApiFactory {
         if (!payloadDef) {
           _af.template.warn("validation set to true, but no payloadDef is received.");
         } else {
-          const validator = _af.validationEngine.getMainValidator(payload, payloadDef);
-
           try {
             if (_af.typeCheck.isFunction(onBeforeValidate)) onBeforeValidate.call(this, payloadDef, payload);
+            const validator = _af.validationEngine.getMainValidator(payload, payloadDef);
             validator();
           } catch (error) {
             if (_af.typeCheck.isFunction(onValidateError)) onValidateError.call(this, error as Error);

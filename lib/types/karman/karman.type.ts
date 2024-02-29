@@ -3,10 +3,12 @@ import { AsyncHooks, SyncHooks } from "./hooks.type";
 import { RequestConfig } from "./http.type";
 import { FinalAPI } from "./final-api.type";
 
+export type CacheStrategyTypes = "sessionStorage" | "localStorage" | "memory";
+
 export interface CacheConfig {
   cache?: boolean;
   cacheExpireTime?: number;
-  cacheStrategy?: "sessionStorage" | "localStorage" | "memory";
+  cacheStrategy?: CacheStrategyTypes;
 }
 
 export interface UtilConfig {

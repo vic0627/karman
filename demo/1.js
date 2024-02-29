@@ -1,33 +1,20 @@
-const h = {
-  fn() {
-    console.log("this from func", this);
-  },
-  fn2: () => {
-    console.log("this from arrow func", this);
-  },
-  fn3: function () {
-    console.log("this from func 2", this);
-  },
-};
-
 class C {
-  constructor() {
-    this.h = h;
-    this.h.fn.apply(this);
-    this.h.fn2.apply(this);
-    this.h.fn3.apply(this);
-  }
+  getFn(o) {
+    const c = this;
 
-  getFn() {
-    function f() {
-      console.log("this from getFn", this);
+    function fn() {
+      c.print();
+      console.log(this.name);
     }
 
-    return f.bind(this);
+    return fn.bind(o);
+  }
+
+  print() {
+    console.log("from class C");
   }
 }
-
 const cc = new C();
-
-const f = cc.getFn();
-f();
+const a = { name: "vic" };
+const fn = cc.getFn(a);
+fn();

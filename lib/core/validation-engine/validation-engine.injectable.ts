@@ -10,6 +10,7 @@ import RuleSet from "./rule-set/rule-set";
 import TypeCheck from "@/utils/type-check.provider";
 import UnionRules from "./rule-set/union-rules";
 import IntersectionRules from "./rule-set/intersection-rules";
+import Template from "@/utils/template.provider";
 
 @Injectable()
 export default class ValidationEngine {
@@ -19,6 +20,7 @@ export default class ValidationEngine {
     private readonly regexpValidator: RegExpValidator,
     private readonly typeValidator: TypeValidator,
     private readonly typeCheck: TypeCheck,
+    private readonly template: Template
   ) {}
 
   public defineCustomValidator(validatefn: (param: string, value: any) => void): CustomValidator {
@@ -58,7 +60,7 @@ export default class ValidationEngine {
     const { rules } = payloadDef[param] ?? {};
 
     if (!rules) {
-      console.warn(`Cannot find certain rules for parameter "${param}".`);
+      this.template.warn(`Cannot find certain rules for parameter "${param}".`);
 
       return;
     }
