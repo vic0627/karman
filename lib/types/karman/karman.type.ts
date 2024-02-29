@@ -9,6 +9,11 @@ export interface CacheConfig {
   cacheStrategy?: "sessionStorage" | "localStorage" | "memory";
 }
 
+export interface UtilConfig {
+  validation?: boolean;
+  scheduleInterval?: number;
+}
+
 export interface APIs {
   [x: string]: FinalAPI;
 }
@@ -17,11 +22,8 @@ export interface Routes {
   [x: string]: Karman;
 }
 
-export interface KarmanConfig extends SyncHooks, AsyncHooks, CacheConfig, RequestConfig {
+export interface KarmanConfig extends SyncHooks, AsyncHooks, CacheConfig, RequestConfig, UtilConfig {
   url?: string;
   route?: Routes;
   api?: APIs;
-  validation?: boolean;
-  scheduleInterval?: number;
-  requestStrategy?: "xhr" | "fetch";
 }

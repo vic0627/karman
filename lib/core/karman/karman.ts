@@ -53,27 +53,28 @@ export default class Karman {
   // #endregion
 
   constructor(config: KarmanConfig) {
-    // const {
-    //   url = "",
-    //   validation,
-    //   scheduleInterval,
-    //   cache,
-    //   cacheExpireTime,
-    //   cacheStrategy,
-    //   headers,
-    //   auth,
-    //   timeout,
-    //   timeoutErrorMessage,
-    //   responseType,
-    //   headerMap,
-    //   withCredentials,
-    //   onBeforeValidate,
-    //   onValidateError,
-    //   onBeforeRequest,
-    //   onSuccess,
-    //   onError,
-    //   onFinally,
-    // } = config ?? {};
+    const {
+      url = "",
+      validation,
+      scheduleInterval,
+      cache,
+      cacheExpireTime,
+      cacheStrategy,
+      headers,
+      auth,
+      timeout,
+      timeoutErrorMessage,
+      responseType,
+      headerMap,
+      withCredentials,
+      requestStrategy,
+      onBeforeValidate,
+      onValidateError,
+      onBeforeRequest,
+      onSuccess,
+      onError,
+      onFinally,
+    } = config ?? {};
     // this.$baseURL = url;
     // this.$validation = validation;
     // this.$scheduleInterval = scheduleInterval;

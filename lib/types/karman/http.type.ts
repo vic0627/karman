@@ -1,4 +1,5 @@
 import { SyncHooks, AsyncHooks } from "./hooks.type";
+import { CacheConfig, UtilConfig } from "./karman.type";
 import { PayloadDef } from "./payload-def.type";
 
 export type HttpMethod =
@@ -47,6 +48,8 @@ export interface HeadersConfig {
   [x: string]: any;
 }
 
+export type ReqStrategyTypes = "xhr" | "fetch";
+
 export interface RequestConfig {
   headers?: HeadersConfig;
   auth?: Partial<HttpAuthentication>;
@@ -55,9 +58,10 @@ export interface RequestConfig {
   responseType?: ResponseType;
   headerMap?: boolean;
   withCredentials?: boolean;
+  requestStrategy?: ReqStrategyTypes;
 }
 
-export interface ApiConfig extends RequestConfig, SyncHooks, AsyncHooks {
+export interface ApiConfig extends RequestConfig, SyncHooks, AsyncHooks, UtilConfig, CacheConfig {
   endpoint?: string;
   method?: HttpMethod;
   payloadDef?: PayloadDef;
@@ -99,5 +103,5 @@ export default interface RequestDetail<D> {
   requestExecutor: RequestExecutor<D>;
   promiseExecutor: PromiseExecutor<D>;
   config: HttpConfig;
-// eslint-disable-next-line semi
+  // eslint-disable-next-line semi
 }
