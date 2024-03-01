@@ -12,15 +12,24 @@ export default class CachePipe implements RequestPipe {
     const cache = this.getCacheStrategy(cacheStrategyType);
     const { promiseExecutor, requestExecutor, requestKey, config, payload } = requestDetail;
     const cacheData = cache.get<D>(requestKey);
+    const { resolve } = promiseExecutor;
 
     if (cacheData) {
       const { res } = cacheData;
       const isSameRequest = isEqual(payload, cacheData.payload);
+
+      if (isSameRequest) {
+        resolve(res as D);
+
+        return requestExecutor;
+      }
     }
 
-    const [reqPromise] = requestExecutor();
+    const [reqPromise, abortControler] = requestExecutor();
 
     const newPromise = reqPromise.then();
+
+    return () => [newPromise, abortControler];
   }
 
   private getCacheStrategy(type: CacheStrategyTypes): CacheStrategy {
