@@ -11,6 +11,8 @@ import { CacheConfig, UtilConfig } from "@/types/karman/karman.type";
 import { AsyncHooks, SyncHooks } from "@/types/karman/hooks.type";
 import { configInherit } from "../out-of-paradigm/config-inherit";
 import ValidationEngine from "../validation-engine/validation-engine.injectable";
+import CachePipe from "./request-pipe/cache-pipe.injectable";
+import Injectable from "@/decorator/Injectable.decorator";
 
 export type ApiReturns<D> = [resPromise: Promise<D>, abortControler: () => void];
 
@@ -33,6 +35,7 @@ export interface PreqBuilderOptions extends Required<Pick<AllConfigCache, "baseU
   payload: Record<string, any>;
 }
 
+@Injectable()
 export default class ApiFactory {
   constructor(
     private readonly template: Template,
@@ -40,6 +43,7 @@ export default class ApiFactory {
     private readonly pathResolver: PathResolver,
     private readonly validationEngine: ValidationEngine,
     private readonly xhr: Xhr,
+    private readonly cachePipe: CachePipe,
   ) {}
 
   // 調用時還不會接收到完整的配置
@@ -52,6 +56,12 @@ export default class ApiFactory {
     let runtimeOptionsCache: ParsedRuntimeOptions | null = null;
     const allConfigCache: AllConfigCache = $$apiConfig;
 
+    /**
+     * @param this
+     * @param payload
+     * @param runtimeOptions
+     * @returns
+     */
     function finalAPI<D>(this: Karman, payload: Record<string, any>, runtimeOptions?: RuntimeOptions) {
       const runtimeOptionsCopy = _af.runtimeOptionsParser(runtimeOptions);
 
@@ -119,8 +129,15 @@ export default class ApiFactory {
         method,
         ...requestConfig,
       });
-
       const [requestPromise, abortController] = requestExecutor();
+
+      if (cacheConfig?.cache) {
+        const { cacheExpireTime, cacheStrategy } = cacheConfig;
+        return _af.cachePipe.chain(
+          { requestKey, requestExecutor, promiseExecutor, config, payload },
+          { cacheStrategyType: cacheStrategy, expiration: cacheExpireTime },
+        );
+      }
 
       return [requestPromise, abortController];
     }

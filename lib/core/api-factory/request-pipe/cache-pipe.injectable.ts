@@ -8,13 +8,18 @@ import { isEqual } from "lodash";
 export default class CachePipe implements RequestPipe {
   constructor(private readonly memoryCache: MemoryCache) {}
 
-  public chain<D>(requestDetail: PipeDetail<D>, cacheStrategyType: CacheStrategyTypes): RequestExecutor<D> {
-    const cache = this.getCacheStrategy(cacheStrategyType);
-    const { promiseExecutor, requestExecutor, requestKey, config, payload } = requestDetail;
+  public chain<D>(
+    requestDetail: PipeDetail<D>,
+    options: { cacheStrategyType?: CacheStrategyTypes; expiration?: number },
+  ): RequestExecutor<D> {
+    const { cacheStrategyType, expiration } = options;
+    const cache = this.getCacheStrategy(cacheStrategyType ?? "memory");
+    const { promiseExecutor, requestExecutor, requestKey, payload } = requestDetail;
     const cacheData = cache.get<D>(requestKey);
     const { resolve } = promiseExecutor;
+    const currentT = Date.now();
 
-    if (cacheData) {
+    if (cacheData && cacheData.expiration < currentT) {
       const { res } = cacheData;
       const isSameRequest = isEqual(payload, cacheData.payload);
 
@@ -27,7 +32,11 @@ export default class CachePipe implements RequestPipe {
 
     const [reqPromise, abortControler] = requestExecutor();
 
-    const newPromise = reqPromise.then();
+    const newPromise = reqPromise.then((res) => {
+      cache.set<D>(requestKey, { res, payload, expiration: expiration ?? currentT + 1000000 });
+
+      return res;
+    });
 
     return () => [newPromise, abortControler];
   }
