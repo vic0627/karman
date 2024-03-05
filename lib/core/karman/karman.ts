@@ -1,6 +1,8 @@
 import { AsyncHooks, SyncHooks } from "@/types/karman/hooks.type";
 import { RequestConfig } from "@/types/karman/http.type";
-import { KarmanConfig, APIs, Routes, CacheConfig } from "@/types/karman/karman.type";
+import { KarmanConfig, APIs, Routes, CacheConfig, KarmanInstanceConfig } from "@/types/karman/karman.type";
+import { configInherit } from "@/core/out-of-paradigm/config-inherit";
+import PathResolver from "@/utils/path-rosolver.provider";
 import TypeCheck from "@/utils/type-check.provider";
 import _ from "lodash";
 
@@ -8,8 +10,9 @@ const HOUR = 60 * 60 * 60 * 1000;
 
 export default class Karman {
   // #region utils
-  #typeCheck?: TypeCheck;
-  #lodash: typeof _ = _;
+  private _typeCheck!: TypeCheck;
+  private _pathResolver!: PathResolver;
+  private _: typeof _ = _;
   // #endregion
 
   // #region fields
@@ -18,7 +21,7 @@ export default class Karman {
     return this.#parant;
   }
   set $parent(value) {
-    if (!(value instanceof Karman) || !this.#typeCheck?.isNull(value)) return;
+    if (!(value instanceof Karman) || !this._typeCheck.isNull(value)) return;
     this.#parant = value;
   }
   #baseURL: string = "";
@@ -26,7 +29,7 @@ export default class Karman {
     return this.#baseURL;
   }
   set $baseURL(value) {
-    if (!this.#typeCheck?.isString(value)) return;
+    if (!this._typeCheck.isString(value)) return;
     this.#baseURL = value;
   }
   $cacheConfig: CacheConfig = {
@@ -36,25 +39,28 @@ export default class Karman {
   };
   $requestConfig: RequestConfig = {};
   $hooks: AsyncHooks & SyncHooks = {};
-  #validation?: boolean = false;
+  #validation?: boolean;
   get $validation() {
     return this.#validation;
   }
   set $validation(value) {
-    if (this.#typeCheck?.isBoolean(value)) this.#validation = value;
+    if (this._typeCheck.isBoolean(value)) this.#validation = value;
   }
-  #scheduleInterval?: number = HOUR;
+  #scheduleInterval?: number;
   get $scheduleInterval() {
     return this.#scheduleInterval;
   }
   set $scheduleInterval(value) {
-    if (this.#typeCheck?.isNumber(value)) this.#scheduleInterval = value;
+    if (this._typeCheck.isNumber(value)) this.#scheduleInterval = value;
   }
   // #endregion
 
-  constructor(config: KarmanConfig) {
+  #inherited = false;
+
+  constructor(config: KarmanInstanceConfig) {
     const {
-      url = "",
+      baseURL,
+      url,
       validation,
       scheduleInterval,
       cache,
@@ -75,40 +81,57 @@ export default class Karman {
       onError,
       onFinally,
     } = config ?? {};
-    // this.$baseURL = url;
-    // this.$validation = validation;
-    // this.$scheduleInterval = scheduleInterval;
-    // this.$setCacheConfig({ cache, cacheExpireTime, cacheStrategy });
-    // this.$setHooks({ onBeforeValidate, onValidateError, onBeforeRequest, onSuccess, onError, onFinally });
-    // this.$setRequestConfig
-    // ({ headers, auth, timeout, timeoutErrorMessage, responseType, headerMap, withCredentials });
+    this.$baseURL = baseURL ?? url ?? "";
+    this.$validation = validation;
+    this.$scheduleInterval = scheduleInterval;
+    this.$cacheConfig = { cache, cacheExpireTime, cacheStrategy };
+    this.$hooks = { onBeforeValidate, onValidateError, onBeforeRequest, onSuccess, onError, onFinally };
+    this.$requestConfig = {
+      headers,
+      auth,
+      timeout,
+      timeoutErrorMessage,
+      responseType,
+      headerMap,
+      withCredentials,
+      requestStrategy,
+    };
   }
 
   public $mount<O extends object>(o: O, name: string = "$karman") {
     Object.defineProperty(o, name, { value: this });
   }
 
-  // private $setCacheConfig(cacheConfig: CacheConfig) {
-  //   Object.entries(cacheConfig).forEach(([key, value]) => {
-  //     if (this.#typeCheck?.isUndefinedOrNull(value)) return;
-  //     this.$cacheConfig[key as keyof CacheConfig] = value;
-  //   });
-  // }
+  /**
+   * Inheriting all configurations down to the whole Karman tree from root node.
+   * Only allows to be invoked once on root layer.
+   */
+  public $inherit(): void {
+    if (this.#inherited || !this.$parent || !this.$parent.$baseURL || this.$baseURL.includes(this.$parent.$baseURL))
+      return;
 
-  // private $setHooks(hooks: SyncHooks & AsyncHooks) {
-  //   const bind: SyncHooks & AsyncHooks = {};
-  //   const copy = this.#lodash.cloneDeep(hooks);
-  //   bind.onBeforeValidate = copy.onBeforeValidate?.bind(this);
-  //   bind.onValidateError = copy.onValidateError?.bind(this);
-  //   bind.onBeforeRequest = copy.onBeforeRequest?.bind(this);
-  //   bind.onSuccess = copy.onSuccess?.bind(this);
-  //   bind.onError = copy.onError?.bind(this);
-  //   bind.onFinally = copy.onFinally?.bind(this);
-  //   this.$hooks = bind;
-  // }
+    const { $baseURL, $requestConfig, $cacheConfig, $hooks, $validation, $scheduleInterval } = this.$parent;
+    this.$baseURL = this._pathResolver.resolve($baseURL, this.$baseURL);
+    this.$requestConfig = configInherit($requestConfig, this.$requestConfig);
+    this.$cacheConfig = configInherit($cacheConfig, this.$cacheConfig);
+    this.$hooks = configInherit($hooks, this.$hooks);
+    if (this._typeCheck.isUndefined(this.$validation)) this.$validation = $validation;
+    if (this._typeCheck.isUndefined(this.$scheduleInterval)) this.$scheduleInterval = $scheduleInterval;
 
-  // private $setRequestConfig(requestConfig: RequestConfig) {
-  //   const copy = this.#lodash.cloneDeep(requestConfig);
-  //   this.$requestConfig = copy;
-  // }
+    this.$invokeChildrenInherit();
+  }
+
+  public $setDependencies(...deps: (TypeCheck | PathResolver)[]) {
+    deps.forEach((dep) => {
+      if (dep instanceof TypeCheck) this._typeCheck = dep;
+      else if (dep instanceof PathResolver) this._pathResolver = dep;
+    });
+  }
+
+  private $invokeChildrenInherit(): void {
+    Object.values(this).forEach((prop) => {
+      if (prop instanceof Karman) prop.$inherit();
+    });
+    this.#inherited = true;
+  }
 }

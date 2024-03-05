@@ -1,5 +1,10 @@
-import RequestDetail, { HttpBody, HttpConfig } from "@/types/karman/http.type";
+import RequestDetail, { HttpBody, HttpConfig, ReqStrategyTypes, XhrResponse } from "@/types/karman/http.type";
+
+type SelectRequestStrategy<T extends ReqStrategyTypes, D> = T extends "xhr" ? XhrResponse<D, T> : D;
 
 export default abstract class RequestStrategy {
-  abstract request<D>(payload: HttpBody, config: HttpConfig): RequestDetail<D>;
+  abstract request<D, T extends ReqStrategyTypes>(
+    payload: HttpBody,
+    config: HttpConfig<T>,
+  ): RequestDetail<SelectRequestStrategy<T, D>, T>;
 }

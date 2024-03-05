@@ -1,17 +1,17 @@
 import Karman from "@/core/karman/karman";
 import { AsyncHooks, SyncHooks } from "./hooks.type";
-import { RequestConfig } from "./http.type";
+import { ReqStrategyTypes, RequestConfig, RequestExecutor } from "./http.type";
 import { CacheConfig, UtilConfig } from "./karman.type";
 
-export interface RuntimeOptions
+export interface RuntimeOptions<T extends ReqStrategyTypes>
   extends SyncHooks,
     AsyncHooks,
-    RequestConfig,
+    RequestConfig<T>,
     CacheConfig,
     Omit<UtilConfig, "scheduleInterval"> {}
 
-export type FinalAPI<T = any> = (
+export type FinalAPI<T extends ReqStrategyTypes, D> = (
   this: Karman,
   payload: Record<string, any>,
-  runtimeOptions?: RuntimeOptions,
-) => Promise<T>;
+  runtimeOptions?: RuntimeOptions<T>,
+) => ReturnType<RequestExecutor<D>>;

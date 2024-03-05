@@ -1,5 +1,5 @@
 import RequestPipe, { PipeDetail } from "@/abstract/request-pipe.abstract";
-import { RequestExecutor } from "@/types/karman/http.type";
+import { ReqStrategyTypes, RequestExecutor } from "@/types/karman/http.type";
 import { CacheStrategyTypes } from "@/types/karman/karman.type";
 import MemoryCache from "./cache-strategy/memory-cache.provider";
 import CacheStrategy from "@/abstract/cache-strategy.abstract";
@@ -8,8 +8,8 @@ import { isEqual } from "lodash";
 export default class CachePipe implements RequestPipe {
   constructor(private readonly memoryCache: MemoryCache) {}
 
-  public chain<D>(
-    requestDetail: PipeDetail<D>,
+  public chain<D, T extends ReqStrategyTypes>(
+    requestDetail: PipeDetail<D, T>,
     options: { cacheStrategyType?: CacheStrategyTypes; expiration?: number },
   ): RequestExecutor<D> {
     const { cacheStrategyType, expiration } = options;

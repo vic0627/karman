@@ -16,22 +16,24 @@ import Injectable from "@/decorator/Injectable.decorator";
 
 export type ApiReturns<D> = [resPromise: Promise<D>, abortControler: () => void];
 
-export interface ParsedRuntimeOptions {
-  $$$requestConfig: RequestConfig;
+export interface ParsedRuntimeOptions<T extends ReqStrategyTypes> {
+  $$$requestConfig: RequestConfig<T>;
   $$$cacheConfig: CacheConfig;
   $$$utilConfig: UtilConfig;
   $$$hooks: AsyncHooks & SyncHooks;
 }
 
-export interface AllConfigCache extends Pick<ApiConfig, "endpoint" | "method" | "payloadDef"> {
+export interface AllConfigCache<D, T extends ReqStrategyTypes>
+  extends Pick<ApiConfig<D, T>, "endpoint" | "method" | "payloadDef"> {
   baseURL?: string;
-  requestConfig?: RequestConfig;
+  requestConfig?: RequestConfig<T>;
   cacheConfig?: CacheConfig;
   utilConfig?: UtilConfig;
   hooks?: AsyncHooks & SyncHooks;
 }
 
-export interface PreqBuilderOptions extends Required<Pick<AllConfigCache, "baseURL" | "endpoint" | "payloadDef">> {
+export interface PreqBuilderOptions<D, T extends ReqStrategyTypes>
+  extends Required<Pick<AllConfigCache<D, T>, "baseURL" | "endpoint" | "payloadDef">> {
   payload: Record<string, any>;
 }
 
@@ -47,14 +49,14 @@ export default class ApiFactory {
   ) {}
 
   // 調用時還不會接收到完整的配置
-  public createAPI(apiConfig: ApiConfig) {
+  public createAPI<D, T extends ReqStrategyTypes>(apiConfig: ApiConfig<D, T>) {
     // destructure
     const { $$apiConfig, $$requestConfig, $$cacheConfig, $$utilConfig, $$hooks } = this.apiConfigParser(apiConfig);
     // delegate
     const _af = this as ApiFactory;
     // caching
-    let runtimeOptionsCache: ParsedRuntimeOptions | null = null;
-    const allConfigCache: AllConfigCache = $$apiConfig;
+    let runtimeOptionsCache: ParsedRuntimeOptions<ReqStrategyTypes> | null = null;
+    const allConfigCache: AllConfigCache<D, T> = $$apiConfig;
 
     /**
      * @param this
@@ -62,7 +64,11 @@ export default class ApiFactory {
      * @param runtimeOptions
      * @returns
      */
-    function finalAPI<D>(this: Karman, payload: Record<string, any>, runtimeOptions?: RuntimeOptions) {
+    function finalAPI<T2 extends ReqStrategyTypes>(
+      this: Karman,
+      payload: Record<string, any>,
+      runtimeOptions?: RuntimeOptions<T2>,
+    ) {
       const runtimeOptionsCopy = _af.runtimeOptionsParser(runtimeOptions);
 
       // config inheritance and caching
@@ -124,7 +130,7 @@ export default class ApiFactory {
 
       // 3. request sending
       const reqStrategy = _af.requestStrategySelector(requestStrategy);
-      const { requestKey, requestExecutor, promiseExecutor, config } = reqStrategy.request<XhrResponse<D>>(_payload, {
+      const { requestKey, requestExecutor, promiseExecutor, config } = reqStrategy.request<D, T>(_payload, {
         url: requestURL,
         method,
         ...requestConfig,
@@ -133,10 +139,12 @@ export default class ApiFactory {
 
       if (cacheConfig?.cache) {
         const { cacheExpireTime, cacheStrategy } = cacheConfig;
-        return _af.cachePipe.chain(
+        const executer = _af.cachePipe.chain<D, T>(
           { requestKey, requestExecutor, promiseExecutor, config, payload },
           { cacheStrategyType: cacheStrategy, expiration: cacheExpireTime },
         );
+
+        return executer();
       }
 
       return [requestPromise, abortController];
@@ -145,7 +153,9 @@ export default class ApiFactory {
     return finalAPI;
   }
 
-  private preqBuilder(preqBuilderOptions: PreqBuilderOptions): [requestURL: string, requestBody: Record<string, any>] {
+  private preqBuilder<D, T extends ReqStrategyTypes>(
+    preqBuilderOptions: PreqBuilderOptions<D, T>,
+  ): [requestURL: string, requestBody: Record<string, any>] {
     const { baseURL, endpoint, payloadDef, payload } = preqBuilderOptions;
     const urlSources: string[] = [baseURL, endpoint];
     const pathParams: string[] = [];
@@ -173,7 +183,7 @@ export default class ApiFactory {
     else throw new Error("strategy not found.");
   }
 
-  private runtimeOptionsParser(runtimeOptions?: RuntimeOptions) {
+  private runtimeOptionsParser<T extends ReqStrategyTypes>(runtimeOptions?: RuntimeOptions<T>) {
     // 優先權最高
     const {
       // RequestConfig
@@ -209,7 +219,7 @@ export default class ApiFactory {
       headerMap,
       withCredentials,
       requestStrategy,
-    } as RequestConfig;
+    } as RequestConfig<T>;
 
     const $$$cacheConfig = {
       cache,
@@ -236,7 +246,7 @@ export default class ApiFactory {
     });
   }
 
-  private apiConfigParser(apiConfig?: ApiConfig) {
+  private apiConfigParser<D, T extends ReqStrategyTypes>(apiConfig?: ApiConfig<D, T>) {
     // 優先權中等
     const {
       // ApiConfig
@@ -283,7 +293,7 @@ export default class ApiFactory {
       headerMap,
       withCredentials,
       requestStrategy,
-    } as RequestConfig;
+    } as RequestConfig<T>;
 
     const $$cacheConfig = {
       cache,

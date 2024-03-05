@@ -1,5 +1,5 @@
 import Injectable from "@/decorator/Injectable.decorator";
-import { KarmanConfig } from "@/types/karman/karman.type";
+import { APIs, FinalKarman, KarmanConfig, Routes } from "@/types/karman/karman.type";
 import TypeCheck from "@/utils/type-check.provider";
 import KarmanFactory from "../karman/karman-factory.injectable";
 import PathResolver from "@/utils/path-rosolver.provider";
@@ -12,8 +12,9 @@ export default class LayerBuilder {
     private readonly karmanFactory: KarmanFactory,
   ) {}
 
-  public configure(k: KarmanConfig) {
+  public configure<A extends APIs, R extends Routes>(k: KarmanConfig<A, R>) {
     const {
+      baseURL,
       url,
       validation,
       scheduleInterval,
@@ -28,17 +29,18 @@ export default class LayerBuilder {
       headerMap,
       withCredentials,
       requestStrategy,
-      api,
-      route = {},
       onBeforeValidate,
       onValidateError,
       onBeforeRequest,
       onSuccess,
       onError,
       onFinally,
+      api = {},
+      route = {},
     } = k;
 
-    const karmanInstance = this.karmanFactory.create({
+    const currentKarman = this.karmanFactory.create({
+      baseURL,
       url,
       validation,
       scheduleInterval,
@@ -61,10 +63,17 @@ export default class LayerBuilder {
       onFinally,
     });
 
-    Object.entries(route).forEach(([key, karman]) => {
-      karman.$parent = karmanInstance;
-      karman.$baseURL = this.pathResolver.resolve(karmanInstance.$baseURL, karman.$baseURL);
-      Object.defineProperty(karmanInstance, key, { value: karman });
+    currentKarman.$setDependencies(this.typeCheck, this.pathResolver);
+
+    Object.entries(route as R).forEach(([key, karman]) => {
+      karman.$parent = currentKarman;
+      Object.defineProperty(currentKarman, key, { value: karman, enumerable: true });
     });
+
+    Object.entries(api as A).forEach(([key, value]) => {
+      Object.defineProperty(currentKarman, key, { value: value.bind(currentKarman), enumerable: true });
+    });
+
+    return currentKarman as FinalKarman<A, R>;
   }
 }

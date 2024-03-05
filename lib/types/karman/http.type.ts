@@ -50,7 +50,7 @@ export interface HeadersConfig {
 
 export type ReqStrategyTypes = "xhr" | "fetch";
 
-export interface RequestConfig {
+export interface RequestConfig<T extends ReqStrategyTypes> {
   headers?: HeadersConfig;
   auth?: Partial<HttpAuthentication>;
   timeout?: number;
@@ -58,16 +58,22 @@ export interface RequestConfig {
   responseType?: ResponseType;
   headerMap?: boolean;
   withCredentials?: boolean;
-  requestStrategy?: ReqStrategyTypes;
+  requestStrategy?: T;
 }
 
-export interface ApiConfig extends RequestConfig, SyncHooks, AsyncHooks, UtilConfig, CacheConfig {
+export interface ApiConfig<D, T extends ReqStrategyTypes>
+  extends RequestConfig<T>,
+    SyncHooks,
+    AsyncHooks,
+    UtilConfig,
+    CacheConfig {
   endpoint?: string;
   method?: HttpMethod;
   payloadDef?: PayloadDef;
+  dto?: D;
 }
 
-export interface HttpConfig extends RequestConfig {
+export interface HttpConfig<T extends ReqStrategyTypes> extends RequestConfig<T> {
   url: string;
   method?: HttpMethod;
 }
@@ -79,29 +85,29 @@ export interface PromiseExecutor<D> {
   reject(reason?: unknown): void;
 }
 
-export type XhrHooksHandler<D> = (
+export type XhrHooksHandler<D, T extends ReqStrategyTypes> = (
   e: ProgressEvent | Event,
-  config: HttpConfig,
+  config: HttpConfig<T>,
   xhr: XMLHttpRequest,
   executer: PromiseExecutor<D>,
 ) => void;
 
 export type RequestExecutor<D> = (onRequest?: () => void) => [requestPromise: Promise<D>, abortController: () => void];
 
-export interface XhrResponse<D> {
+export interface XhrResponse<D, T extends ReqStrategyTypes> {
   data: D;
   status: number;
   statusText: string;
   headers: string | Record<string, string>;
-  config: HttpConfig | undefined;
+  config: HttpConfig<T> | undefined;
   request: XMLHttpRequest;
   [x: string]: any;
 }
 
-export default interface RequestDetail<D> {
+export default interface RequestDetail<D, T extends ReqStrategyTypes> {
   requestKey: string;
   requestExecutor: RequestExecutor<D>;
   promiseExecutor: PromiseExecutor<D>;
-  config: HttpConfig;
+  config: HttpConfig<T>;
   // eslint-disable-next-line semi
 }
