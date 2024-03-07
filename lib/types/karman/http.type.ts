@@ -1,6 +1,7 @@
 import { SyncHooks, AsyncHooks } from "./hooks.type";
 import { CacheConfig, UtilConfig } from "./karman.type";
 import { PayloadDef } from "./payload-def.type";
+import { SelectRequestStrategy } from "@/abstract/request-strategy.abstract";
 
 export type HttpMethod =
   | "get"
@@ -61,7 +62,7 @@ export interface RequestConfig<T extends ReqStrategyTypes> {
   requestStrategy?: T;
 }
 
-export interface ApiConfig<D, T extends ReqStrategyTypes>
+export interface ApiConfig<D, T extends ReqStrategyTypes, P extends PayloadDef>
   extends RequestConfig<T>,
     SyncHooks,
     AsyncHooks,
@@ -69,7 +70,7 @@ export interface ApiConfig<D, T extends ReqStrategyTypes>
     CacheConfig {
   endpoint?: string;
   method?: HttpMethod;
-  payloadDef?: PayloadDef;
+  payloadDef?: P;
   dto?: D;
 }
 

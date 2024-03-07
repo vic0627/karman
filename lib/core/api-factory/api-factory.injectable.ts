@@ -1,4 +1,4 @@
-import RequestStrategy from "@/abstract/request-strategy.abstract";
+import RequestStrategy, { SelectRequestStrategy } from "@/abstract/request-strategy.abstract";
 import Xhr from "../request-strategy/xhr.injectable";
 import TypeCheck from "@/utils/type-check.provider";
 import Template from "@/utils/template.provider";
@@ -13,6 +13,7 @@ import { configInherit } from "../out-of-paradigm/config-inherit";
 import ValidationEngine from "../validation-engine/validation-engine.injectable";
 import CachePipe from "./request-pipe/cache-pipe.injectable";
 import Injectable from "@/decorator/Injectable.decorator";
+import { PayloadDef } from "@/types/karman/payload-def.type";
 
 export type ApiReturns<D> = [resPromise: Promise<D>, abortControler: () => void];
 
@@ -24,7 +25,7 @@ export interface ParsedRuntimeOptions<T extends ReqStrategyTypes> {
 }
 
 export interface AllConfigCache<D, T extends ReqStrategyTypes>
-  extends Pick<ApiConfig<D, T>, "endpoint" | "method" | "payloadDef"> {
+  extends Pick<ApiConfig<D, T, PayloadDef>, "endpoint" | "method" | "payloadDef"> {
   baseURL?: string;
   requestConfig?: RequestConfig<T>;
   cacheConfig?: CacheConfig;
@@ -49,7 +50,7 @@ export default class ApiFactory {
   ) {}
 
   // 調用時還不會接收到完整的配置
-  public createAPI<D, T extends ReqStrategyTypes>(apiConfig: ApiConfig<D, T>) {
+  public createAPI<D, T extends ReqStrategyTypes, P extends PayloadDef>(apiConfig: ApiConfig<D, T, P>) {
     // destructure
     const { $$apiConfig, $$requestConfig, $$cacheConfig, $$utilConfig, $$hooks } = this.apiConfigParser(apiConfig);
     // delegate
@@ -66,9 +67,9 @@ export default class ApiFactory {
      */
     function finalAPI<T2 extends ReqStrategyTypes>(
       this: Karman,
-      payload: Record<string, any>,
+      payload: { [K in keyof P]: any },
       runtimeOptions?: RuntimeOptions<T2>,
-    ) {
+    ): [requestPromise: Promise<SelectRequestStrategy<T, D>>, abortController: () => void] {
       const runtimeOptionsCopy = _af.runtimeOptionsParser(runtimeOptions);
 
       // config inheritance and caching
@@ -83,7 +84,7 @@ export default class ApiFactory {
         const hooks = configInherit($hooks, $$hooks, $$$hooks);
 
         allConfigCache.baseURL = $baseURL;
-        allConfigCache.requestConfig = requestConfig;
+        allConfigCache.requestConfig = requestConfig as RequestConfig<T>;
         allConfigCache.cacheConfig = cacheConfig;
         allConfigCache.utilConfig = utilConfig;
         allConfigCache.hooks = hooks;
@@ -139,7 +140,7 @@ export default class ApiFactory {
 
       if (cacheConfig?.cache) {
         const { cacheExpireTime, cacheStrategy } = cacheConfig;
-        const executer = _af.cachePipe.chain<D, T>(
+        const executer = _af.cachePipe.chain(
           { requestKey, requestExecutor, promiseExecutor, config, payload },
           { cacheStrategyType: cacheStrategy, expiration: cacheExpireTime },
         );
@@ -246,7 +247,7 @@ export default class ApiFactory {
     });
   }
 
-  private apiConfigParser<D, T extends ReqStrategyTypes>(apiConfig?: ApiConfig<D, T>) {
+  private apiConfigParser<D, T extends ReqStrategyTypes, P extends PayloadDef>(apiConfig?: ApiConfig<D, T, P>) {
     // 優先權中等
     const {
       // ApiConfig

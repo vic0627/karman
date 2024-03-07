@@ -1,5 +1,5 @@
-import { META_EXPOSE } from "src/assets/METADATA";
-import { ClassDecorator } from "src/types/common.type";
+import { META_EXPOSE } from "@/assets/METADATA";
+import { ClassDecorator } from "@/types/common.type";
 
 /**
  * @deprecated Define metadata that represents which targets should be exposed to the IoC.

@@ -1,6 +1,5 @@
-import { ClassSignature } from "src/types/common.type";
-import { META_PARAMTYPES } from "src/assets/METADATA";
-import { ClassDecorator } from "src/types/common.type";
+import { ClassSignature, ClassDecorator } from "@/types/common.type";
+import { META_PARAMTYPES } from "@/assets/METADATA";
 
 /**
  * Record all the dependencies required by the target.

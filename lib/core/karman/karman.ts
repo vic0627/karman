@@ -1,5 +1,5 @@
 import { AsyncHooks, SyncHooks } from "@/types/karman/hooks.type";
-import { RequestConfig } from "@/types/karman/http.type";
+import { ReqStrategyTypes, RequestConfig } from "@/types/karman/http.type";
 import { KarmanConfig, APIs, Routes, CacheConfig, KarmanInstanceConfig } from "@/types/karman/karman.type";
 import { configInherit } from "@/core/out-of-paradigm/config-inherit";
 import PathResolver from "@/utils/path-rosolver.provider";
@@ -37,7 +37,7 @@ export default class Karman {
     cacheExpireTime: HOUR,
     cacheStrategy: "memory",
   };
-  $requestConfig: RequestConfig = {};
+  $requestConfig: RequestConfig<ReqStrategyTypes> = {};
   $hooks: AsyncHooks & SyncHooks = {};
   #validation?: boolean;
   get $validation() {

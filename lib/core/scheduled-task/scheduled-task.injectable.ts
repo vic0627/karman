@@ -12,7 +12,10 @@ export default class ScheduledTask {
   /** 排程任務的執行間隔 */
   #interval: number = 1000 * 60 * 10;
 
-  /** 排程任務的執行間隔 */
+  /**
+   * 排程任務的執行間隔
+   * @returns
+   */
   get interval() {
     return this.#interval;
   }
@@ -26,10 +29,9 @@ export default class ScheduledTask {
   /**
    * 設定排程任務的執行間隔時間
    * @param interval 間隔時間
-   * @param service Sevice 抽象層實例
    */
-  setInterval(interval?: number, service?: any) {
-    if (this.typeCheck.isUndefinedOrNull(interval) || (interval as number) <= 0 || service?._parent) {
+  setInterval(interval?: number) {
+    if (this.typeCheck.isUndefinedOrNull(interval) || (interval as number) <= 0) {
       return;
     }
 
@@ -89,7 +91,10 @@ export default class ScheduledTask {
     }, this.interval);
   }
 
-  /** 運行排程任務 */
+  /**
+   * 運行排程任務
+   * @returns
+   */
   #runTasks() {
     // 1. 取得當前時間戳
     const now = Date.now();

@@ -21,7 +21,7 @@ export type Reflect<T> = {
 };
 
 export interface APIs {
-  [x: string]: FinalAPI<T, D>;
+  [x: string]: any;
 }
 
 export interface Routes {

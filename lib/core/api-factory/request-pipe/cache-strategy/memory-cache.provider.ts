@@ -1,9 +1,10 @@
 import CacheStrategy, { CacheData } from "@/abstract/cache-strategy.abstract";
+import { ReqStrategyTypes } from "@/types/karman/http.type";
 
 export default class MemoryCache implements CacheStrategy {
-  private readonly store: Map<string, CacheData<any>> = new Map();
+  private readonly store: Map<string, any> = new Map();
 
-  set<D>(requestKey: string, cacheData: CacheData<D>): void {
+  set<T extends ReqStrategyTypes, D>(requestKey: string, cacheData: CacheData<T, D>): void {
     this.store.set(requestKey, cacheData);
   }
 
@@ -15,9 +16,9 @@ export default class MemoryCache implements CacheStrategy {
     return this.store.has(requestKey);
   }
 
-  get<D>(requestKey: string): CacheData<D> | undefined {
-    const data = this.store.get(requestKey);
-    const existed = this.checkExpiration<D>(requestKey, data);
+  get<T extends ReqStrategyTypes, D>(requestKey: string): CacheData<T, D> | undefined {
+    const data = this.store.get(requestKey) as CacheData<T, D>;
+    const existed = this.checkExpiration(requestKey, data);
 
     if (existed) return data;
   }
@@ -34,7 +35,10 @@ export default class MemoryCache implements CacheStrategy {
     return !this.store.size;
   }
 
-  private checkExpiration<D>(requestKey: string, cacheData?: CacheData<D>): cacheData is CacheData<D> {
+  private checkExpiration<T extends ReqStrategyTypes, D>(
+    requestKey: string,
+    cacheData?: CacheData<T, D>,
+  ): cacheData is CacheData<T, D> {
     if (!cacheData) return false;
 
     if (Date.now() > cacheData.expiration) {

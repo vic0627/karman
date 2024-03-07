@@ -3,16 +3,19 @@ import { APIs, FinalKarman, KarmanConfig, Routes } from "@/types/karman/karman.t
 import TypeCheck from "@/utils/type-check.provider";
 import KarmanFactory from "../karman/karman-factory.injectable";
 import PathResolver from "@/utils/path-rosolver.provider";
+import { ReqStrategyTypes } from "@/types/karman/http.type";
+import ScheduledTask from "../scheduled-task/scheduled-task.injectable";
 
 @Injectable()
 export default class LayerBuilder {
   constructor(
     private readonly typeCheck: TypeCheck,
+    private readonly scheduledTask: ScheduledTask,
     private readonly pathResolver: PathResolver,
     private readonly karmanFactory: KarmanFactory,
   ) {}
 
-  public configure<A extends APIs, R extends Routes>(k: KarmanConfig<A, R>) {
+  public configure<A extends APIs, R extends Routes>(k: KarmanConfig<A, R, ReqStrategyTypes>) {
     const {
       baseURL,
       url,
@@ -62,6 +65,8 @@ export default class LayerBuilder {
       onError,
       onFinally,
     });
+
+    if (this.typeCheck.isString(baseURL)) this.scheduledTask.setInterval(scheduleInterval);
 
     currentKarman.$setDependencies(this.typeCheck, this.pathResolver);
 

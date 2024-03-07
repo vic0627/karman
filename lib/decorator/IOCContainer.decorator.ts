@@ -1,7 +1,7 @@
-import type { ClassDecorator, ClassSignature } from "src/types/common.type";
-import type { Provider, Importer } from "src/types/ioc.type";
-import type { IOCOptions } from "src/types/decorator.type";
-import { META_PARAMTYPES, META_EXPOSE } from "src/assets/METADATA";
+import type { ClassDecorator, ClassSignature } from "@/types/common.type";
+import type { Provider, Importer } from "@/types/ioc.type";
+import type { IOCOptions } from "@/types/decorator.type";
+import { META_PARAMTYPES, META_EXPOSE } from "@/assets/METADATA";
 
 /**
  * Inversion of control container
@@ -110,7 +110,7 @@ export default function IOCContainer(options: IOCOptions = {}): ClassDecorator {
          * 跑到這裡代表有依賴沒被傳入 IoC
          */
         console.warn("Missing dependency.");
-        
+
         break;
       }
     }

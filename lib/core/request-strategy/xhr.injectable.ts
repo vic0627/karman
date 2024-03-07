@@ -6,6 +6,7 @@ import RequestDetail, {
   HttpBody,
   HttpConfig,
   PromiseExecutor,
+  ReqStrategyTypes,
   RequestExecutor,
   XhrHooksHandler,
 } from "@/types/karman/http.type";
@@ -16,11 +17,11 @@ import { cloneDeep } from "lodash";
 export default class Xhr implements RequestStrategy {
   constructor(private readonly typeCheck: TypeCheck) {}
 
-  public request<D>(payload: HttpBody, config: HttpConfig): RequestDetail<D> {
+  public request<D, T extends ReqStrategyTypes>(payload: HttpBody, config: HttpConfig<T>): RequestDetail<D, T> {
     const { url = "", method = "GET" } = config;
     const [xhr, cleanup, requestKey] = this.initXhr({ method, url });
     this.setBasicSettings(xhr, config);
-    const [reqExecutor, promiseExecutor] = this.buildPromise<D>(xhr, cleanup, config);
+    const [reqExecutor, promiseExecutor] = this.buildPromise<D, T>(xhr, cleanup, config);
 
     const requestExecutor: RequestExecutor<D> = (onRequest) => {
       if (xhr) xhr.send(payload ?? null);
@@ -36,8 +37,8 @@ export default class Xhr implements RequestStrategy {
     };
   }
 
-  private initXhr(
-    options: Pick<HttpConfig, "method" | "url">,
+  private initXhr<T extends ReqStrategyTypes>(
+    options: Pick<HttpConfig<T>, "method" | "url">,
   ): [xhr: XMLHttpRequest, cleanup: () => void, requestKey: string] {
     const method = options.method?.toUpperCase() ?? "GET";
     const { url } = options;
@@ -52,7 +53,7 @@ export default class Xhr implements RequestStrategy {
     return [xhr, cleanup, requestKey];
   }
 
-  private setBasicSettings(xhr: XMLHttpRequest, config: HttpConfig) {
+  private setBasicSettings<T extends ReqStrategyTypes>(xhr: XMLHttpRequest, config: HttpConfig<T>) {
     const { timeout, auth, headers, responseType = "", withCredentials } = config;
     xhr.timeout = timeout ?? 0;
     xhr.withCredentials = !!withCredentials;
@@ -85,10 +86,10 @@ export default class Xhr implements RequestStrategy {
     }
   }
 
-  private buildPromise<D>(
+  private buildPromise<D, T extends ReqStrategyTypes>(
     xhr: XMLHttpRequest,
     cleanup: () => void,
-    config: HttpConfig,
+    config: HttpConfig<T>,
   ): [requestExecuter: RequestExecutor<D>, promiseExecutor: PromiseExecutor<D>] {
     let promiseExecutor: PromiseExecutor<D> = { resolve: cleanup, reject: cleanup };
 
@@ -114,10 +115,10 @@ export default class Xhr implements RequestStrategy {
         };
 
         promiseExecutor = { resolve, reject };
-        xhr.onloadend = this.hooksHandlerFactory<D>(xhr, config, promiseExecutor, this.handleLoadend);
-        xhr.onabort = this.hooksHandlerFactory<D>(xhr, config, promiseExecutor, this.handleAbort);
-        xhr.ontimeout = this.hooksHandlerFactory<D>(xhr, config, promiseExecutor, this.handleTimeout);
-        xhr.onerror = this.hooksHandlerFactory<D>(xhr, config, promiseExecutor, this.handleError);
+        xhr.onloadend = this.hooksHandlerFactory<D, T>(xhr, config, promiseExecutor, this.handleLoadend);
+        xhr.onabort = this.hooksHandlerFactory<D, T>(xhr, config, promiseExecutor, this.handleAbort);
+        xhr.ontimeout = this.hooksHandlerFactory<D, T>(xhr, config, promiseExecutor, this.handleTimeout);
+        xhr.onerror = this.hooksHandlerFactory<D, T>(xhr, config, promiseExecutor, this.handleError);
       });
 
       return [requestPromise, abortController];
@@ -126,27 +127,27 @@ export default class Xhr implements RequestStrategy {
     return [requestExecuter, promiseExecutor];
   }
 
-  private hooksHandlerFactory<D>(
+  private hooksHandlerFactory<D, T extends ReqStrategyTypes>(
     xhr: XMLHttpRequest,
-    config: HttpConfig,
+    config: HttpConfig<T>,
     executer: PromiseExecutor<D>,
-    handler: XhrHooksHandler<D>,
+    handler: XhrHooksHandler<D, T>,
   ) {
     return (e: ProgressEvent | Event) => handler.call(this, e, config, xhr, executer);
   }
 
-  private handleAbort<D>(
+  private handleAbort<D, T extends ReqStrategyTypes>(
     _: ProgressEvent | Event,
-    __: HttpConfig,
+    __: HttpConfig<T>,
     xhr: XMLHttpRequest,
     { reject }: PromiseExecutor<D>,
   ) {
     xhr && reject(new Error("Request aborted"));
   }
 
-  private handleTimeout<D>(
+  private handleTimeout<D, T extends ReqStrategyTypes>(
     _: ProgressEvent | Event,
-    config: HttpConfig,
+    config: HttpConfig<T>,
     xhr: XMLHttpRequest,
     { reject }: PromiseExecutor<D>,
   ) {
@@ -160,9 +161,9 @@ export default class Xhr implements RequestStrategy {
     reject(new Error(errorMessage));
   }
 
-  private handleError<D>(
+  private handleError<D, T extends ReqStrategyTypes>(
     _: ProgressEvent | Event,
-    config: HttpConfig,
+    config: HttpConfig<T>,
     xhr: XMLHttpRequest,
     { reject }: PromiseExecutor<D>,
   ) {
@@ -174,9 +175,9 @@ export default class Xhr implements RequestStrategy {
     reject(new Error(`Network Error ${url} ${status}`));
   }
 
-  private handleLoadend<D>(
+  private handleLoadend<D, T extends ReqStrategyTypes>(
     _: ProgressEvent | Event,
-    config: HttpConfig,
+    config: HttpConfig<T>,
     xhr: XMLHttpRequest,
     { resolve }: PromiseExecutor<D>,
   ) {
