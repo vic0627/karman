@@ -42,7 +42,7 @@ export default class TypeCheck {
   }
 
   isChar(value: any): boolean {
-    return this.isString(value) && value.length === 1;
+    return typeof value === "string" && value.length === 1;
   }
 
   isString(value: any): value is string {
@@ -54,15 +54,15 @@ export default class TypeCheck {
   }
 
   isInteger(value: any): boolean {
-    return this.isNumber(value) && Number.isInteger(value);
+    return typeof value === "number" && !isNaN(value) && Number.isInteger(value);
   }
 
   isFloat(value: any): boolean {
-    return !this.isInteger(value);
+    return !(typeof value === "number" && !isNaN(value) && Number.isInteger(value));
   }
 
   isNaN(value: any): boolean {
-    return this.isNaN(value);
+    return isNaN(value);
   }
 
   isBoolean(value: any): value is boolean {
@@ -86,7 +86,7 @@ export default class TypeCheck {
   }
 
   isObjectLiteral(value: any): value is ObjectLiteral {
-    return this.isObject(value) && !this.isArray(value) && !this.isNull(value);
+    return typeof value === "object" && !Array.isArray(value) && value !== null;
   }
 
   isUndefined(value: any): value is undefined {
@@ -94,7 +94,7 @@ export default class TypeCheck {
   }
 
   isUndefinedOrNull(value: any): value is null | undefined {
-    return this.isUndefined(value) || this.isNull(value);
+    return value === undefined || value === null;
   }
 
   isBigInt(value: any): value is bigint {

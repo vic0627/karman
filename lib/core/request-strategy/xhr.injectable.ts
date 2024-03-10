@@ -11,7 +11,9 @@ import RequestDetail, {
   XhrHooksHandler,
 } from "@/types/karman/http.type";
 import TypeCheck from "@/utils/type-check.provider";
-import { cloneDeep } from "lodash";
+// import * as _ from "lodash";
+
+declare const _: typeof import("lodash");
 
 @Injectable()
 export default class Xhr implements RequestStrategy {
@@ -58,7 +60,7 @@ export default class Xhr implements RequestStrategy {
     xhr.timeout = timeout ?? 0;
     xhr.withCredentials = !!withCredentials;
     xhr.responseType = responseType as XMLHttpRequestResponseType;
-    const _headers = cloneDeep(headers) ?? {};
+    const _headers = _.cloneDeep(headers) ?? {};
     Object.assign(_headers, this.getAuthHeaders(auth));
     this.setRequestHeader(xhr, _headers);
   }

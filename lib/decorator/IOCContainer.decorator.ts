@@ -7,25 +7,31 @@ import { META_PARAMTYPES, META_EXPOSE } from "@/assets/METADATA";
  * Inversion of control container
  * @param options
  */
-export default function IOCContainer(options: IOCOptions = {}): ClassDecorator {
-  const { provides, imports } = options;
+export default function IOCContainer<E extends ClassSignature>(options: IOCOptions<E> = {}): ClassDecorator {
+  const { provides, imports, exports = [] } = options;
+
+  /**
+   * 需要直接暴露在 IoC 容器實例上的功能模組
+   */
+  const exposeModules = new Map<string, E>();
+
+  const getExport = (value: unknown) => {
+    for (const prototype of exports) {
+      if (value instanceof prototype) exposeModules.set(prototype.name, value as E);
+    }
+  };
 
   return (target) => {
-    /**
-     * 需要直接暴露在 IoC 容器實例上的功能模組
-     */
-    const exposeModules = new Map<string, {}>();
-
     /**
      * provides 的 token 與實例陣列
      */
     const providers = (provides?.map((slice: ClassSignature) => {
-      const expose = (Reflect.getMetadata(META_EXPOSE, slice) ?? "") as string;
+      // const expose = (Reflect.getMetadata(META_EXPOSE, slice) ?? "") as string;
       const value = new slice();
-
-      if (expose) {
-        exposeModules.set(expose, value);
-      }
+      getExport(value);
+      // if (expose) {
+      //   exposeModules.set(expose, value);
+      // }
 
       return [Symbol.for(slice.toString()), value];
     }) ?? []) as Provider[];
@@ -93,12 +99,12 @@ export default function IOCContainer(options: IOCOptions = {}): ClassDecorator {
         }
 
         const value = new constructor(...(deps || []));
+        getExport(value);
+        // const expose = (Reflect.getMetadata(META_EXPOSE, constructor) ?? "") as string;
 
-        const expose = (Reflect.getMetadata(META_EXPOSE, constructor) ?? "") as string;
-
-        if (expose) {
-          exposeModules.set(expose, value);
-        }
+        // if (expose) {
+        //   exposeModules.set(expose, value);
+        // }
 
         instances.set(token, value);
 
@@ -109,7 +115,7 @@ export default function IOCContainer(options: IOCOptions = {}): ClassDecorator {
         /**
          * 跑到這裡代表有依賴沒被傳入 IoC
          */
-        console.warn("Missing dependency.");
+        console.warn("Missing dependency...");
 
         break;
       }

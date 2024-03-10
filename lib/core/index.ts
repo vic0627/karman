@@ -13,6 +13,7 @@ import TypeValidator from "./validation-engine/validators/type-validator.injecta
 import ValidationEngine from "./validation-engine/validation-engine.injectable";
 import PathResolver from "@/utils/path-rosolver.provider";
 import TypeCheck from "@/utils/type-check.provider";
+import Template from "@/utils/template.provider";
 
 @IOCContainer({
   imports: [
@@ -28,6 +29,11 @@ import TypeCheck from "@/utils/type-check.provider";
     TypeValidator,
     ValidationEngine,
   ],
-  provides: [MemoryCache, PathResolver, TypeCheck],
+  provides: [MemoryCache, PathResolver, TypeCheck, Template],
+  exports: [ApiFactory, LayerBuilder, ValidationEngine],
 })
-export default class {}
+export default class {
+  ApiFactory!: ApiFactory;
+  LayerBuilder!: LayerBuilder;
+  ValidationEngine!: ValidationEngine;
+}

@@ -4,9 +4,8 @@ import TypeCheck from "@/utils/type-check.provider";
 import Template from "@/utils/template.provider";
 import { RuntimeOptions } from "@/types/karman/final-api.type";
 import Karman from "../karman/karman";
-import { ApiConfig, HttpBody, ReqStrategyTypes, RequestConfig, XhrResponse } from "@/types/karman/http.type";
+import { ApiConfig, HttpBody, ReqStrategyTypes, RequestConfig } from "@/types/karman/http.type";
 import PathResolver from "@/utils/path-rosolver.provider";
-import { cloneDeep, isEqual } from "lodash";
 import { CacheConfig, UtilConfig } from "@/types/karman/karman.type";
 import { AsyncHooks, SyncHooks } from "@/types/karman/hooks.type";
 import { configInherit } from "../out-of-paradigm/config-inherit";
@@ -14,6 +13,9 @@ import ValidationEngine from "../validation-engine/validation-engine.injectable"
 import CachePipe from "./request-pipe/cache-pipe.injectable";
 import Injectable from "@/decorator/Injectable.decorator";
 import { PayloadDef } from "@/types/karman/payload-def.type";
+// import * as _ from "lodash";
+
+declare const _: typeof import("lodash");
 
 export type ApiReturns<D> = [resPromise: Promise<D>, abortControler: () => void];
 
@@ -73,7 +75,7 @@ export default class ApiFactory {
       const runtimeOptionsCopy = _af.runtimeOptionsParser(runtimeOptions);
 
       // config inheritance and caching
-      if (!isEqual(runtimeOptionsCache, runtimeOptionsCopy)) {
+      if (!_.isEqual(runtimeOptionsCache, runtimeOptionsCopy)) {
         runtimeOptionsCache = runtimeOptionsCopy;
         const { $$$requestConfig, $$$cacheConfig, $$$utilConfig, $$$hooks } = runtimeOptionsCopy;
         const { $baseURL, $requestConfig, $cacheConfig, $hooks } = this;
@@ -167,12 +169,15 @@ export default class ApiFactory {
       const { path, query, body } = def;
       const value = payload[param as keyof typeof payload];
 
-      if (this.typeCheck.isNumber(path)) pathParams[path] = value;
+      if (this.typeCheck.isUndefinedOrNull(value)) return;
+
+      if (this.typeCheck.isNumber(path) && path >= 0) pathParams[path] = `${value}`;
       if (query) queryParams[param] = value;
       if (body) requestBody[param] = value;
     });
 
-    urlSources.push(...pathParams.map((p) => p));
+    urlSources.push(...pathParams.filter((p) => p));
+    // console.warn(urlSources, queryParams);
     const requestURL = this.pathResolver.resolveURL({ paths: urlSources, query: queryParams });
 
     return [requestURL, requestBody];
@@ -239,7 +244,7 @@ export default class ApiFactory {
       onFinally,
     } as AsyncHooks & SyncHooks;
 
-    return cloneDeep({
+    return _.cloneDeep({
       $$$requestConfig,
       $$$cacheConfig,
       $$$utilConfig,
@@ -316,6 +321,6 @@ export default class ApiFactory {
       onFinally,
     } as AsyncHooks & SyncHooks;
 
-    return cloneDeep({ $$apiConfig, $$requestConfig, $$cacheConfig, $$utilConfig, $$hooks });
+    return _.cloneDeep({ $$apiConfig, $$requestConfig, $$cacheConfig, $$utilConfig, $$hooks });
   }
 }

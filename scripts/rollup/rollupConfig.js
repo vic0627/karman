@@ -9,7 +9,7 @@ const relativePathToRoot = "../../";
 
 const getPath = (...paths) => resolve(__dirname, relativePathToRoot, ...paths);
 
-const input = getPath("lib/index.ts");
+const input = getPath("./lib/index.ts");
 
 const privateFieldIndentifier = /^#[^#]+$/i;
 
@@ -40,21 +40,21 @@ const babelPlugin = babel(babelOptions);
 /** @type {import("rollup").OutputOptions[]} */
 const output = [
   {
-    name: "us",
-    file: getPath("dist/karman.esm.js"),
+    name: "karman",
+    file: getPath("dist/index.esm.js"),
     format: "es",
     exports: "named",
   },
   {
-    name: "us",
-    file: getPath("dist/karman.min.js"),
+    name: "karman",
+    file: getPath("dist/index.min.js"),
     format: "iife",
     exports: "named",
-    plugins: [terser(terserOptions)],
+    // plugins: [terser(terserOptions)],
   },
   {
-    name: "us",
-    file: getPath("dist/karman.cjs"),
+    name: "karman",
+    file: getPath("dist/index.cjs"),
     format: "commonjs",
     exports: "named",
   },
@@ -62,9 +62,14 @@ const output = [
 
 /** @type {import('@rollup/plugin-typescript').RollupTypescriptOptions} */
 const tsOption = {
-  tsconfig: getPath("./tsconfig.json"),
+  tsconfig: getPath("tsconfig.json"),
 };
 
-const plugins = [babelPlugin, typescript(tsOption), nodeResolve(), cleanupPlugin];
+const plugins = [
+  babelPlugin,
+  typescript(tsOption),
+  nodeResolve(),
+  cleanupPlugin,
+];
 
-module.exports = { input, output, plugins };
+module.exports = { input, output, plugins, external: ['lodash'] };

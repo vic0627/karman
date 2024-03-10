@@ -6,6 +6,8 @@ import PathResolver from "@/utils/path-rosolver.provider";
 import { ReqStrategyTypes } from "@/types/karman/http.type";
 import ScheduledTask from "../scheduled-task/scheduled-task.injectable";
 
+declare const _: typeof import("lodash");
+
 @Injectable()
 export default class LayerBuilder {
   constructor(
@@ -72,12 +74,17 @@ export default class LayerBuilder {
 
     Object.entries(route as R).forEach(([key, karman]) => {
       karman.$parent = currentKarman;
+      console.log("built karman => ", karman);
       Object.defineProperty(currentKarman, key, { value: karman, enumerable: true });
     });
 
     Object.entries(api as A).forEach(([key, value]) => {
       Object.defineProperty(currentKarman, key, { value: value.bind(currentKarman), enumerable: true });
     });
+
+    if (_.isString(baseURL)) currentKarman.$inherit();
+
+    console.log(currentKarman.$baseURL);
 
     return currentKarman as FinalKarman<A, R>;
   }

@@ -3,10 +3,12 @@ import { ReqStrategyTypes, RequestExecutor } from "@/types/karman/http.type";
 import { CacheStrategyTypes } from "@/types/karman/karman.type";
 import MemoryCache from "./cache-strategy/memory-cache.provider";
 import CacheStrategy, { CacheData } from "@/abstract/cache-strategy.abstract";
-import { isEqual } from "lodash";
 import { SelectRequestStrategy } from "@/abstract/request-strategy.abstract";
 import ScheduledTask from "@/core/scheduled-task/scheduled-task.injectable";
 import Injectable from "@/decorator/Injectable.decorator";
+// import * as _ from "lodash";
+
+declare const _: typeof import("lodash");
 
 @Injectable()
 export default class CachePipe implements RequestPipe {
@@ -28,7 +30,7 @@ export default class CachePipe implements RequestPipe {
 
     if (cacheData && cacheData.expiration < currentT) {
       const { res } = cacheData;
-      const isSameRequest = isEqual(payload, cacheData.payload);
+      const isSameRequest = _.isEqual(payload, cacheData.payload);
 
       if (isSameRequest) {
         resolve(res as SelectRequestStrategy<T, D>);

@@ -4,7 +4,9 @@ import { KarmanConfig, APIs, Routes, CacheConfig, KarmanInstanceConfig } from "@
 import { configInherit } from "@/core/out-of-paradigm/config-inherit";
 import PathResolver from "@/utils/path-rosolver.provider";
 import TypeCheck from "@/utils/type-check.provider";
-import _ from "lodash";
+// import * as _ from "lodash";
+
+declare const _: typeof import("lodash");
 
 const HOUR = 60 * 60 * 60 * 1000;
 
@@ -21,15 +23,14 @@ export default class Karman {
     return this.#parant;
   }
   set $parent(value) {
-    if (!(value instanceof Karman) || !this._typeCheck.isNull(value)) return;
-    this.#parant = value;
+    if (value instanceof Karman) this.#parant = value;
   }
   #baseURL: string = "";
   get $baseURL() {
     return this.#baseURL;
   }
   set $baseURL(value) {
-    if (!this._typeCheck.isString(value)) return;
+    if (!this._.isString(value)) return;
     this.#baseURL = value;
   }
   $cacheConfig: CacheConfig = {
@@ -44,14 +45,14 @@ export default class Karman {
     return this.#validation;
   }
   set $validation(value) {
-    if (this._typeCheck.isBoolean(value)) this.#validation = value;
+    if (this._.isBoolean(value)) this.#validation = value;
   }
   #scheduleInterval?: number;
   get $scheduleInterval() {
     return this.#scheduleInterval;
   }
   set $scheduleInterval(value) {
-    if (this._typeCheck.isNumber(value)) this.#scheduleInterval = value;
+    if (this._.isNumber(value)) this.#scheduleInterval = value;
   }
   // #endregion
 
@@ -107,16 +108,17 @@ export default class Karman {
    * Only allows to be invoked once on root layer.
    */
   public $inherit(): void {
-    if (this.#inherited || !this.$parent || !this.$parent.$baseURL || this.$baseURL.includes(this.$parent.$baseURL))
-      return;
+    if (this.#inherited) return;
 
-    const { $baseURL, $requestConfig, $cacheConfig, $hooks, $validation, $scheduleInterval } = this.$parent;
-    this.$baseURL = this._pathResolver.resolve($baseURL, this.$baseURL);
-    this.$requestConfig = configInherit($requestConfig, this.$requestConfig);
-    this.$cacheConfig = configInherit($cacheConfig, this.$cacheConfig);
-    this.$hooks = configInherit($hooks, this.$hooks);
-    if (this._typeCheck.isUndefined(this.$validation)) this.$validation = $validation;
-    if (this._typeCheck.isUndefined(this.$scheduleInterval)) this.$scheduleInterval = $scheduleInterval;
+    if (this.$parent) {
+      const { $baseURL, $requestConfig, $cacheConfig, $hooks, $validation, $scheduleInterval } = this.$parent;
+      this.$baseURL = this._pathResolver.resolve($baseURL, this.$baseURL);
+      this.$requestConfig = configInherit($requestConfig, this.$requestConfig);
+      this.$cacheConfig = configInherit($cacheConfig, this.$cacheConfig);
+      this.$hooks = configInherit($hooks, this.$hooks);
+      if (this._typeCheck.isUndefined(this.$validation)) this.$validation = $validation;
+      if (this._typeCheck.isUndefined(this.$scheduleInterval)) this.$scheduleInterval = $scheduleInterval;
+    }
 
     this.$invokeChildrenInherit();
   }

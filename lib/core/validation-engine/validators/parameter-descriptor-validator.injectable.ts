@@ -31,8 +31,9 @@ export default class ParameterDescriptorValidator implements Validator {
   private isParameterDescriptor(rule: ParamRules): rule is ParameterDescriptor {
     const isObject = this.typeCheck.isObjectLiteral(rule);
     const _rule = rule as ParameterDescriptor;
-    const hasDescriptorKeys =
-      "min" in _rule || "max" in _rule || "equality" in _rule || "measurement" in _rule || "reuqired" in _rule;
+    const hasDescriptorKeys = [_rule?.min, _rule?.max, _rule?.equality, _rule?.measurement, _rule?.required].some(
+      (des) => !this.typeCheck.isUndefinedOrNull(des),
+    );
 
     return isObject && hasDescriptorKeys;
   }

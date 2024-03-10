@@ -22,20 +22,14 @@
     // "useDefineForClassFields": true,                  /* Emit ECMAScript-standard-compliant class fields. */
     // "moduleDetection": "auto",                        /* Control what method is used to detect module-format JS files. */
     /* Modules */
-    "module": "nodenext" /* Specify what module code is generated. */,
+    "module": "ESNext" /* Specify what module code is generated. */,
     // "rootDir": "./",                                  /* Specify the root folder within your source files. */
-    "moduleResolution": "nodenext", /* Specify how TypeScript looks up a file from a given module specifier. */
+    "moduleResolution": "node" /* Specify how TypeScript looks up a file from a given module specifier. */,
     "baseUrl": "./" /* Specify the base directory to resolve non-relative module names. */,
     "paths": {
-      "@jest/globals": [
-        "node_modules/@jest/globals/build/index.d.ts"
-      ],
-      "form-data": [
-        "node_modules/form-data/index.d.ts"
-      ],
-      "@/*": [
-        "lib/*"
-      ]
+      "@jest/globals": ["node_modules/@jest/globals/build/index.d.ts"],
+      "form-data": ["node_modules/form-data/index.d.ts"],
+      "@/*": ["lib/*"]
     } /* Specify a set of entries that re-map imports to additional lookup locations. */,
     // "rootDirs": [],                                   /* Allow multiple folders to be treated as one when resolving modules. */
     // "typeRoots": [],                                  /* Specify multiple folders that act like './node_modules/@types'. */
@@ -78,13 +72,13 @@
     // "noEmitHelpers": true,                            /* Disable generating custom helper functions like '__extends' in compiled output. */
     // "noEmitOnError": true,                            /* Disable emitting files if any type checking errors are reported. */
     // "preserveConstEnums": true,                       /* Disable erasing 'const enum' declarations in generated code. */
-    "declarationDir": "dist",                           /* Specify the output directory for generated declaration files. */
+    "declarationDir": "dist" /* Specify the output directory for generated declaration files. */,
     // "preserveValueImports": true,                     /* Preserve unused imported values in the JavaScript output that would otherwise be removed. */
     /* Interop Constraints */
     // "isolatedModules": true,                          /* Ensure that each file can be safely transpiled without relying on other imports. */
     // "verbatimModuleSyntax": true,                     /* Do not transform or elide any imports or exports not marked as type-only, ensuring they are written in the output file's format based on the 'module' setting. */
     // "allowSyntheticDefaultImports": true,             /* Allow 'import x from y' when a module doesn't have a default export. */
-    "esModuleInterop": true /* Emit additional JavaScript to ease support for importing CommonJS modules. This enables 'allowSyntheticDefaultImports' for type compatibility. */,
+    // "esModuleInterop": true /* Emit additional JavaScript to ease support for importing CommonJS modules. This enables 'allowSyntheticDefaultImports' for type compatibility. */,
     // "preserveSymlinks": true,                         /* Disable resolving symlinks to their realpath. This correlates to the same flag in node. */
     "forceConsistentCasingInFileNames": true /* Ensure that casing is correct in imports. */,
     /* Type Checking */
@@ -111,17 +105,9 @@
     // "skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */
     "skipLibCheck": true /* Skip type checking all .d.ts files. */
   },
-  "exclude": [
-    "example",
-    "test"
-  ],
+  "exclude": ["example", "test"],
   "watchOptions": {
-    "excludeFiles": [
-      "**/*.test.ts",
-    ],
-    "excludeDirectories": [
-      "example",
-      "test"
-    ]
+    "excludeFiles": ["**/*.test.ts"],
+    "excludeDirectories": ["example", "test"]
   }
 }

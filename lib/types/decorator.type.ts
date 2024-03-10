@@ -1,6 +1,6 @@
 import { ClassSignature } from "./common.type";
 
-export interface IOCOptions {
+export interface IOCOptions<E> {
   /**
    * Providers does not contain any dependencies required.
    */
@@ -9,4 +9,5 @@ export interface IOCOptions {
    * An import moudle can also be a provider of another moudule.
    */
   imports?: ClassSignature[];
+  exports?: E[];
 }

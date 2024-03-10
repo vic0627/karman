@@ -110,6 +110,7 @@ export default class PathResolver {
   /**
    * 去除字串的 `/` 並返回所有路徑
    * @param path 路徑字串
+   * @returns
    * @example
    * const arr = DI.antiSlash("/hello/world//");
    * console.log(arr); // => ["hello", "world"]
