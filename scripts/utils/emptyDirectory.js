@@ -59,7 +59,7 @@ module.exports = async function emptyDirectory(...resolvePath) {
 
     const distNotExisit = error.message?.includes(
       "ENOENT: no such file or directory, scandir",
-    ) && error.message?.includes("dist");
+    ) && error.message?.includes("karman");
 
     return !!distNotExisit;
   }

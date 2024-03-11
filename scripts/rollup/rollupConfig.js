@@ -37,24 +37,27 @@ const babelOptions = {
 
 const babelPlugin = babel(babelOptions);
 
+const baseFileName = "demo/vanilla/karman/index";
+
 /** @type {import("rollup").OutputOptions[]} */
 const output = [
   {
     name: "karman",
-    file: getPath("dist/index.esm.js"),
+    file: getPath(`${baseFileName}.esm.js`),
     format: "es",
     exports: "named",
   },
   {
     name: "karman",
-    file: getPath("dist/index.min.js"),
+    file: getPath(`${baseFileName}.min.js`),
     format: "iife",
     exports: "named",
+    /** @todo fix terser option */
     // plugins: [terser(terserOptions)],
   },
   {
     name: "karman",
-    file: getPath("dist/index.cjs"),
+    file: getPath(`${baseFileName}.cjs`),
     format: "commonjs",
     exports: "named",
   },
@@ -65,11 +68,6 @@ const tsOption = {
   tsconfig: getPath("tsconfig.json"),
 };
 
-const plugins = [
-  babelPlugin,
-  typescript(tsOption),
-  nodeResolve(),
-  cleanupPlugin,
-];
+const plugins = [babelPlugin, typescript(tsOption), nodeResolve(), cleanupPlugin];
 
-module.exports = { input, output, plugins, external: ['lodash'] };
+module.exports = { input, output, plugins, treeshake: true };

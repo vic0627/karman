@@ -12,7 +12,7 @@ const build = async (callback) => {
   try {
     timeLog("start cleaning 'dist' dir...");
 
-    const clean = await emptyDirectory(__dirname, "../../dist");
+    const clean = await emptyDirectory(__dirname, "../../demo/vanilla/karman");
 
     if (!clean) throw new Error('failed to clean up "dist" dir');
 

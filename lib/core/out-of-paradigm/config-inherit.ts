@@ -1,10 +1,8 @@
-// import * as _ from "lodash";
-
-declare const _: typeof import("lodash");
+import { cloneDeep, merge } from "lodash-es";
 
 export function configInherit<O extends object>(baseObj: O, ...objs: O[]): O {
-  const copy = _.cloneDeep(baseObj);
-  const combination = _.merge(copy, ...objs);
+  const copy = cloneDeep(baseObj);
+  const combination = merge(copy, ...objs);
 
   return combination;
 }

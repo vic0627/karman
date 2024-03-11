@@ -1,20 +1,17 @@
 import { AsyncHooks, SyncHooks } from "@/types/karman/hooks.type";
 import { ReqStrategyTypes, RequestConfig } from "@/types/karman/http.type";
-import { KarmanConfig, APIs, Routes, CacheConfig, KarmanInstanceConfig } from "@/types/karman/karman.type";
+import { CacheConfig, KarmanInstanceConfig } from "@/types/karman/karman.type";
 import { configInherit } from "@/core/out-of-paradigm/config-inherit";
 import PathResolver from "@/utils/path-rosolver.provider";
 import TypeCheck from "@/utils/type-check.provider";
-// import * as _ from "lodash";
-
-declare const _: typeof import("lodash");
+import { isString, isBoolean, isNumber } from "lodash-es";
 
 const HOUR = 60 * 60 * 60 * 1000;
 
 export default class Karman {
   // #region utils
-  private _typeCheck!: TypeCheck;
-  private _pathResolver!: PathResolver;
-  private _: typeof _ = _;
+  protected _typeCheck!: TypeCheck;
+  protected _pathResolver!: PathResolver;
   // #endregion
 
   // #region fields
@@ -30,7 +27,7 @@ export default class Karman {
     return this.#baseURL;
   }
   set $baseURL(value) {
-    if (!this._.isString(value)) return;
+    if (!isString(value)) return;
     this.#baseURL = value;
   }
   $cacheConfig: CacheConfig = {
@@ -45,14 +42,14 @@ export default class Karman {
     return this.#validation;
   }
   set $validation(value) {
-    if (this._.isBoolean(value)) this.#validation = value;
+    if (isBoolean(value)) this.#validation = value;
   }
   #scheduleInterval?: number;
   get $scheduleInterval() {
     return this.#scheduleInterval;
   }
   set $scheduleInterval(value) {
-    if (this._.isNumber(value)) this.#scheduleInterval = value;
+    if (isNumber(value)) this.#scheduleInterval = value;
   }
   // #endregion
 

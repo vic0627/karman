@@ -1,5 +1,4 @@
 import "reflect-metadata";
-// import "lodash";
 import core from "@/core";
 
 const facade = new core();

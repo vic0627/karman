@@ -1,7 +1,6 @@
 import { SyncHooks, AsyncHooks } from "./hooks.type";
 import { CacheConfig, UtilConfig } from "./karman.type";
 import { PayloadDef } from "./payload-def.type";
-import { SelectRequestStrategy } from "@/abstract/request-strategy.abstract";
 
 export type HttpMethod =
   | "get"

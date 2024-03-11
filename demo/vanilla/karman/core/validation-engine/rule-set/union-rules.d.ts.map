@@ -1,0 +1,1 @@
+{"version":3,"file":"union-rules.d.ts","sourceRoot":"","sources":["../../../../../../lib/core/validation-engine/rule-set/union-rules.ts"],"names":[],"mappings":"AAAA,OAAO,OAAO,MAAM,4CAA4C,CAAC;AACjE,OAAO,EAAE,UAAU,EAAE,MAAM,2BAA2B,CAAC;AAEvD,MAAM,CAAC,OAAO,OAAO,UAAW,SAAQ,OAAO;IAC7C,IAAI,KAAK,IAAI,OAAO,CAEnB;gBAEW,GAAG,KAAK,EAAE,UAAU,EAAE;CAGnC"}

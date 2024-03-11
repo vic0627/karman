@@ -5,8 +5,9 @@ import KarmanFactory from "../karman/karman-factory.injectable";
 import PathResolver from "@/utils/path-rosolver.provider";
 import { ReqStrategyTypes } from "@/types/karman/http.type";
 import ScheduledTask from "../scheduled-task/scheduled-task.injectable";
-
-declare const _: typeof import("lodash");
+import { isString } from "lodash-es";
+import Karman from "../karman/karman";
+import { FinalAPI } from "@/types/karman/final-api.type";
 
 @Injectable()
 export default class LayerBuilder {
@@ -17,7 +18,7 @@ export default class LayerBuilder {
     private readonly karmanFactory: KarmanFactory,
   ) {}
 
-  public configure<A extends APIs, R extends Routes>(k: KarmanConfig<A, R, ReqStrategyTypes>) {
+  public configure<A extends unknown, R extends unknown>(k: KarmanConfig<A, R, ReqStrategyTypes>) {
     const {
       baseURL,
       url,
@@ -40,8 +41,8 @@ export default class LayerBuilder {
       onSuccess,
       onError,
       onFinally,
-      api = {},
-      route = {},
+      api,
+      route,
     } = k;
 
     const currentKarman = this.karmanFactory.create({
@@ -72,19 +73,16 @@ export default class LayerBuilder {
 
     currentKarman.$setDependencies(this.typeCheck, this.pathResolver);
 
-    Object.entries(route as R).forEach(([key, karman]) => {
+    Object.entries(route as Record<string, Karman>).forEach(([key, karman]) => {
       karman.$parent = currentKarman;
-      console.log("built karman => ", karman);
       Object.defineProperty(currentKarman, key, { value: karman, enumerable: true });
     });
 
-    Object.entries(api as A).forEach(([key, value]) => {
+    Object.entries(api).forEach(([key, value]) => {
       Object.defineProperty(currentKarman, key, { value: value.bind(currentKarman), enumerable: true });
     });
 
-    if (_.isString(baseURL)) currentKarman.$inherit();
-
-    console.log(currentKarman.$baseURL);
+    if (isString(baseURL)) currentKarman.$inherit();
 
     return currentKarman as FinalKarman<A, R>;
   }

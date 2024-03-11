@@ -13,9 +13,7 @@ import ValidationEngine from "../validation-engine/validation-engine.injectable"
 import CachePipe from "./request-pipe/cache-pipe.injectable";
 import Injectable from "@/decorator/Injectable.decorator";
 import { PayloadDef } from "@/types/karman/payload-def.type";
-// import * as _ from "lodash";
-
-declare const _: typeof import("lodash");
+import { isEqual, cloneDeep } from "lodash-es";
 
 export type ApiReturns<D> = [resPromise: Promise<D>, abortControler: () => void];
 
@@ -75,7 +73,7 @@ export default class ApiFactory {
       const runtimeOptionsCopy = _af.runtimeOptionsParser(runtimeOptions);
 
       // config inheritance and caching
-      if (!_.isEqual(runtimeOptionsCache, runtimeOptionsCopy)) {
+      if (!isEqual(runtimeOptionsCache, runtimeOptionsCopy)) {
         runtimeOptionsCache = runtimeOptionsCopy;
         const { $$$requestConfig, $$$cacheConfig, $$$utilConfig, $$$hooks } = runtimeOptionsCopy;
         const { $baseURL, $requestConfig, $cacheConfig, $hooks } = this;
@@ -244,7 +242,7 @@ export default class ApiFactory {
       onFinally,
     } as AsyncHooks & SyncHooks;
 
-    return _.cloneDeep({
+    return cloneDeep({
       $$$requestConfig,
       $$$cacheConfig,
       $$$utilConfig,
@@ -321,6 +319,6 @@ export default class ApiFactory {
       onFinally,
     } as AsyncHooks & SyncHooks;
 
-    return _.cloneDeep({ $$apiConfig, $$requestConfig, $$cacheConfig, $$utilConfig, $$hooks });
+    return cloneDeep({ $$apiConfig, $$requestConfig, $$cacheConfig, $$utilConfig, $$hooks });
   }
 }

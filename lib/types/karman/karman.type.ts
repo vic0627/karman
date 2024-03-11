@@ -1,7 +1,6 @@
 import Karman from "@/core/karman/karman";
 import { AsyncHooks, SyncHooks } from "./hooks.type";
 import { ReqStrategyTypes, RequestConfig } from "./http.type";
-import { FinalAPI } from "./final-api.type";
 
 export type CacheStrategyTypes = "sessionStorage" | "localStorage" | "memory";
 
@@ -21,14 +20,14 @@ export type Reflect<T> = {
 };
 
 export interface APIs {
-  [x: string]: any;
+  [x: string]: unknown;
 }
 
 export interface Routes {
-  [x: string]: FinalKarman<APIs, Routes>;
+  [x: string]: unknown;
 }
 
-export interface KarmanConfig<A extends APIs, R extends Routes, T extends ReqStrategyTypes>
+export interface KarmanConfig<A, R, T extends ReqStrategyTypes>
   extends SyncHooks,
     AsyncHooks,
     CacheConfig,
@@ -40,6 +39,6 @@ export interface KarmanConfig<A extends APIs, R extends Routes, T extends ReqStr
   api?: A;
 }
 
-export type KarmanInstanceConfig = Omit<KarmanConfig<APIs, Routes, ReqStrategyTypes>, "route" | "api">;
+export type KarmanInstanceConfig = Omit<KarmanConfig<unknown, unknown, ReqStrategyTypes>, "route" | "api">;
 
-export type FinalKarman<A, R> = Karman | Reflect<A> | Reflect<R>;
+export type FinalKarman<A, R> = Karman | A | R;

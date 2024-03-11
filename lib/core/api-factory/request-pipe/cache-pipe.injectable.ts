@@ -6,9 +6,7 @@ import CacheStrategy, { CacheData } from "@/abstract/cache-strategy.abstract";
 import { SelectRequestStrategy } from "@/abstract/request-strategy.abstract";
 import ScheduledTask from "@/core/scheduled-task/scheduled-task.injectable";
 import Injectable from "@/decorator/Injectable.decorator";
-// import * as _ from "lodash";
-
-declare const _: typeof import("lodash");
+import { isEqual } from "lodash-es";
 
 @Injectable()
 export default class CachePipe implements RequestPipe {
@@ -30,7 +28,7 @@ export default class CachePipe implements RequestPipe {
 
     if (cacheData && cacheData.expiration < currentT) {
       const { res } = cacheData;
-      const isSameRequest = _.isEqual(payload, cacheData.payload);
+      const isSameRequest = isEqual(payload, cacheData.payload);
 
       if (isSameRequest) {
         resolve(res as SelectRequestStrategy<T, D>);

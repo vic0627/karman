@@ -1,0 +1,8 @@
+import "reflect-metadata";
+declare const defineKarman: <A extends import("@/types/karman/karman.type").APIs, R extends import("@/types/karman/karman.type").Routes>(k: import("@/types/karman/karman.type").KarmanConfig<A, R, import("@/types/karman/http.type").ReqStrategyTypes>) => import("@/types/karman/karman.type").FinalKarman<A, R>;
+declare const defineAPI: <D, T extends import("@/types/karman/http.type").ReqStrategyTypes, P extends import("@/types/karman/payload-def.type").PayloadDef>(apiConfig: import("@/types/karman/http.type").ApiConfig<D, T, P>) => <T2 extends import("@/types/karman/http.type").ReqStrategyTypes>(this: import("@/core/karman/karman").default, payload: { [K in keyof P]: any; }, runtimeOptions?: import("@/types/karman/final-api.type").RuntimeOptions<T2> | undefined) => [requestPromise: Promise<import("@/abstract/request-strategy.abstract").SelectRequestStrategy<T, D>>, abortController: () => void];
+declare const defineCustomValidator: (validatefn: (param: string, value: any) => void) => import("@/types/karman/rules.type").CustomValidator;
+declare const defineIntersectionRules: (...rules: import("@/types/karman/rules.type").ParamRules[]) => import("@/core/validation-engine/rule-set/intersection-rules").default;
+declare const defineUnionRules: (...rules: import("@/types/karman/rules.type").ParamRules[]) => import("@/core/validation-engine/rule-set/union-rules").default;
+export { defineKarman, defineAPI, defineCustomValidator, defineIntersectionRules, defineUnionRules };
+//# sourceMappingURL=index.d.ts.map

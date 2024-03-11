@@ -50,5 +50,6 @@ module.exports = {
     "@typescript-eslint/ban-types": 0,
     "@typescript-eslint/no-explicit-any": 1,
     "@typescript-eslint/no-unused-vars": 1,
+    "@typescript-eslint/no-unnecessary-type-constraint": 1,
   },
 };
