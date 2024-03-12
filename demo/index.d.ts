@@ -56,7 +56,7 @@ export interface ParameterDescriptor {
 
 export type ParamRules = Type | Prototype | RegularExpression | CustomValidator | ParameterDescriptor;
 
-class RuleSet {
+declare class RuleSet {
   protected readonly rules: ParamRules[];
   protected errors: Error[];
   public get valid(): boolean;
@@ -66,11 +66,9 @@ class RuleSet {
   public execute(callbackfn: (value: ParamRules, index: number, array: ParamRules[]) => void): void;
 }
 
-class UnionRules extends RuleSet {}
+declare class UnionRules extends RuleSet {}
 
-class UnionRules extends RuleSet {}
-
-class IntersectionRules extends RuleSet {}
+declare class IntersectionRules extends RuleSet {}
 
 type ParamPosition = {
   path?: number;
@@ -84,7 +82,7 @@ interface ParamDef extends ParamPosition {
 
 type PayloadDef = Record<string, ParamDef>;
 
-class TypeCheck {
+declare class TypeCheck {
   get CorrespondingMap(): Record<Type, keyof this>;
   get TypeSet(): Type[];
   isChar(value: any): boolean;
@@ -105,7 +103,7 @@ class TypeCheck {
   isSymbol(value: any): value is symbol;
 }
 
-class PathResolver {
+declare class PathResolver {
   trimStart(path: string): string;
   trimEnd(path: string): string;
   trim(path: string): string;
@@ -116,7 +114,7 @@ class PathResolver {
   resolveURL(options: { query?: Record<string, string>; paths: string[] }): string;
 }
 
-class Template {
+declare class Template {
   withPrefix(options: { type?: "warn" | "error"; messages: (string | number)[] }): string;
   warn(...messages: (string | number)[]): void;
   throw(...messages: (string | number)[]): void;
@@ -252,7 +250,7 @@ type FinalAPI<ST, P, D, S, E> = <ST2 extends ReqStrategyTypes, S2 extends unknow
 
 type FinalAPIRes<D, S, S2, E, E2> = SelectPrimitive2<E, E2, void> | SelectPrimitive3<D, S, S2, void>;
 
-class Karman {
+declare class Karman {
   public _typeCheck: TypeCheck;
   public _pathResolver: PathResolver;
 
@@ -294,6 +292,9 @@ export function defineAPI<
   E extends unknown,
 >(options: ApiOptions<ST, P, D, S, E>): FinalAPI<ST, P, D, S, E>;
 
+/**
+ * @todo hooks 抽離，layer 分層
+ */
 interface KarmanOptions<A, R, ST> extends Hooks<ST, any, any, any, void>, CacheConfig, RequestConfig<ST>, UtilConfig {
   baseURL?: string;
   url?: string;
@@ -301,7 +302,7 @@ interface KarmanOptions<A, R, ST> extends Hooks<ST, any, any, any, void>, CacheC
   route?: R;
 }
 
-export function defineKarman<A extends unknown, R extends unknown, ST extends unknown>(
+export function defineKarman<A extends unknown, R extends unknown, ST extends ReqStrategyType>(
   options: KarmanOptions<A, R, ST>,
 ): Karman & SelectPrimitive<A, void> & SelectPrimitive<R, void>;
 

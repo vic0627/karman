@@ -45,7 +45,6 @@ const productDTO = {
  */
 const $k = defineKarman({
   baseURL: "https://fakestoreapi.com",
-  requestStrategy: "xhr",
   validation: true,
   route: {
     /**
