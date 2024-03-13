@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 type Primitive = string | number | boolean | bigint | symbol | undefined | object;
 
 type SelectPrimitive<T, D = any> = T extends Primitive ? T : D;
@@ -273,7 +274,7 @@ declare class Karman {
   private $invokeChildrenInherit(): void;
 }
 
-interface ApiOptions<ST extends ReqStrategyTypes, P extends unknown, D extends unknown, S, E>
+interface ApiOptions<ST extends ReqStrategyTypes, P, D, S, E>
   extends Hooks<ST, P, D, S, E>,
     UtilConfig,
     CacheConfig,
@@ -292,18 +293,27 @@ export function defineAPI<
   E extends unknown,
 >(options: ApiOptions<ST, P, D, S, E>): FinalAPI<ST, P, D, S, E>;
 
+interface KarmanInterceptors {
+  onRequest?(this: Karman, req: HttpConfig<ReqStrategyTypes>): void;
+  onResponse?(this: Karman, res: XhrResponse<any, ReqStrategyTypes> | FetchResponse<any>): void;
+}
+
 /**
  * @todo hooks 抽離，layer 分層
  */
-interface KarmanOptions<A, R, ST> extends Hooks<ST, any, any, any, void>, CacheConfig, RequestConfig<ST>, UtilConfig {
-  baseURL?: string;
+interface KarmanOptions<A, R>
+  extends KarmanInterceptors,
+    CacheConfig,
+    Omit<RequestConfig<ReqStrategyTypes>, "requestStrategy">,
+    UtilConfig {
+  root?: boolean;
   url?: string;
   api?: A;
   route?: R;
 }
 
-export function defineKarman<A extends unknown, R extends unknown, ST extends ReqStrategyType>(
-  options: KarmanOptions<A, R, ST>,
+export function defineKarman<A extends unknown, R extends unknown>(
+  options: KarmanOptions<A, R>,
 ): Karman & SelectPrimitive<A, void> & SelectPrimitive<R, void>;
 
 export function defineCustomValidator(validatefn: (param: string, value: any) => void): CustomValidator;
