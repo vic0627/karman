@@ -1,67 +1,102 @@
-import { defineKarman, defineAPI, defineCustomValidator } from "karman";
-import limitAndSort from "./payload-def/limit-and-sort";
-import productInfo from "./dto/product-info";
-import category from "./dto/category";
+import { defineKarman, defineAPI } from "@/node_modules_/karman";
+import limitAndSort from "../payload-def/limit-and-sort";
+import dtoProductInfo from "./dto/dto-product-info";
+import dtoCategory from "./dto/dto-category";
+import category from "./payload-def/category";
+import productInfo from "./payload-def/product-info";
+import imageBase64 from "@/utils/imageBase64";
+import id from "../payload-def/id";
+
+async function convertImage(_, payload) {
+  payload.image = await imageBase64(payload.image);
+}
 
 export default defineKarman({
   url: "products",
   api: {
     /**
-     * ### 取得所有商品
+     * ### get all products
      */
-    getAllProducts: defineAPI({
+    getAll: defineAPI({
       payloadDef: limitAndSort,
-      dto: [productInfo],
+      dto: [dtoProductInfo],
       requestStrategy: "fetch",
-      onSuccess(res) {
-        return res.json();
-      },
       onBeforeRequest(_, payload) {
         if (!payload.limit) payload.limit = 10;
       },
-    }),
-    /**
-     * ### 依商品編號取得商品
-     */
-    getSingleProduct: defineAPI({
-      payloadDef: {
-        /**
-         * 商品編號
-         * @min 1
-         * @type {number}
-         */
-        id: { path: 0, rules: ["int", { min: 1, required: true }] },
+      onSuccess(res) {
+        return res.json();
       },
-      dto: productInfo,
     }),
     /**
-     * ### 取得所有商品種類
+     * ### get single product by id
      */
-    getAllCategories: defineAPI({
+    getById: defineAPI({
+      payloadDef: {
+        ...id(true, { path: 0 }),
+      },
+      dto: dtoProductInfo,
+    }),
+    /**
+     * ### create a new product
+     */
+    create: defineAPI({
+      method: "POST",
+      payloadDef: {
+        ...productInfo(true),
+      },
+      dto: dtoProductInfo,
+      onBeforeRequest: convertImage,
+    }),
+    /**
+     * ### update single product
+     */
+    update: defineAPI({
+      method: "PUT",
+      payloadDef: {
+        ...id(true, { path: 0 }),
+        ...productInfo(true),
+      },
+      dto: dtoProductInfo,
+      onBeforeRequest: convertImage,
+    }),
+    /**
+     * ### modify single product
+     */
+    modify: defineAPI({
+      method: "PATCH",
+      payloadDef: {
+        ...id(true, { path: 0 }),
+        ...productInfo(false),
+      },
+      dto: dtoProductInfo,
+      onBeforeRequest: convertImage,
+    }),
+    /**
+     * ### delete a product
+     */
+    delete: defineAPI({
+      method: "DELETE",
+      payloadDef: {
+        ...id(true, { path: 0 }),
+      },
+      dto: dtoProductInfo,
+    }),
+    /**
+     * ### get all product's categories
+     */
+    getCategories: defineAPI({
       endpoint: "categories",
-      /** @type {Array<category>} */
+      /** @type {Array<dtoCategory>} */
       dto: [],
     }),
     /**
-     * ### 依商品種類搜尋商品
+     * ### get products by category
      */
-    getProductsFromCategories: defineAPI({
+    getProductsByCategory: defineAPI({
       endpoint: "category",
       payloadDef: {
-        /**
-         * 商品種類
-         * @type {category}
-         */
-        category: {
-          path: 0,
-          rules: [
-            "string",
-            defineCustomValidator((_, value) => {
-              if (!["electronics", "jewelery", "men's clothing", "women's clothing"].includes(value))
-                throw new TypeError("invalid category");
-            }),
-          ],
-        },
+        ...category(true, { path: 0 }),
       },
     }),
   },
