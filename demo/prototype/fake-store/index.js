@@ -1,11 +1,10 @@
-import { defineAPI, defineKarman } from "@/node_modules_/karman";
+import { defineAPI, defineKarman } from "karman";
 import product from "./product";
 import cart from "./cart";
 import user from "./user";
 
 const fakestore = defineKarman({
   url: "https://fakestoreapi.com",
-  validation: true,
   api: {
     /**
      * ### user login

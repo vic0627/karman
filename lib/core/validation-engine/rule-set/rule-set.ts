@@ -1,4 +1,4 @@
-import { ParamRules } from "@/types/karman/rules.type";
+import { ParamRules } from "@/types/rules.type";
 
 export default class RuleSet {
   protected readonly rules: ParamRules[];

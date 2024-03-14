@@ -1,5 +1,5 @@
 import RuleSet from "@/core/validation-engine/rule-set/rule-set";
-import { ParamRules } from "@/types/karman/rules.type";
+import { ParamRules } from "@/types/rules.type";
 
 export default class UnionRules extends RuleSet {
   get valid(): boolean {

@@ -1,6 +1,6 @@
 import RequestPipe, { PipeDetail } from "@/abstract/request-pipe.abstract";
-import { ReqStrategyTypes, RequestExecutor } from "@/types/karman/http.type";
-import { CacheStrategyTypes } from "@/types/karman/karman.type";
+import { ReqStrategyTypes, RequestExecutor } from "@/types/http.type";
+import { CacheStrategyTypes } from "@/types/karman.type";
 import MemoryCache from "./cache-strategy/memory-cache.provider";
 import CacheStrategy, { CacheData } from "@/abstract/cache-strategy.abstract";
 import { SelectRequestStrategy } from "@/abstract/request-strategy.abstract";

@@ -1,5 +1,5 @@
 import CacheStrategy, { CacheData } from "@/abstract/cache-strategy.abstract";
-import { ReqStrategyTypes } from "@/types/karman/http.type";
+import { ReqStrategyTypes } from "@/types/http.type";
 
 export default class MemoryCache implements CacheStrategy {
   private readonly store: Map<string, any> = new Map();

@@ -1,4 +1,4 @@
-import { ObjectLiteral, Type } from "@/types/karman/rules.type";
+import { ObjectLiteral, Type } from "@/types/rules.type";
 
 export default class TypeCheck {
   get CorrespondingMap(): Record<Type, keyof this> {

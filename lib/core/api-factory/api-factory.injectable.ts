@@ -2,17 +2,17 @@ import RequestStrategy, { SelectRequestStrategy } from "@/abstract/request-strat
 import Xhr from "../request-strategy/xhr.injectable";
 import TypeCheck from "@/utils/type-check.provider";
 import Template from "@/utils/template.provider";
-import { RuntimeOptions } from "@/types/karman/final-api.type";
+import { RuntimeOptions } from "@/types/final-api.type";
 import Karman from "../karman/karman";
-import { ApiConfig, HttpBody, ReqStrategyTypes, RequestConfig } from "@/types/karman/http.type";
+import { ApiConfig, HttpBody, ReqStrategyTypes, RequestConfig, RequestExecutor } from "@/types/http.type";
 import PathResolver from "@/utils/path-rosolver.provider";
-import { CacheConfig, UtilConfig } from "@/types/karman/karman.type";
-import { AsyncHooks, SyncHooks } from "@/types/karman/hooks.type";
+import { CacheConfig, UtilConfig } from "@/types/karman.type";
+import { AsyncHooks, KarmanInterceptors, SyncHooks } from "@/types/hooks.type";
 import { configInherit } from "../out-of-paradigm/config-inherit";
 import ValidationEngine from "../validation-engine/validation-engine.injectable";
 import CachePipe from "./request-pipe/cache-pipe.injectable";
 import Injectable from "@/decorator/Injectable.decorator";
-import { PayloadDef } from "@/types/karman/payload-def.type";
+import { PayloadDef } from "@/types/payload-def.type";
 import { isEqual, cloneDeep } from "lodash-es";
 
 export type ApiReturns<D> = [resPromise: Promise<D>, abortControler: () => void];
@@ -31,6 +31,7 @@ export interface AllConfigCache<D, T extends ReqStrategyTypes>
   cacheConfig?: CacheConfig;
   utilConfig?: UtilConfig;
   hooks?: AsyncHooks & SyncHooks;
+  interceptors?: KarmanInterceptors;
 }
 
 export interface PreqBuilderOptions<D, T extends ReqStrategyTypes>
@@ -59,12 +60,6 @@ export default class ApiFactory {
     let runtimeOptionsCache: ParsedRuntimeOptions<ReqStrategyTypes> | null = null;
     const allConfigCache: AllConfigCache<D, T> = $$apiConfig;
 
-    /**
-     * @param this
-     * @param payload
-     * @param runtimeOptions
-     * @returns
-     */
     function finalAPI<T2 extends ReqStrategyTypes>(
       this: Karman,
       payload: { [K in keyof P]: any },
@@ -76,18 +71,19 @@ export default class ApiFactory {
       if (!isEqual(runtimeOptionsCache, runtimeOptionsCopy)) {
         runtimeOptionsCache = runtimeOptionsCopy;
         const { $$$requestConfig, $$$cacheConfig, $$$utilConfig, $$$hooks } = runtimeOptionsCopy;
-        const { $baseURL, $requestConfig, $cacheConfig, $hooks } = this;
+        const { $baseURL, $requestConfig, $cacheConfig, $interceptors } = this;
         const $utilConfig = { validation: this.$validation } as UtilConfig;
         const requestConfig = configInherit($requestConfig, $$requestConfig, $$$requestConfig);
         const cacheConfig = configInherit($cacheConfig, $$cacheConfig, $$$cacheConfig);
         const utilConfig = configInherit($utilConfig, $$utilConfig, $$$utilConfig);
-        const hooks = configInherit($hooks, $$hooks, $$$hooks);
+        const hooks = configInherit($$hooks, $$$hooks);
 
         allConfigCache.baseURL = $baseURL;
         allConfigCache.requestConfig = requestConfig as RequestConfig<T>;
         allConfigCache.cacheConfig = cacheConfig;
         allConfigCache.utilConfig = utilConfig;
         allConfigCache.hooks = hooks;
+        allConfigCache.interceptors = $interceptors;
       }
 
       const {
@@ -99,29 +95,40 @@ export default class ApiFactory {
         cacheConfig,
         utilConfig,
         hooks,
+        interceptors,
       } = allConfigCache;
       const { requestStrategy } = requestConfig;
       const { validation } = utilConfig ?? {};
-      const { onBeforeValidate, onValidateError, onBeforeRequest } = hooks ?? {};
+      const { onBeforeValidate, onValidateError, onBeforeRequest, onError, onFinally, onSuccess } = hooks ?? {};
+      const { onRequest, onResponse } = interceptors ?? {};
 
       // 1. validation
       if (validation) {
-        if (!payloadDef) {
-          _af.template.warn("validation set to true, but no payloadDef is received.");
-        } else {
-          try {
-            if (_af.typeCheck.isFunction(onBeforeValidate)) onBeforeValidate.call(this, payloadDef, payload);
-            const validator = _af.validationEngine.getMainValidator(payload, payloadDef);
-            validator();
-          } catch (error) {
-            if (_af.typeCheck.isFunction(onValidateError)) onValidateError.call(this, error as Error);
-            else throw error;
-          }
+        try {
+          if (_af.typeCheck.isFunction(onBeforeValidate)) onBeforeValidate.call(this, payloadDef, payload);
+          const validator = _af.validationEngine.getMainValidator(payload, payloadDef);
+          validator();
+        } catch (error) {
+          if (_af.typeCheck.isFunction(onValidateError)) onValidateError.call(this, error as Error);
+          else throw error;
         }
       }
 
+      /**
+       * @todo
+       * - hooks install
+       * - auto convert payload into corresponing content type
+       */
       // 2. parameter builder
       const [requestURL, requestBody] = _af.preqBuilder.call(_af, { baseURL, endpoint, payload, payloadDef });
+
+      const httpConfig = {
+        url: requestURL,
+        method,
+        ...requestConfig,
+      };
+
+      onRequest?.call(this, httpConfig);
 
       let _payload: HttpBody = requestBody as HttpBody;
 
@@ -137,18 +144,34 @@ export default class ApiFactory {
         ...requestConfig,
       });
       const [requestPromise, abortController] = requestExecutor();
+      const _requestPromise = requestPromise
+        .then((res) => {
+          const _res = onSuccess?.call(this, res as Response);
+          return _res ?? res;
+        })
+        .catch((err) => {
+          if (this._typeCheck.isFunction(onError)) return onError.call(this, err);
+          else throw err;
+        })
+        .finally(() => {
+          if (this._typeCheck.isFunction(onFinally)) onFinally.call(this);
+        });
+      const _requestExecutor: RequestExecutor<SelectRequestStrategy<T, D>> = () => [
+        _requestPromise as Promise<SelectRequestStrategy<T, D>>,
+        abortController,
+      ];
 
       if (cacheConfig?.cache) {
         const { cacheExpireTime, cacheStrategy } = cacheConfig;
         const executer = _af.cachePipe.chain(
-          { requestKey, requestExecutor, promiseExecutor, config, payload },
+          { requestKey, requestExecutor: _requestExecutor, promiseExecutor, config, payload },
           { cacheStrategyType: cacheStrategy, expiration: cacheExpireTime },
         );
 
         return executer();
       }
 
-      return [requestPromise, abortController];
+      return [_requestPromise as Promise<SelectRequestStrategy<T, D>>, abortController];
     }
 
     return finalAPI;

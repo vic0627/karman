@@ -1,4 +1,4 @@
-import { defineCustomValidator } from "@/node_modules_/karman";
+import { defineCustomValidator } from "karman";
 import { dateRegexp } from "@/fake-store/payload-def/date-range";
 import dtoCartProduct from "../dto/dto-cart-product";
 
@@ -13,7 +13,7 @@ export default {
    */
   userId: {
     body,
-    rules: ["int", { required, min: 1 }],
+    rules: ["int", { required, min: 1, measurement: "self" }],
   },
   /**
    * update date

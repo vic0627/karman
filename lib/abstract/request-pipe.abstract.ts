@@ -1,4 +1,4 @@
-import RequestDetail, { ReqStrategyTypes, RequestExecutor } from "@/types/karman/http.type";
+import RequestDetail, { ReqStrategyTypes, RequestExecutor } from "@/types/http.type";
 import { SelectRequestStrategy } from "./request-strategy.abstract";
 
 export interface PipeDetail<D, T extends ReqStrategyTypes> extends RequestDetail<SelectRequestStrategy<T, D>, T> {

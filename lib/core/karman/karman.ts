@@ -1,10 +1,10 @@
-import { AsyncHooks, SyncHooks } from "@/types/karman/hooks.type";
-import { ReqStrategyTypes, RequestConfig } from "@/types/karman/http.type";
-import { CacheConfig, KarmanInstanceConfig } from "@/types/karman/karman.type";
+import { AsyncHooks, KarmanInterceptors, SyncHooks } from "@/types/hooks.type";
+import { ReqStrategyTypes, RequestConfig } from "@/types/http.type";
+import { CacheConfig, KarmanInstanceConfig } from "@/types/karman.type";
 import { configInherit } from "@/core/out-of-paradigm/config-inherit";
 import PathResolver from "@/utils/path-rosolver.provider";
 import TypeCheck from "@/utils/type-check.provider";
-import { isString, isBoolean, isNumber } from "lodash-es";
+import { isString, isBoolean, isNumber, isFunction } from "lodash-es";
 
 const HOUR = 60 * 60 * 60 * 1000;
 
@@ -15,6 +15,13 @@ export default class Karman {
   // #endregion
 
   // #region fields
+  #root: boolean = false;
+  get $root(): boolean {
+    return this.#root;
+  }
+  set $root(value: boolean | undefined) {
+    if (isBoolean(value)) this.#root = value;
+  }
   #parant: null | Karman = null;
   get $parent() {
     return this.#parant;
@@ -36,7 +43,7 @@ export default class Karman {
     cacheStrategy: "memory",
   };
   $requestConfig: RequestConfig<ReqStrategyTypes> = {};
-  $hooks: AsyncHooks & SyncHooks = {};
+  $interceptors: KarmanInterceptors = {};
   #validation?: boolean;
   get $validation() {
     return this.#validation;
@@ -57,7 +64,7 @@ export default class Karman {
 
   constructor(config: KarmanInstanceConfig) {
     const {
-      baseURL,
+      root,
       url,
       validation,
       scheduleInterval,
@@ -71,19 +78,14 @@ export default class Karman {
       responseType,
       headerMap,
       withCredentials,
-      requestStrategy,
-      onBeforeValidate,
-      onValidateError,
-      onBeforeRequest,
-      onSuccess,
-      onError,
-      onFinally,
+      onRequest,
+      onResponse,
     } = config ?? {};
-    this.$baseURL = baseURL ?? url ?? "";
+    this.$baseURL = url ?? "";
+    this.$root = root;
     this.$validation = validation;
     this.$scheduleInterval = scheduleInterval;
     this.$cacheConfig = { cache, cacheExpireTime, cacheStrategy };
-    this.$hooks = { onBeforeValidate, onValidateError, onBeforeRequest, onSuccess, onError, onFinally };
     this.$requestConfig = {
       headers,
       auth,
@@ -92,12 +94,31 @@ export default class Karman {
       responseType,
       headerMap,
       withCredentials,
-      requestStrategy,
     };
+    this.$interceptors = { onRequest, onResponse };
   }
 
   public $mount<O extends object>(o: O, name: string = "$karman") {
     Object.defineProperty(o, name, { value: this });
+  }
+
+  public $use<T extends { install(k: Karman): void }>(plugin: T) {
+    if (!this.$root) throw new Error("[karman] plugins can only be installed from the root Karman!");
+
+    if (!isFunction(plugin?.install)) throw new TypeError("[karman] plugin must has an install function!");
+
+    plugin.install(this);
+
+    const onTraverse = (k: any) => {
+      if (!(k instanceof Karman)) return;
+
+      plugin.install(k);
+      k.$traverseInstanceTree({ onTraverse });
+    };
+
+    this.$traverseInstanceTree({
+      onTraverse,
+    });
   }
 
   /**
@@ -108,11 +129,11 @@ export default class Karman {
     if (this.#inherited) return;
 
     if (this.$parent) {
-      const { $baseURL, $requestConfig, $cacheConfig, $hooks, $validation, $scheduleInterval } = this.$parent;
+      const { $baseURL, $requestConfig, $cacheConfig, $interceptors, $validation, $scheduleInterval } = this.$parent;
       this.$baseURL = this._pathResolver.resolve($baseURL, this.$baseURL);
       this.$requestConfig = configInherit($requestConfig, this.$requestConfig);
       this.$cacheConfig = configInherit($cacheConfig, this.$cacheConfig);
-      this.$hooks = configInherit($hooks, this.$hooks);
+      this.$interceptors = configInherit($interceptors, this.$interceptors);
       if (this._typeCheck.isUndefined(this.$validation)) this.$validation = $validation;
       if (this._typeCheck.isUndefined(this.$scheduleInterval)) this.$scheduleInterval = $scheduleInterval;
     }
@@ -128,9 +149,27 @@ export default class Karman {
   }
 
   private $invokeChildrenInherit(): void {
-    Object.values(this).forEach((prop) => {
-      if (prop instanceof Karman) prop.$inherit();
+    this.$traverseInstanceTree({
+      onTraverse: (prop) => {
+        if (prop instanceof Karman) prop.$inherit();
+      },
+      onTraverseEnd: () => {
+        this.#inherited = true;
+      },
     });
-    this.#inherited = true;
+  }
+
+  private $traverseInstanceTree(
+    {
+      onTraverse,
+      onTraverseEnd,
+    }: {
+      onTraverse: (value: any, index: number, array: any[]) => void;
+      onTraverseEnd?: () => void;
+    },
+    instance = this,
+  ) {
+    Object.values(instance).forEach(onTraverse);
+    onTraverseEnd?.();
   }
 }

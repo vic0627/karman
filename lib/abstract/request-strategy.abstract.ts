@@ -1,4 +1,4 @@
-import RequestDetail, { HttpBody, HttpConfig, ReqStrategyTypes, XhrResponse } from "@/types/karman/http.type";
+import RequestDetail, { HttpBody, HttpConfig, ReqStrategyTypes, XhrResponse } from "@/types/http.type";
 
 export type SelectRequestStrategy<T extends ReqStrategyTypes, D> = T extends "xhr" ? XhrResponse<D, T> : D;
 

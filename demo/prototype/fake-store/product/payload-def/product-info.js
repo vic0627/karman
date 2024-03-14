@@ -12,7 +12,7 @@ export default (required) => {
      */
     title: {
       body,
-      rules: ["string", { required, min: 1, max: 20, measurement: "length" }],
+      rules: ["string", { required, min: 1, max: 20 }],
     },
     /**
      * 價格
@@ -21,7 +21,7 @@ export default (required) => {
      */
     price: {
       body,
-      rules: ["number", { required, min: 1 }],
+      rules: ["number", { required, min: 1, measurement: "self" }],
     },
     /**
      * 說明
@@ -31,7 +31,7 @@ export default (required) => {
      */
     description: {
       body,
-      rules: ["string", { required, min: 1, max: 100, measurement: "length" }],
+      rules: ["string", { required, min: 1, max: 100 }],
     },
     /**
      * 圖片

@@ -1,4 +1,4 @@
-import { ReqStrategyTypes } from "@/types/karman/http.type";
+import { ReqStrategyTypes } from "@/types/http.type";
 import { SelectRequestStrategy } from "./request-strategy.abstract";
 
 type PopSignal = boolean;

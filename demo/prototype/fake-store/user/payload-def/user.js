@@ -1,4 +1,4 @@
-import { defineCustomValidator } from "@/node_modules_/karman";
+import { defineCustomValidator } from "karman";
 import dtoUser from "../dto/dto-user";
 
 const body = true;
@@ -11,7 +11,7 @@ export default (required) => ({
    */
   id: {
     body,
-    rules: ["int", { required, min: 1 }],
+    rules: ["int", { required, min: 1, measurement: "self" }],
   },
   /**
    * email
@@ -27,7 +27,7 @@ export default (required) => ({
    */
   username: {
     body,
-    rules: ["string", { required, min: 1, measurement: "length" }],
+    rules: ["string", { required, min: 1 }],
   },
   /**
    * password
@@ -35,7 +35,7 @@ export default (required) => ({
    */
   password: {
     body,
-    rules: ["string", { required, min: 1, measurement: "length" }],
+    rules: ["string", { required, min: 1 }],
   },
   /**
    * user full name

@@ -1,9 +1,10 @@
+/** @type {import("karman").PayloadDef} */
 export default {
   /**
    * 回傳筆數
    * @type {number | undefined}
    */
-  limit: { query: true, rules: ["int", { min: 1 }] },
+  limit: { query: true, rules: ["int", { min: 1, measurement: "self" }] },
   /**
    * 排序策略
    * @type {"asc" | "desc" | undefined}

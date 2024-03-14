@@ -19,7 +19,6 @@ import Template from "@/utils/template.provider";
   imports: [
     CachePipe,
     ApiFactory,
-    KarmanFactory,
     LayerBuilder,
     Xhr,
     ScheduledTask,

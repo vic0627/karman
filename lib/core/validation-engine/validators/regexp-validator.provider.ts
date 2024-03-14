@@ -1,5 +1,5 @@
 import Validator, { ValidateOption } from "@/abstract/parameter-validator.abstract";
-import { ParamRules, RegExpWithMessage, RegularExpression } from "@/types/karman/rules.type";
+import { ParamRules, RegExpWithMessage, RegularExpression } from "@/types/rules.type";
 
 export interface RegExpValidateOption extends Omit<ValidateOption, "rule"> {
   rule: RegularExpression;

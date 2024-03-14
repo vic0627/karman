@@ -1,4 +1,4 @@
-import { defineCustomValidator } from "@/node_modules_/karman";
+import { defineCustomValidator } from "karman";
 import category from "../dto/dto-category";
 
 export default (required, { path, query, body } = {}) => {

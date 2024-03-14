@@ -1,7 +1,7 @@
 module.exports = {
-  extends: ["eslint:recommended", "plugin:@typescript-eslint/recommended", "plugin:jsdoc/recommended-typescript"],
+  extends: ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
   parser: "@typescript-eslint/parser",
-  plugins: ["@typescript-eslint", "@stylistic", "jsdoc"],
+  plugins: ["@typescript-eslint", "@stylistic"],
   root: true,
   env: {
     browser: true,

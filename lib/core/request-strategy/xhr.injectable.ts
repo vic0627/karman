@@ -9,7 +9,7 @@ import RequestDetail, {
   ReqStrategyTypes,
   RequestExecutor,
   XhrHooksHandler,
-} from "@/types/karman/http.type";
+} from "@/types/http.type";
 import TypeCheck from "@/utils/type-check.provider";
 import { cloneDeep } from "lodash-es";
 
@@ -23,10 +23,10 @@ export default class Xhr implements RequestStrategy {
     this.setBasicSettings(xhr, config);
     const [reqExecutor, promiseExecutor] = this.buildPromise<D, T>(xhr, cleanup, config);
 
-    const requestExecutor: RequestExecutor<D> = (onRequest) => {
+    const requestExecutor: RequestExecutor<D> = () => {
       if (xhr) xhr.send(payload ?? null);
 
-      return reqExecutor(onRequest);
+      return reqExecutor();
     };
 
     return {
@@ -101,7 +101,7 @@ export default class Xhr implements RequestStrategy {
       const requestPromise = new Promise<D>((_resolve, _reject) => {
         const resolve = (value: D) => {
           cleanup();
-          _resolve(value as any);
+          _resolve(value as D);
         };
 
         const reject = (reason?: unknown) => {

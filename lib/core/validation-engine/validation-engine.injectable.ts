@@ -4,8 +4,8 @@ import ParameterDescriptorValidator from "./validators/parameter-descriptor-vali
 import RegExpValidator from "./validators/regexp-validator.provider";
 import TypeValidator from "./validators/type-validator.injectable";
 import type { ValidateOption } from "@/abstract/parameter-validator.abstract";
-import { PayloadDef } from "@/types/karman/payload-def.type";
-import { CustomValidator, ParamRules } from "@/types/karman/rules.type";
+import { PayloadDef } from "@/types/payload-def.type";
+import { CustomValidator, ParamRules } from "@/types/rules.type";
 import RuleSet from "./rule-set/rule-set";
 import TypeCheck from "@/utils/type-check.provider";
 import UnionRules from "./rule-set/union-rules";

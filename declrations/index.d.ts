@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-type-constraint */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Primitive = string | number | boolean | bigint | symbol | undefined | object;
 
@@ -32,7 +33,7 @@ type Type =
 
 type ObjectLiteral = { [x: string | number | symbol]: any };
 
-export type Prototype = { new (...args: any[]): any };
+export type ConstructorFn = { new (...args: any[]): any };
 
 export type RegExpWithMessage = { regexp: RegExp; errorMessage?: string };
 
@@ -41,10 +42,20 @@ export type RegularExpression = RegExp | RegExpWithMessage;
 export type CustomValidator = ((param: string, value: any) => void) & { _karman: true };
 
 export interface ParameterDescriptor {
+  /**
+   * min value of the measurement unit for param
+   */
   min?: number;
+  /**
+   * max value of the measurement unit for param
+   */
   max?: number;
+  /**
+   * equality value of the measurement unit for param
+   */
   equality?: number;
   /**
+   * the measurement unit of the param
    * - `"self"`: test the value itself
    * @default "length"
    */
@@ -55,7 +66,7 @@ export interface ParameterDescriptor {
   required?: boolean;
 }
 
-export type ParamRules = Type | Prototype | RegularExpression | CustomValidator | ParameterDescriptor;
+export type ParamRules = Type | ConstructorFn | RegularExpression | CustomValidator | ParameterDescriptor;
 
 declare class RuleSet {
   protected readonly rules: ParamRules[];
@@ -72,16 +83,76 @@ declare class UnionRules extends RuleSet {}
 declare class IntersectionRules extends RuleSet {}
 
 type ParamPosition = {
+  /**
+   * describe the param should use for path parameter
+   * @description Accept integers that greater than or equal to 0.
+   * The url builder will consider this value as an index of all path parameters.
+   * @example
+   * // assuming the base url is 'https://karman.com/' and the instance of Karman is '$k'
+   * // ...
+   * getSomthing: defineAPI({
+   *   endpoint: "some-thing",
+   *   payloadDef: {
+   *     param01: { path: 1 },
+   *     param02: { path: 0 },
+   *   }
+   * })
+   * // ... call the final API
+   * $k.getSomething({ param01: 'hello', param02: 12 })
+   * // request url => 'https://karman.com/some-thing/12/hello'
+   */
   path?: number;
+  /**
+   * describe the param should use for query string parameter
+   * @description if true, url builder will use the same key of payloadDef
+   * and the received value to build the request url
+   * @example
+   * // assuming the base url is 'https://karman.com/' and the instance of Karman is '$k'
+   * // ...
+   * getSomthing: defineAPI({
+   *   endpoint: "some-thing",
+   *   payloadDef: {
+   *     param01: { query: true },
+   *     param02: { query: true },
+   *   }
+   * })
+   * // ... call the final API
+   * $k.getSomething({ param01: 'hello', param02: 12 })
+   * // request url => 'https://karman.com/some-thing?param01=hello&param02=12'
+   */
   query?: boolean;
+  /**
+   * describe the param should use for the request body
+   * @example
+   * // assuming the base url is 'https://karman.com/' and the instance of Karman is '$k'
+   * // ...
+   * getSomthing: defineAPI({
+   *   endpoint: "some-thing",
+   *   payloadDef: {
+   *     param01: { body: true },
+   *     param02: { body: false },
+   *     onBeforeRequest(requestURL, payload) {
+   *       console.log(payload)
+   *       return JSON.stringfy(payload)
+   *     }
+   *   }
+   * })
+   * // ... call the final API
+   * $k.getSomething({ param01: 'hello', param02: 12 })
+   * // console output => { param01: 'hello' }
+   */
   body?: boolean;
 };
 
 interface ParamDef extends ParamPosition {
+  /**
+   * validation rule of the param
+   * @description if received an array, it will be implicitly converted into an `IntersectionRules`
+   */
   rules?: ParamRules | ParamRules[] | RuleSet;
 }
 
-type PayloadDef = Record<string, ParamDef>;
+export type PayloadDef = Record<string, ParamDef>;
 
 declare class TypeCheck {
   get CorrespondingMap(): Record<Type, keyof this>;
@@ -124,14 +195,25 @@ declare class Template {
 type CacheStrategyTypes = "sessionStorage" | "localStorage" | "memory";
 
 interface CacheConfig {
+  /**
+   * activate the caching funcitonality
+   */
   cache?: boolean;
+  /**
+   * how long will the cache data be existed
+   * @default 216000000 an hour
+   */
   cacheExpireTime?: number;
+  /**
+   * which storage strategy should be used
+   * @default "memory"
+   */
   cacheStrategy?: CacheStrategyTypes;
 }
 
 type ReqStrategyTypes = "xhr" | "fetch";
 
-type HttpBody = Document | XMLHttpRequestBodyInit | null;
+type HttpBody = Document | BodyInit | null;
 
 type RemoveOptional<T extends string> = T extends `${infer K}?` ? K : T;
 
@@ -216,7 +298,15 @@ interface HttpConfig<ST> extends RequestConfig<ST> {
 }
 
 interface UtilConfig {
+  /**
+   * activating the validation enigine
+   * @default true
+   */
   validation?: boolean;
+  /**
+   * The time interval for calling scheduled tasks
+   * @default 216000000 an hour
+   */
   scheduleInterval?: number;
 }
 
@@ -235,86 +325,110 @@ interface FetchResponse<D> extends Response {
 
 type SelectResponseForm<ST, D> = ST extends "xhr" ? XhrResponse<D, ST> : ST extends "fetch" ? FetchResponse<D> : never;
 
-type RequestExecutor<D> = (onRequest?: () => void) => [requestPromise: Promise<D>, abortController: () => void];
+type RequestExecutor<D> = () => [requestPromise: Promise<D>, abortController: () => void];
 
-interface RuntimeOptions<ST, P, D, S, E>
-  extends Hooks<ST, P, D, S, E>,
-    RequestConfig<ST>,
+interface RuntimeOptions<ST, ST2, P, D, S, E>
+  extends Hooks<SelectPrimitive2<ST, ST2>, P, D, S, E>,
+    RequestConfig<SelectPrimitive2<ST, ST2>>,
     CacheConfig,
     Omit<UtilConfig, "scheduleInterval"> {}
 
-type FinalAPI<ST, P, D, S, E> = <ST2 extends ReqStrategyTypes, S2 extends unknown, E2 extends unknown>(
+type FinalAPI<ST, P, D, S, E> = <ST2 extends unknown, S2 extends unknown, E2 extends unknown>(
   this: Karman,
   payload: { [K in keyof P]: P[K] },
-  runtimeOptions?: RuntimeOptions<ST2, P, D, S2, E2>,
-) => ReturnType<RequestExecutor<FinalAPIRes<SelectResponseForm<ST, D>, S, S2, E, E2>>>;
+  runtimeOptions?: RuntimeOptions<ST, ST2, P, D, S2, E2>,
+) => ReturnType<RequestExecutor<FinalAPIRes<SelectResponseForm<SelectPrimitive2<ST, ST2>, D>, S, S2, E, E2>>>;
 
-type FinalAPIRes<D, S, S2, E, E2> = SelectPrimitive2<E, E2, void> | SelectPrimitive3<D, S, S2, void>;
+type FinalAPIRes<D, S, S2, E, E2> = SelectPrimitive2<E, E2, undefined> | SelectPrimitive3<D, S, S2, undefined>;
 
-declare class Karman {
+interface IKarman {
+  _typeCheck: TypeCheck;
+  _pathResolver: PathResolver;
+}
+
+declare class Karman extends IKarman {
   public _typeCheck: TypeCheck;
   public _pathResolver: PathResolver;
 
-  public get $baseURL(): string;
-  public set $baseURL(value: string);
-  public get $parent(): Karman | null;
-  public set $parent(value: Karman | null);
-
+  private get $root(): boolean;
+  private set $root(value: boolean);
+  private get $baseURL(): string;
+  private set $baseURL(value: string);
+  private get $parent(): Karman | null;
+  private set $parent(value: Karman | null);
   private $cacheConfig: CacheConfig;
   private $requestConfig: RequestConfig<ReqStrategyTypes>;
-  // private $hooks: Hooks<ReqStrategyTypes>;
+  private $hooks: Hooks<ReqStrategyTypes>;
   private get $validation(): boolean | undefined;
   private set $validation(value: boolean | undefined);
   private get $scheduleInterval(): number | undefined;
   private set $scheduleInterval(value: number | undefined);
 
   public $mount<O extends object>(o: O, name?: string): void;
+  public $use<T extends { install(k: Karman): void }>(dependency: T): void;
   private $inherit(): void;
   private $setDependencies(...deps: (TypeCheck | PathResolver)[]): void;
   private $invokeChildrenInherit(): void;
 }
 
-interface ApiOptions<ST extends ReqStrategyTypes, P, D, S, E>
-  extends Hooks<ST, P, D, S, E>,
-    UtilConfig,
-    CacheConfig,
-    RequestConfig<ST> {
+interface ApiOptions<ST, P, D, S, E> extends Hooks<ST, P, D, S, E>, UtilConfig, CacheConfig, RequestConfig<ST> {
+  /**
+   * endpoint of an API
+   * @description if received value, the value would be place after the
+   * base url of current layer, and before all url parameters
+   */
   endpoint?: string;
+  /**
+   * HTTP method
+   * @default "GET"
+   */
   method?: HttpMethod;
+  /**
+   * payload definition of the final API
+   */
   payloadDef?: P;
+  /**
+   * data transfer object of the response
+   */
   dto?: D;
 }
 
-export function defineAPI<
-  ST extends ReqStrategyTypes,
-  P extends unknown,
-  D extends unknown,
-  S extends unknown,
-  E extends unknown,
->(options: ApiOptions<ST, P, D, S, E>): FinalAPI<ST, P, D, S, E>;
+export function defineAPI<ST = "xhr", P extends unknown, D extends unknown, S extends unknown, E extends unknown>(
+  options: ApiOptions<ST, P, D, S, E>,
+): FinalAPI<ST, P, D, S, E>;
 
 interface KarmanInterceptors {
   onRequest?(this: Karman, req: HttpConfig<ReqStrategyTypes>): void;
   onResponse?(this: Karman, res: XhrResponse<any, ReqStrategyTypes> | FetchResponse<any>): void;
 }
 
-/**
- * @todo hooks 抽離，layer 分層
- */
 interface KarmanOptions<A, R>
   extends KarmanInterceptors,
     CacheConfig,
     Omit<RequestConfig<ReqStrategyTypes>, "requestStrategy">,
     UtilConfig {
+  /**
+   * root layer of the whole Karman tree
+   * @description this will notify the instance of Karman to invoke the inheritance funciton
+   */
   root?: boolean;
+  /**
+   * the base url or route of current layer
+   */
   url?: string;
+  /**
+   * actual API on current layer
+   */
   api?: A;
+  /**
+   * children route, must be instance of Karman
+   */
   route?: R;
 }
 
 export function defineKarman<A extends unknown, R extends unknown>(
   options: KarmanOptions<A, R>,
-): Karman & SelectPrimitive<A, void> & SelectPrimitive<R, void>;
+): SelectPrimitive<A, void> & SelectPrimitive<R, void> & Karman;
 
 export function defineCustomValidator(validatefn: (param: string, value: any) => void): CustomValidator;
 

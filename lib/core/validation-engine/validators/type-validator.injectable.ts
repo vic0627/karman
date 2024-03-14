@@ -1,6 +1,6 @@
 import Validator, { ValidateOption } from "@/abstract/parameter-validator.abstract";
 import Injectable from "@/decorator/Injectable.decorator";
-import { Type } from "@/types/karman/rules.type";
+import { Type } from "@/types/rules.type";
 import TypeCheck from "@/utils/type-check.provider";
 
 @Injectable()

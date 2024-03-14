@@ -1,4 +1,4 @@
-import { defineKarman, defineAPI } from "@/node_modules_/karman";
+import { defineKarman, defineAPI } from "karman";
 import limitAndSort from "../payload-def/limit-and-sort";
 import dtoProductInfo from "./dto/dto-product-info";
 import dtoCategory from "./dto/dto-category";
