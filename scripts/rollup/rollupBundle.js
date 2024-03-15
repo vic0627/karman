@@ -10,11 +10,11 @@ const build = async (callback) => {
   let buildFailed = false;
 
   try {
-    timeLog("start cleaning 'dist' dir...");
+    // timeLog("start cleaning 'dist' dir...");
 
-    const clean = await emptyDirectory(__dirname, "../../dist");
+    // const clean = await emptyDirectory(__dirname, "../../dist");
 
-    if (!clean) throw new Error('failed to clean up "dist" dir');
+    // if (!clean) throw new Error('failed to clean up "dist" dir');
 
     const { input, output, plugins } = require("./rollupConfig.js");
 

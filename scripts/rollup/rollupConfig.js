@@ -37,30 +37,30 @@ const babelOptions = {
 
 const babelPlugin = babel(babelOptions);
 
-const baseFileName = "dist/index";
+const baseFileName = "demo/vanilla/src/karman/index";
 
 /** @type {import("rollup").OutputOptions[]} */
 const output = [
   {
     name: "karman",
-    file: getPath(`${baseFileName}.esm.js`),
+    file: getPath(`${baseFileName}.js`),
     format: "es",
     exports: "named",
   },
-  {
-    name: "karman",
-    file: getPath(`${baseFileName}.min.js`),
-    format: "iife",
-    exports: "named",
-    /** @todo fix terser option */
-    plugins: [terser(terserOptions)],
-  },
-  {
-    name: "karman",
-    file: getPath(`${baseFileName}.cjs`),
-    format: "commonjs",
-    exports: "named",
-  },
+  // {
+  //   name: "karman",
+  //   file: getPath(`${baseFileName}.min.js`),
+  //   format: "iife",
+  //   exports: "named",
+  //   /** @todo fix terser option */
+  //   plugins: [terser(terserOptions)],
+  // },
+  // {
+  //   name: "karman",
+  //   file: getPath(`${baseFileName}.cjs`),
+  //   format: "commonjs",
+  //   exports: "named",
+  // },
 ];
 
 /** @type {import('@rollup/plugin-typescript').RollupTypescriptOptions} */

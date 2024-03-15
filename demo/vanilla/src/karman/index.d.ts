@@ -133,7 +133,7 @@ type ParamPosition = {
    *   payloadDef: {
    *     param01: { body: true },
    *     param02: { body: false },
-   *     onBeforeRequest(requestURL, payload) {
+   *     onBeforeRequest(endpoint, payload) {
    *       console.log(payload)
    *       return JSON.stringfy(payload)
    *     }
@@ -229,7 +229,7 @@ interface ValidationHooks<P> {
 }
 
 interface SyncHooks<P> extends ValidationHooks<P> {
-  onBeforeRequest?(this: Karman, requestURL: string, payload: GetPayloadType<P>): HttpBody;
+  onBeforeRequest?(this: Karman, endpoint: string, payload: GetPayloadType<P>): HttpBody;
 }
 
 interface AsyncHooks<ST, D, S, E> {

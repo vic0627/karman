@@ -1,9 +1,10 @@
-import { defineAPI, defineKarman } from "karman";
+import { defineAPI, defineKarman } from "@karman";
 import product from "./product";
 import cart from "./cart";
 import user from "./user";
 
 export default defineKarman({
+  root: true,
   url: "https://fakestoreapi.com",
   api: {
     /**
@@ -30,6 +31,12 @@ export default defineKarman({
           body: true,
           rules: ["string", { required: true, min: 1, measurement: "length" }],
         },
+      },
+      onBeforeRequest(_, payload) {
+        return JSON.stringify(payload)
+      },
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8"
       },
       /**
        * @typedef {object} LoginRes

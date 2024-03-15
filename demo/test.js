@@ -1,23 +1,10 @@
 const init = (onError) => {
-  let resolver = {};
-
   const p = new Promise((resolve, reject) => {
-    resolver = { resolve, reject };
-  }).then((e) => {
-    return new Promise((resolve) => {
-      const t = setTimeout(() => {
-        resolve(e);
-        clearTimeout(t);
-      }, 20);
-    });
+    p.resolve = resolve;
+    p.reject = reject;
   });
 
-  const _p = p.catch((r) => {
-    if (onError) return onError(r);
-    else throw r;
-  });
-
-  return [_p, resolver];
+  return p;
 };
 
 const fn = async () => {
@@ -27,10 +14,10 @@ const fn = async () => {
     //   return r?.message;
     // };
     const onError = null;
-    const [p, r] = init(onError);
+    const p = init(onError);
 
     // r.reject(new Error("hello"));
-    r.resolve("yeah!!!!!");
+    p.resolve("yeah!!!!!");
     const res = await p;
 
     console.log(res);

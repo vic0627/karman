@@ -1,4 +1,4 @@
-import { defineKarman, defineAPI } from "karman";
+import { defineKarman, defineAPI } from "@karman";
 import limitAndSort from "../payload-def/limit-and-sort";
 import id from "../payload-def/id";
 import dateRange from "../payload-def/date-range";
@@ -17,9 +17,6 @@ export default defineKarman({
         ...dateRange(true),
       },
       dto: [dtoCart],
-      onSuccess(res) {
-        return res.data.map(cart => cart.products).flat();
-      },
     }),
     /**
      * ### get single cart by id

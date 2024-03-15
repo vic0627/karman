@@ -1,7 +1,6 @@
 import RequestStrategy, { SelectRequestStrategy } from "@/abstract/request-strategy.abstract";
 import Xhr from "../request-strategy/xhr.injectable";
 import TypeCheck from "@/utils/type-check.provider";
-import Template from "@/utils/template.provider";
 import { RuntimeOptions } from "@/types/final-api.type";
 import Karman from "../karman/karman";
 import { ApiConfig, HttpBody, ReqStrategyTypes, RequestConfig, RequestExecutor } from "@/types/http.type";
@@ -65,6 +64,7 @@ export default class ApiFactory {
       runtimeOptions?: RuntimeOptions<T2>,
     ): [requestPromise: Promise<SelectRequestStrategy<T, D>>, abortController: () => void] {
       const runtimeOptionsCopy = _af.runtimeOptionsParser(runtimeOptions);
+      if (this._typeCheck.isUndefinedOrNull(payload)) payload = {} as { [K in keyof P]: any };
 
       // config inheritance and caching
       if (!isEqual(runtimeOptionsCache, runtimeOptionsCopy)) {
@@ -96,7 +96,7 @@ export default class ApiFactory {
         hooks,
         interceptors,
       } = allConfigCache;
-      const { requestStrategy } = requestConfig;
+      const { requestStrategy = "xhr", headers = {} } = requestConfig;
       const { validation } = utilConfig ?? {};
       const { onBeforeValidate, onValidateError, onBeforeRequest, onError, onFinally, onSuccess } = hooks ?? {};
       const { onRequest, onResponse } = interceptors ?? {};
@@ -113,13 +113,23 @@ export default class ApiFactory {
         }
       }
 
+      let _payload: HttpBody = payload as HttpBody;
+
+      if (_af.typeCheck.isFunction(onBeforeRequest)) {
+        _payload = (onBeforeRequest.call(this, endpoint, _payload) as HttpBody) ?? (payload as HttpBody);
+      }
+
       /**
        * @todo
-       * - hooks install
        * - auto convert payload into corresponing content type
        */
       // 2. parameter builder
-      const [requestURL, requestBody] = _af.preqBuilder.call(_af, { baseURL, endpoint, payload, payloadDef });
+      const [requestURL, requestBody] = _af.preqBuilder.call(_af, {
+        baseURL,
+        endpoint,
+        payload: _payload as Record<string, any>,
+        payloadDef,
+      });
 
       const httpConfig = {
         url: requestURL,
@@ -129,19 +139,16 @@ export default class ApiFactory {
 
       onRequest?.call(this, httpConfig);
 
-      let _payload: HttpBody = requestBody as HttpBody;
-
-      if (_af.typeCheck.isFunction(onBeforeRequest)) {
-        _payload = onBeforeRequest.call(this, requestURL, requestBody) as HttpBody;
-      }
-
       // 3. request sending
       const reqStrategy = _af.requestStrategySelector(requestStrategy);
-      const { requestKey, requestExecutor, promiseExecutor, config } = reqStrategy.request<D, T>(_payload, {
-        url: requestURL,
-        method,
-        ...requestConfig,
-      });
+      const { requestKey, requestExecutor, promiseExecutor, config } = reqStrategy.request<D, T>(
+        requestBody as HttpBody,
+        {
+          url: requestURL,
+          method,
+          ...requestConfig,
+        },
+      );
       const [requestPromise, abortController] = requestExecutor();
       const _requestPromise = requestPromise
         .then((res) => {

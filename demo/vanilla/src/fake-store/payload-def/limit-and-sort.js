@@ -1,3 +1,4 @@
+import { defineCustomValidator } from "@karman";
 /**
  * @param {R} required
  * @template {boolean} R

@@ -1,10 +1,10 @@
-import { defineKarman, defineAPI } from "karman";
+import { defineKarman, defineAPI } from "@karman";
 import limitAndSort from "../payload-def/limit-and-sort";
 import dtoProductInfo from "./dto/dto-product-info";
 import dtoCategory from "./dto/dto-category";
 import category from "./payload-def/category";
 import productInfo from "./payload-def/product-info";
-import imageBase64 from "@/utils/imageBase64";
+import imageBase64 from "../../utils/imageBase64";
 import id from "../payload-def/id";
 
 async function convertImage(_, payload) {
@@ -13,6 +13,7 @@ async function convertImage(_, payload) {
 
 export default defineKarman({
   url: "products",
+  headerMap: true,
   api: {
     /**
      * ### get all products
@@ -20,12 +21,9 @@ export default defineKarman({
     getAll: defineAPI({
       payloadDef: limitAndSort(false),
       dto: [dtoProductInfo],
-      requestStrategy: "fetch",
       onBeforeRequest(_, payload) {
         if (!payload.limit) payload.limit = 10;
-      },
-      onSuccess(res) {
-        return res.json();
+        return JSON.stringify(payload);
       },
     }),
     /**

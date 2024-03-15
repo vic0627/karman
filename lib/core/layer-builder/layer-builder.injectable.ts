@@ -57,14 +57,16 @@ export default class LayerBuilder {
 
     currentKarman.$setDependencies(this.typeCheck, this.pathResolver);
 
-    Object.entries(route as Record<string, Karman>).forEach(([key, karman]) => {
-      karman.$parent = currentKarman;
-      Object.defineProperty(currentKarman, key, { value: karman, enumerable: true });
-    });
+    if (this.typeCheck.isObjectLiteral(route))
+      Object.entries(route as Record<string, Karman>).forEach(([key, karman]) => {
+        karman.$parent = currentKarman;
+        Object.defineProperty(currentKarman, key, { value: karman, enumerable: true });
+      });
 
-    Object.entries(api as Record<string, Function>).forEach(([key, value]) => {
-      Object.defineProperty(currentKarman, key, { value: value.bind(currentKarman), enumerable: true });
-    });
+    if (this.typeCheck.isObjectLiteral(api))
+      Object.entries(api as Record<string, Function>).forEach(([key, value]) => {
+        Object.defineProperty(currentKarman, key, { value: value.bind(currentKarman), enumerable: true });
+      });
 
     if (root) {
       this.scheduledTask.setInterval(scheduleInterval);

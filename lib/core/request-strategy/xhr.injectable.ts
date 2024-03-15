@@ -184,16 +184,18 @@ export default class Xhr implements RequestStrategy {
     if (!xhr) return;
 
     const { responseType, response, responseText, status, statusText } = xhr;
-    const data = !responseType || responseType === "text" || responseType === "json" ? responseText : response;
-    let headers: string | Record<string, string> = xhr.getAllResponseHeaders();
+    let data = !responseType || responseType === "text" || responseType === "json" ? responseText : response;
+    const headers: string | Record<string, string> = xhr.getAllResponseHeaders();
 
-    if (typeof headers === "string" && config?.headerMap) headers = this.getHeaderMap(headers);
+    const headersMap = this.getHeaderMap(headers);
+
+    if (headersMap?.["content-type"]?.includes("json") || responseType === "json") data = JSON.parse(data);
 
     const res = {
       data,
       status,
       statusText,
-      headers,
+      headers: config?.headerMap ? headersMap : headers,
       config,
       request: xhr,
     };
@@ -202,6 +204,8 @@ export default class Xhr implements RequestStrategy {
   }
 
   private getHeaderMap(headers: string) {
+    if (!headers) return {};
+
     const arr = headers.trim().split(/[\r\n]+/);
     const headerMap: Record<string, string> = {};
     arr.forEach((line) => {
