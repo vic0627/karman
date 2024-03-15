@@ -3,6 +3,13 @@ const init = (onError) => {
 
   const p = new Promise((resolve, reject) => {
     resolver = { resolve, reject };
+  }).then((e) => {
+    return new Promise((resolve) => {
+      const t = setTimeout(() => {
+        resolve(e);
+        clearTimeout(t);
+      }, 20);
+    });
   });
 
   const _p = p.catch((r) => {
@@ -22,8 +29,8 @@ const fn = async () => {
     const onError = null;
     const [p, r] = init(onError);
 
-    r.reject(new Error("hello"));
-
+    // r.reject(new Error("hello"));
+    r.resolve("yeah!!!!!");
     const res = await p;
 
     console.log(res);

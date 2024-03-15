@@ -37,7 +37,7 @@ const babelOptions = {
 
 const babelPlugin = babel(babelOptions);
 
-const baseFileName = "demo/vanilla/karman/index";
+const baseFileName = "dist/index";
 
 /** @type {import("rollup").OutputOptions[]} */
 const output = [
@@ -53,7 +53,7 @@ const output = [
     format: "iife",
     exports: "named",
     /** @todo fix terser option */
-    // plugins: [terser(terserOptions)],
+    plugins: [terser(terserOptions)],
   },
   {
     name: "karman",
@@ -70,4 +70,4 @@ const tsOption = {
 
 const plugins = [babelPlugin, typescript(tsOption), nodeResolve(), cleanupPlugin];
 
-module.exports = { input, output, plugins, treeshake: true };
+module.exports = { input, output, plugins, treeshake: false };

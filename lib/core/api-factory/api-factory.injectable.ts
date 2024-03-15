@@ -42,7 +42,6 @@ export interface PreqBuilderOptions<D, T extends ReqStrategyTypes>
 @Injectable()
 export default class ApiFactory {
   constructor(
-    private readonly template: Template,
     private readonly typeCheck: TypeCheck,
     private readonly pathResolver: PathResolver,
     private readonly validationEngine: ValidationEngine,
@@ -146,16 +145,23 @@ export default class ApiFactory {
       const [requestPromise, abortController] = requestExecutor();
       const _requestPromise = requestPromise
         .then((res) => {
-          const _res = onSuccess?.call(this, res as Response);
-          return _res ?? res;
+          if (this._typeCheck.isFunction(onResponse)) onResponse.call(this, res as any);
+          return res;
         })
-        .catch((err) => {
-          if (this._typeCheck.isFunction(onError)) return onError.call(this, err);
-          else throw err;
-        })
-        .finally(() => {
-          if (this._typeCheck.isFunction(onFinally)) onFinally.call(this);
-        });
+        .catch(
+          (err) =>
+            new Promise((resolve, reject) => {
+              if (this._typeCheck.isFunction(onError)) resolve(onError.call(this, err));
+              else reject(err);
+            }),
+        )
+        .finally(
+          () =>
+            new Promise((resolve) => {
+              if (this._typeCheck.isFunction(onFinally)) resolve(onFinally.call(this));
+              else resolve(void 0);
+            }),
+        );
       const _requestExecutor: RequestExecutor<SelectRequestStrategy<T, D>> = () => [
         _requestPromise as Promise<SelectRequestStrategy<T, D>>,
         abortController,
@@ -167,11 +173,16 @@ export default class ApiFactory {
           { requestKey, requestExecutor: _requestExecutor, promiseExecutor, config, payload },
           { cacheStrategyType: cacheStrategy, expiration: cacheExpireTime },
         );
+        const [chainPromise, abortController] = executer();
+        const _chainPromise = chainPromise.then(_af.successChaining(this, onSuccess));
 
-        return executer();
+        return [_chainPromise as Promise<SelectRequestStrategy<T, D>>, abortController];
       }
 
-      return [_requestPromise as Promise<SelectRequestStrategy<T, D>>, abortController];
+      return [
+        _requestPromise.then(_af.successChaining(this, onSuccess)) as Promise<SelectRequestStrategy<T, D>>,
+        abortController,
+      ];
     }
 
     return finalAPI;
@@ -202,6 +213,14 @@ export default class ApiFactory {
     const requestURL = this.pathResolver.resolveURL({ paths: urlSources, query: queryParams });
 
     return [requestURL, requestBody];
+  }
+
+  private successChaining<T extends ReqStrategyTypes, D>(k: Karman, onSuccess?: (res: Response) => any) {
+    return (res: SelectRequestStrategy<T, D>) =>
+      new Promise((resolve) => {
+        if (this.typeCheck.isFunction(onSuccess)) resolve(onSuccess.call(k, res as Response));
+        else resolve(res);
+      });
   }
 
   private requestStrategySelector(requestStrategy?: ReqStrategyTypes): RequestStrategy {

@@ -2,7 +2,6 @@ import IOCContainer from "@/decorator/IOCContainer.decorator";
 import MemoryCache from "./api-factory/request-pipe/cache-strategy/memory-cache.provider";
 import CachePipe from "./api-factory/request-pipe/cache-pipe.injectable";
 import ApiFactory from "./api-factory/api-factory.injectable";
-import KarmanFactory from "./karman/karman-factory.injectable";
 import LayerBuilder from "./layer-builder/layer-builder.injectable";
 import Xhr from "./request-strategy/xhr.injectable";
 import ScheduledTask from "./scheduled-task/scheduled-task.injectable";
