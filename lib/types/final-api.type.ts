@@ -8,7 +8,9 @@ export interface RuntimeOptions<T extends ReqStrategyTypes>
     AsyncHooks,
     RequestConfig<T>,
     CacheConfig,
-    Omit<UtilConfig, "scheduleInterval"> {}
+    Omit<UtilConfig, "scheduleInterval"> {
+  cancelToken?: AbortSignal;
+}
 
 export type FinalAPI<T extends ReqStrategyTypes, D> = (
   this: Karman,

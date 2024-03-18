@@ -5,7 +5,6 @@ import { FetchResponse } from "declrations";
 
 export interface ValidationHooks {
   onBeforeValidate?(payloadDef: PayloadDef, payload: Record<string, any>): void;
-  onValidateError?(error: Error): void;
 }
 
 export interface SyncHooks extends ValidationHooks {

@@ -1,21 +1,13 @@
-import fakeStore from "./src/fake-store/index.js";
+import rootKarman from "./root-karman";
 
 const request = async () => {
   try {
-    const [resPromise] = fakeStore.product.getAll(
-      null,
-      {
-        onSuccess(res) {
-          console.log("interceptor =>", res);
-          const _res = res.data.map((product) => product.title)
-          return _res;
-        },
-      },
-    );
+    const [resPromise] = rootKarman.fakeStore.stringTest({
+      param01: "l",
+      param02: 2,
+    });
 
-    const res = await resPromise;
-
-    console.log("after pre-processing =>", res);
+    console.log(await resPromise);
   } catch (error) {
     console.error(error);
   }

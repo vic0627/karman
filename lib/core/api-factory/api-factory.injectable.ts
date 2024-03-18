@@ -23,6 +23,13 @@ export interface ParsedRuntimeOptions<T extends ReqStrategyTypes> {
   $$$hooks: AsyncHooks & SyncHooks;
 }
 
+export interface ParsedCreatedOptions<T extends ReqStrategyTypes> {
+  $$requestConfig: RequestConfig<T>;
+  $$cacheConfig: CacheConfig;
+  $$utilConfig: UtilConfig;
+  $$hooks: AsyncHooks & SyncHooks;
+}
+
 export interface AllConfigCache<D, T extends ReqStrategyTypes>
   extends Pick<ApiConfig<D, T, PayloadDef>, "endpoint" | "method" | "payloadDef"> {
   baseURL?: string;
@@ -58,32 +65,25 @@ export default class ApiFactory {
     let runtimeOptionsCache: ParsedRuntimeOptions<ReqStrategyTypes> | null = null;
     const allConfigCache: AllConfigCache<D, T> = $$apiConfig;
 
+    const setRuntimeOptionsCache = (cache: ParsedRuntimeOptions<ReqStrategyTypes>) => {
+      runtimeOptionsCache = cache;
+    };
+
     function finalAPI<T2 extends ReqStrategyTypes>(
       this: Karman,
       payload: { [K in keyof P]: any },
       runtimeOptions?: RuntimeOptions<T2>,
     ): [requestPromise: Promise<SelectRequestStrategy<T, D>>, abortController: () => void] {
       const runtimeOptionsCopy = _af.runtimeOptionsParser(runtimeOptions);
-      if (this._typeCheck.isUndefinedOrNull(payload)) payload = {} as { [K in keyof P]: any };
+      if (_af.typeCheck.isUndefinedOrNull(payload)) payload = {} as { [K in keyof P]: any };
 
-      // config inheritance and caching
-      if (!isEqual(runtimeOptionsCache, runtimeOptionsCopy)) {
-        runtimeOptionsCache = runtimeOptionsCopy;
-        const { $$$requestConfig, $$$cacheConfig, $$$utilConfig, $$$hooks } = runtimeOptionsCopy;
-        const { $baseURL, $requestConfig, $cacheConfig, $interceptors } = this;
-        const $utilConfig = { validation: this.$validation } as UtilConfig;
-        const requestConfig = configInherit($requestConfig, $$requestConfig, $$$requestConfig);
-        const cacheConfig = configInherit($cacheConfig, $$cacheConfig, $$$cacheConfig);
-        const utilConfig = configInherit($utilConfig, $$utilConfig, $$$utilConfig);
-        const hooks = configInherit($$hooks, $$$hooks);
-
-        allConfigCache.baseURL = $baseURL;
-        allConfigCache.requestConfig = requestConfig as RequestConfig<T>;
-        allConfigCache.cacheConfig = cacheConfig;
-        allConfigCache.utilConfig = utilConfig;
-        allConfigCache.hooks = hooks;
-        allConfigCache.interceptors = $interceptors;
-      }
+      _af.configInheritance.call(this, {
+        allConfigCache,
+        runtimeOptions: runtimeOptionsCopy,
+        runtimeCache: runtimeOptionsCache,
+        createdOptions: { $$requestConfig, $$cacheConfig, $$utilConfig, $$hooks },
+        setRuntimeCache: setRuntimeOptionsCache,
+      });
 
       const {
         endpoint = "",
@@ -96,21 +96,16 @@ export default class ApiFactory {
         hooks,
         interceptors,
       } = allConfigCache;
-      const { requestStrategy = "xhr", headers = {} } = requestConfig;
+      const { requestStrategy = "xhr", headers } = requestConfig;
       const { validation } = utilConfig ?? {};
-      const { onBeforeValidate, onValidateError, onBeforeRequest, onError, onFinally, onSuccess } = hooks ?? {};
+      const { onBeforeValidate, onBeforeRequest, onError, onFinally, onSuccess } = hooks ?? {};
       const { onRequest, onResponse } = interceptors ?? {};
 
       // 1. validation
       if (validation) {
-        try {
-          if (_af.typeCheck.isFunction(onBeforeValidate)) onBeforeValidate.call(this, payloadDef, payload);
-          const validator = _af.validationEngine.getMainValidator(payload, payloadDef);
-          validator();
-        } catch (error) {
-          if (_af.typeCheck.isFunction(onValidateError)) onValidateError.call(this, error as Error);
-          else throw error;
-        }
+        if (_af.typeCheck.isFunction(onBeforeValidate)) onBeforeValidate.call(this, payloadDef, payload);
+        const validator = _af.validationEngine.getMainValidator(payload, payloadDef);
+        validator();
       }
 
       let _payload: HttpBody = payload as HttpBody;
@@ -119,10 +114,6 @@ export default class ApiFactory {
         _payload = (onBeforeRequest.call(this, endpoint, _payload) as HttpBody) ?? (payload as HttpBody);
       }
 
-      /**
-       * @todo
-       * - auto convert payload into corresponing content type
-       */
       // 2. parameter builder
       const [requestURL, requestBody] = _af.preqBuilder.call(_af, {
         baseURL,
@@ -130,6 +121,11 @@ export default class ApiFactory {
         payload: _payload as Record<string, any>,
         payloadDef,
       });
+
+      const _requestBody =
+        headers?.["Content-Type"]?.includes("json") && _af.typeCheck.isObjectLiteral(requestBody)
+          ? JSON.stringify(requestBody)
+          : requestBody;
 
       const httpConfig = {
         url: requestURL,
@@ -142,7 +138,7 @@ export default class ApiFactory {
       // 3. request sending
       const reqStrategy = _af.requestStrategySelector(requestStrategy);
       const { requestKey, requestExecutor, promiseExecutor, config } = reqStrategy.request<D, T>(
-        requestBody as HttpBody,
+        _requestBody as HttpBody,
         {
           url: requestURL,
           method,
@@ -150,6 +146,8 @@ export default class ApiFactory {
         },
       );
       const [requestPromise, abortController] = requestExecutor();
+
+      // 4. hooks installing
       const _requestPromise = requestPromise
         .then((res) => {
           if (this._typeCheck.isFunction(onResponse)) onResponse.call(this, res as any);
@@ -174,6 +172,7 @@ export default class ApiFactory {
         abortController,
       ];
 
+      // 5. cache pipe
       if (cacheConfig?.cache) {
         const { cacheExpireTime, cacheStrategy } = cacheConfig;
         const executer = _af.cachePipe.chain(
@@ -193,6 +192,38 @@ export default class ApiFactory {
     }
 
     return finalAPI;
+  }
+
+  private configInheritance<D>(
+    this: Karman,
+    options: {
+      allConfigCache: AllConfigCache<D, ReqStrategyTypes>;
+      runtimeOptions: ParsedRuntimeOptions<ReqStrategyTypes>;
+      createdOptions: ParsedCreatedOptions<ReqStrategyTypes>;
+      runtimeCache: ParsedRuntimeOptions<ReqStrategyTypes> | null;
+      setRuntimeCache: (cache: ParsedRuntimeOptions<ReqStrategyTypes>) => void;
+    },
+  ) {
+    const { allConfigCache, runtimeOptions, createdOptions, runtimeCache, setRuntimeCache } = options;
+    const { $$requestConfig, $$cacheConfig, $$hooks, $$utilConfig } = createdOptions;
+
+    if (!isEqual(runtimeCache, runtimeOptions)) {
+      setRuntimeCache(runtimeOptions);
+      const { $$$requestConfig, $$$cacheConfig, $$$utilConfig, $$$hooks } = runtimeOptions;
+      const { $baseURL, $requestConfig, $cacheConfig, $interceptors } = this;
+      const $utilConfig = { validation: this.$validation } as UtilConfig;
+      const requestConfig = configInherit($requestConfig, $$requestConfig, $$$requestConfig);
+      const cacheConfig = configInherit($cacheConfig, $$cacheConfig, $$$cacheConfig);
+      const utilConfig = configInherit($utilConfig, $$utilConfig, $$$utilConfig);
+      const hooks = configInherit($$hooks, $$$hooks);
+
+      allConfigCache.baseURL = $baseURL;
+      allConfigCache.requestConfig = requestConfig as RequestConfig<ReqStrategyTypes>;
+      allConfigCache.cacheConfig = cacheConfig;
+      allConfigCache.utilConfig = utilConfig;
+      allConfigCache.hooks = hooks;
+      allConfigCache.interceptors = $interceptors;
+    }
   }
 
   private preqBuilder<D, T extends ReqStrategyTypes>(
@@ -256,7 +287,6 @@ export default class ApiFactory {
       validation,
       // hooks
       onBeforeValidate,
-      onValidateError,
       onBeforeRequest,
       onSuccess,
       onError,
@@ -284,7 +314,6 @@ export default class ApiFactory {
 
     const $$$hooks = {
       onBeforeValidate,
-      onValidateError,
       onBeforeRequest,
       onSuccess,
       onError,
@@ -324,7 +353,6 @@ export default class ApiFactory {
       scheduleInterval,
       // hooks
       onBeforeValidate,
-      onValidateError,
       onBeforeRequest,
       onSuccess,
       onError,
@@ -361,7 +389,6 @@ export default class ApiFactory {
 
     const $$hooks = {
       onBeforeValidate,
-      onValidateError,
       onBeforeRequest,
       onSuccess,
       onError,

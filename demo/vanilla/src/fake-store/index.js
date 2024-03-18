@@ -4,9 +4,38 @@ import cart from "./cart";
 import user from "./user";
 
 export default defineKarman({
-  root: true,
   url: "https://fakestoreapi.com",
   api: {
+    stringTest: defineAPI({
+      payloadDef: {
+        /** @type {string} */
+        param01: { rules: "char" },
+        /** @type {string} */
+        param02: { rules: "string" },
+      },
+    }),
+    numberTest: defineAPI({
+      payloadDef: {
+        /** @type {number} */
+        param01: { rules: "int" },
+        /** @type {number} */
+        param02: { rules: "number" },
+      },
+    }),
+    objectTest: defineAPI({
+      payloadDef: {
+        /** @type {object} */
+        param01: { rules: "object" },
+        /** @type {object} */
+        param02: { rules: "object-literal" },
+        /** @type {any[]} */
+        param03: { rules: "array" },
+        /** @type {Funciton} */
+        param04: { rules: "funciton" },
+        /** @type {null} */
+        param05: { rules: "null" },
+      },
+    }),
     /**
      * ### user login
      */
@@ -33,10 +62,10 @@ export default defineKarman({
         },
       },
       onBeforeRequest(_, payload) {
-        return JSON.stringify(payload)
+        return JSON.stringify(payload);
       },
       headers: {
-        "Content-Type": "text/plain; charset=utf-8"
+        "Content-Type": "text/plain; charset=utf-8",
       },
       /**
        * @typedef {object} LoginRes

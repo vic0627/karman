@@ -1,7 +1,8 @@
 import Validator, { ValidateOption } from "@/abstract/parameter-validator.abstract";
 import { ParamRules, RegExpWithMessage, RegularExpression } from "@/types/rules.type";
+import ValidationError from "../validation-error/validation-error";
 
-export interface RegExpValidateOption extends Omit<ValidateOption, "rule"> {
+export interface RegExpValidateOption extends Omit<ValidateOption, "rule" | "required"> {
   rule: RegularExpression;
 }
 
@@ -40,12 +41,8 @@ export default class RegExpValidator implements Validator {
     } else if (this.isRegExpWithMessage(rule)) {
       return this.regExpWithMessage.bind(this);
     } else {
-      throw new Error("no matched validate strategy has been found");
+      throw new Error("no matched validate strategy");
     }
-  }
-
-  private getErrorMessage(param: string, value: any) {
-    return `Invalid input "${value}" for parameter "${param}".`;
   }
 
   private pureRegExp(option: RegExpValidateOption) {
@@ -53,7 +50,7 @@ export default class RegExpValidator implements Validator {
     const valid = (option.rule as RegExp).test(value);
 
     if (!valid) {
-      throw new TypeError(this.getErrorMessage(param, value));
+      throw new ValidationError({ prop: param, value });
     }
   }
 
@@ -63,7 +60,7 @@ export default class RegExpValidator implements Validator {
     const valid = regexp.test(value);
 
     if (!valid) {
-      throw new TypeError(errorMessage ?? this.getErrorMessage(param, value));
+      throw new ValidationError({ prop: param, value, message: errorMessage });
     }
   }
 }

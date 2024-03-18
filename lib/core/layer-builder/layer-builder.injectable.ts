@@ -4,6 +4,7 @@ import TypeCheck from "@/utils/type-check.provider";
 import PathResolver from "@/utils/path-rosolver.provider";
 import ScheduledTask from "../scheduled-task/scheduled-task.injectable";
 import Karman from "../karman/karman";
+import Template from "@/utils/template.provider";
 
 @Injectable()
 export default class LayerBuilder {
@@ -11,6 +12,7 @@ export default class LayerBuilder {
     private readonly typeCheck: TypeCheck,
     private readonly scheduledTask: ScheduledTask,
     private readonly pathResolver: PathResolver,
+    private readonly template: Template,
   ) {}
 
   public configure<A extends unknown, R extends unknown>(k: KarmanConfig<A, R>) {
@@ -53,12 +55,13 @@ export default class LayerBuilder {
       onResponse,
     });
 
-    if (root) this.scheduledTask.setInterval(scheduleInterval);
-
     currentKarman.$setDependencies(this.typeCheck, this.pathResolver);
 
     if (this.typeCheck.isObjectLiteral(route))
       Object.entries(route as Record<string, Karman>).forEach(([key, karman]) => {
+        if (karman.$root)
+          this.template.throw("Detected that the 'root' property is set to 'true' on a non-root Karman node.");
+
         karman.$parent = currentKarman;
         Object.defineProperty(currentKarman, key, { value: karman, enumerable: true });
       });

@@ -2,6 +2,7 @@ import Validator, { ValidateOption } from "@/abstract/parameter-validator.abstra
 import Injectable from "@/decorator/Injectable.decorator";
 import { ParamRules, ParameterDescriptor } from "@/types/rules.type";
 import TypeCheck from "@/utils/type-check.provider";
+import ValidationError from "../validation-error/validation-error";
 
 export type RangeValidateOption = Pick<ParameterDescriptor, "min" | "max" | "equality" | "measurement"> &
   Pick<ValidateOption, "param" | "value">;
@@ -17,11 +18,7 @@ export default class ParameterDescriptorValidator implements Validator {
       return;
     }
 
-    const { required = false, measurement = "self", min, max, equality } = rule;
-
-    if (required) {
-      this.requiredValidator(param, value);
-    }
+    const { measurement = "self", min, max, equality } = rule;
 
     const target = this.getMeasureTarget(value, measurement);
 
@@ -31,19 +28,11 @@ export default class ParameterDescriptorValidator implements Validator {
   private isParameterDescriptor(rule: ParamRules): rule is ParameterDescriptor {
     const isObject = this.typeCheck.isObjectLiteral(rule);
     const _rule = rule as ParameterDescriptor;
-    const hasDescriptorKeys = [_rule?.min, _rule?.max, _rule?.equality, _rule?.measurement, _rule?.required].some(
+    const hasDescriptorKeys = [_rule?.min, _rule?.max, _rule?.equality, _rule?.measurement].some(
       (des) => !this.typeCheck.isUndefinedOrNull(des),
     );
 
     return isObject && hasDescriptorKeys;
-  }
-
-  private requiredValidator(param: string, value: any) {
-    const empty = this.typeCheck.isUndefinedOrNull(value);
-
-    if (empty) {
-      throw new TypeError(`Parameter "${param}" is required.`);
-    }
   }
 
   private getMeasureTarget(value: any, measurement: string) {
@@ -61,7 +50,7 @@ export default class ParameterDescriptorValidator implements Validator {
   }
 
   private rangeValidator(option: RangeValidateOption) {
-    const { equality, min, max, value } = option;
+    const { equality, min, max, value, param } = option;
 
     let valid: boolean | null = null;
 
@@ -73,33 +62,6 @@ export default class ParameterDescriptorValidator implements Validator {
       valid = max >= value;
     }
 
-    if (!this.typeCheck.isNull(valid) && !valid) {
-      const message = this.getErrorMessage(option);
-
-      throw new RangeError(message);
-    }
-  }
-
-  private getErrorMessage(option: Partial<RangeValidateOption>) {
-    const { min, max, equality, measurement, param } = option;
-    const sentence = [
-      measurement === "self" ? `Parameter "${param}"` : `Property "${measurement}" of the parameter "${param}"`,
-      "must be",
-    ];
-    const l = sentence.length;
-
-    if (!this.typeCheck.isUndefinedOrNull(equality)) {
-      sentence.push(`equal to "${equality}".`);
-    } else if (!this.typeCheck.isUndefinedOrNull(min)) {
-      sentence.push(`greater than or equal to "${min}".`);
-    } else if (!this.typeCheck.isUndefinedOrNull(max)) {
-      sentence.push(`less than or equal to "${max}".`);
-    }
-
-    if (sentence.length !== l + 1) {
-      throw new Error("missing compare value");
-    }
-
-    return sentence.join(" ");
+    if (!this.typeCheck.isNull(valid) && !valid) throw new ValidationError({ prop: param, value, equality, min, max });
   }
 }

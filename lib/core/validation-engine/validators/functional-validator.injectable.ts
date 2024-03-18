@@ -2,6 +2,7 @@ import Validator, { ValidateOption } from "@/abstract/parameter-validator.abstra
 import Injectable from "@/decorator/Injectable.decorator";
 import { CustomValidator, ParamRules, Prototype } from "@/types/rules.type";
 import TypeCheck from "@/utils/type-check.provider";
+import ValidationError from "../validation-error/validation-error";
 
 @Injectable()
 export default class FunctionalValidator implements Validator {
@@ -30,7 +31,7 @@ export default class FunctionalValidator implements Validator {
     const rule = option.rule as Prototype;
 
     if (!(value instanceof rule)) {
-      throw new TypeError(`The parameter "${param}" must be an instance of "${rule}".`);
+      throw new ValidationError({ prop: param, value, instance: rule });
     }
   }
 }

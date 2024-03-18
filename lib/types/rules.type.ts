@@ -3,7 +3,6 @@ export type Type =
   | "string"
   | "number"
   | "int"
-  | "float"
   | "nan"
   | "boolean"
   | "object"
@@ -34,10 +33,6 @@ export interface ParameterDescriptor {
    * @default "length"
    */
   measurement?: "self" | "length" | "size" | string;
-  /**
-   * @default false
-   */
-  required?: boolean;
 }
 
 export type ParamRules = Type | Prototype | RegularExpression | CustomValidator | ParameterDescriptor;

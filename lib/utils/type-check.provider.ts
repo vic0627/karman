@@ -7,7 +7,6 @@ export default class TypeCheck {
       string: "isString",
       number: "isNumber",
       int: "isInteger",
-      float: "isFloat",
       nan: "isNaN",
       boolean: "isBoolean",
       object: "isObject",
@@ -27,7 +26,6 @@ export default class TypeCheck {
       "string",
       "number",
       "int",
-      "float",
       "nan",
       "boolean",
       "object",
@@ -50,15 +48,11 @@ export default class TypeCheck {
   }
 
   isNumber(value: any): value is number {
-    return typeof value === "number" && !isNaN(value);
+    return typeof value === "number" && !isNaN(value) && isFinite(value);
   }
 
   isInteger(value: any): boolean {
     return typeof value === "number" && !isNaN(value) && Number.isInteger(value);
-  }
-
-  isFloat(value: any): boolean {
-    return !(typeof value === "number" && !isNaN(value) && Number.isInteger(value));
   }
 
   isNaN(value: any): boolean {
@@ -70,7 +64,7 @@ export default class TypeCheck {
   }
 
   isObject(value: any): value is object {
-    return typeof value === "object";
+    return typeof value === "object" || Array.isArray(value) || typeof value === "function";
   }
 
   isNull(value: any): value is null {

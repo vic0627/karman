@@ -13,7 +13,6 @@ async function convertImage(_, payload) {
 
 export default defineKarman({
   url: "products",
-  headerMap: true,
   api: {
     /**
      * ### get all products
@@ -23,7 +22,6 @@ export default defineKarman({
       dto: [dtoProductInfo],
       onBeforeRequest(_, payload) {
         if (!payload.limit) payload.limit = 10;
-        return JSON.stringify(payload);
       },
     }),
     /**

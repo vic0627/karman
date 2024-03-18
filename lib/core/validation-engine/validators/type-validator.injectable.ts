@@ -2,6 +2,7 @@ import Validator, { ValidateOption } from "@/abstract/parameter-validator.abstra
 import Injectable from "@/decorator/Injectable.decorator";
 import { Type } from "@/types/rules.type";
 import TypeCheck from "@/utils/type-check.provider";
+import ValidationError from "../validation-error/validation-error";
 
 @Injectable()
 export default class TypeValidator implements Validator {
@@ -27,7 +28,7 @@ export default class TypeValidator implements Validator {
     const valid = validator(value);
 
     if (!valid) {
-      throw new TypeError(`parameter ${param} should be ${type} type`);
+      throw new ValidationError({ prop: param, value, type });
     }
   }
 

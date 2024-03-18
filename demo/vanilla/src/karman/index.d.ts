@@ -19,9 +19,8 @@ export type Optional<T> = T | void;
 type Type =
   | "char"
   | "string"
-  | "number"
   | "int"
-  | "float"
+  | "number"
   | "nan"
   | "boolean"
   | "object"
@@ -62,10 +61,6 @@ export interface ParameterDescriptor {
    * @default "length"
    */
   measurement?: "self" | "length" | "size" | string;
-  /**
-   * @default false
-   */
-  required?: boolean;
 }
 
 export type ParamRules = Type | ConstructorFn | RegularExpression | CustomValidator | ParameterDescriptor;
@@ -152,6 +147,7 @@ interface ParamDef extends ParamPosition {
    * @description if received an array, it will be implicitly converted into an `IntersectionRules`
    */
   rules?: ParamRules | ParamRules[] | RuleSet;
+  required?: boolean;
 }
 
 export type PayloadDef = Record<string, ParamDef>;
