@@ -4,7 +4,7 @@ const btn = document.getElementById("btn");
 
 const request = async () => {
   try {
-    const [resPromise] = rootKarman.fakeStore.product.getAll(null, { cache: true });
+    const [resPromise] = rootKarman.fakeStore.product.getAll();
 
     console.log(await resPromise);
   } catch (error) {

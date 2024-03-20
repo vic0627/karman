@@ -92,10 +92,7 @@ export type XhrHooksHandler<D, T extends ReqStrategyTypes> = (
   executer: PromiseExecutor<D>,
 ) => void;
 
-export type RequestExecutor<D> = ((send?: boolean) => [requestPromise: Promise<D>, abortController: () => void]) & {
-  cache?: boolean;
-  resolveCache?: () => void;
-};
+export type RequestExecutor<D> = ((send?: boolean) => [requestPromise: Promise<D>, abortController: () => void]);
 
 export interface XhrResponse<D, T extends ReqStrategyTypes> {
   data: D;

@@ -6,6 +6,7 @@ export default defineKarman({
   root: true,
   headerMap: true,
   validation: true,
+  scheduleInterval: 1000 * 10,
   route: {
     fakeStore,
     tpProject,

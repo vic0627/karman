@@ -1844,31 +1844,23 @@ let CachePipe = class CachePipe {
       payload
     } = requestDetail;
     const cacheData = cache.get(requestKey);
-    const {
-      resolve
-    } = promiseExecutor;
     const currentT = Date.now();
     if (cacheData && cacheData.expiration > currentT) {
-      console.log("cache data", cacheData);
       const {
         res
       } = cacheData;
       const isSameRequest = isEqual(payload, cacheData.payload);
       if (isSameRequest) {
-        console.log("cache res", res);
         const [reqPromise, abortControler] = requestExecutor(false);
-        const reqExecutor = () => {
-          return [reqPromise, abortControler];
-        };
-        reqExecutor.resolveCache = () => resolve(res);
+        const reqExecutor = () => [reqPromise, abortControler];
+        promiseExecutor.resolve(res);
         return reqExecutor;
       }
     }
     const [reqPromise, abortControler] = requestExecutor(true);
-    console.log("caching");
     const newPromise = reqPromise.then(this.promiseCallbackFactory(requestKey, cache, {
       payload,
-      expiration: expiration ?? currentT + 1000000
+      expiration: (expiration ?? currentT) + 1000 * 60 * 10
     }));
     return () => [newPromise, abortControler];
   }
@@ -1881,7 +1873,7 @@ let CachePipe = class CachePipe {
         ...cacheData,
         res
       };
-      this.scheduledTask.addTask(now => cache.scheduledTask(now));
+      this.scheduledTask.addSingletonTask("cache", now => cache.scheduledTask(now));
       cache.set(requestKey, data);
       return res;
     };
@@ -2273,10 +2265,36 @@ function cloneDeep(value) {
   return baseClone(value, CLONE_DEEP_FLAG | CLONE_SYMBOLS_FLAG);
 }
 
+class Template {
+  withPrefix(options) {
+    const {
+      type = "warn",
+      messages
+    } = options;
+    let t = `[karman warn] ${type}`;
+    for (const item of messages) {
+      t += item;
+    }
+    return t;
+  }
+  warn(...messages) {
+    console.warn(this.withPrefix({
+      messages
+    }));
+  }
+  throw(...messages) {
+    throw new Error(this.withPrefix({
+      messages
+    }));
+  }
+}
+
 let Xhr = class Xhr {
   typeCheck;
-  constructor(typeCheck) {
+  template;
+  constructor(typeCheck, template) {
     this.typeCheck = typeCheck;
+    this.template = template;
   }
   request(payload, config) {
     const {
@@ -2290,7 +2308,7 @@ let Xhr = class Xhr {
     this.setBasicSettings(xhr, config);
     const [reqExecutor, promiseExecutor] = this.buildPromise(xhr, cleanup, config);
     const requestExecutor = send => {
-      if (xhr && send) xhr.send(payload ?? null);else cleanup();
+      if (xhr && send) xhr.send(payload ?? null);
       return reqExecutor();
     };
     return {
@@ -2351,13 +2369,13 @@ let Xhr = class Xhr {
     }
   }
   buildPromise(xhr, cleanup, config) {
-    let promiseExecutor = {
+    const promiseExecutor = {
       resolve: cleanup,
       reject: cleanup
     };
     const requestExecuter = () => {
       let abortController = () => {
-        console.warn("Failed to abort request.");
+        this.template.warn("Failed to abort request.");
       };
       const requestPromise = new Promise((_resolve, _reject) => {
         const resolve = value => {
@@ -2372,10 +2390,8 @@ let Xhr = class Xhr {
           xhr && xhr.abort();
           reject(reason);
         };
-        promiseExecutor = {
-          resolve,
-          reject
-        };
+        promiseExecutor.resolve = resolve;
+        promiseExecutor.reject = reject;
         xhr.onloadend = this.hooksHandlerFactory(xhr, config, promiseExecutor, this.handleLoadend);
         xhr.onabort = this.hooksHandlerFactory(xhr, config, promiseExecutor, this.handleAbort);
         xhr.ontimeout = this.hooksHandlerFactory(xhr, config, promiseExecutor, this.handleTimeout);
@@ -2457,7 +2473,7 @@ let Xhr = class Xhr {
     return headerMap;
   }
 };
-Xhr = __decorate([Injectable(), __metadata("design:paramtypes", [TypeCheck])], Xhr);
+Xhr = __decorate([Injectable(), __metadata("design:paramtypes", [TypeCheck, Template])], Xhr);
 var Xhr$1 = Xhr;
 
 class PathResolver {
@@ -3122,30 +3138,6 @@ class IntersectionRules extends RuleSet {
   }
 }
 
-class Template {
-  withPrefix(options) {
-    const {
-      type = "warn",
-      messages
-    } = options;
-    let t = `[karman warn] ${type}`;
-    for (const item of messages) {
-      t += item;
-    }
-    return t;
-  }
-  warn(...messages) {
-    console.warn(this.withPrefix({
-      messages
-    }));
-  }
-  throw(...messages) {
-    throw new Error(this.withPrefix({
-      messages
-    }));
-  }
-}
-
 let ValidationEngine = class ValidationEngine {
   functionalValidator;
   parameterDescriptorValidator;
@@ -3389,7 +3381,6 @@ let ApiFactory = class ApiFactory {
           onFinally,
           onResponse
         });
-        executer?.resolveCache?.();
         return [_chainPromise, abortController];
       }
       const [requestPromise, abortController] = requestExecutor(true);

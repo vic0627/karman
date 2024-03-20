@@ -155,7 +155,6 @@ export default class ApiFactory {
         );
         const [chainPromise, abortController] = executer();
         const _chainPromise = _af.installHooks(this, chainPromise, { onSuccess, onError, onFinally, onResponse });
-        executer?.resolveCache?.();
 
         return [_chainPromise, abortController];
       }

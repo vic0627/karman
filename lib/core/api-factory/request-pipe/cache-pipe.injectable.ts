@@ -23,36 +23,28 @@ export default class CachePipe implements RequestPipe {
     const cache = this.getCacheStrategy(cacheStrategyType ?? "memory");
     const { promiseExecutor, requestExecutor, requestKey, payload } = requestDetail;
     const cacheData = cache.get(requestKey);
-    const { resolve } = promiseExecutor;
     const currentT = Date.now();
 
     if (cacheData && cacheData.expiration > currentT) {
-      // console.log("cache data", cacheData);
       const { res } = cacheData;
       const isSameRequest = isEqual(payload, cacheData.payload);
 
       if (isSameRequest) {
-        // console.log("cache res", res);
         const [reqPromise, abortControler] = requestExecutor(false);
-
-        const reqExecutor: RequestExecutor<SelectRequestStrategy<T, D>> = () => {
-          return [reqPromise, abortControler];
-        };
-
-        /**
-         * @todo resolve cache data
-         */
-        reqExecutor.resolveCache = () => resolve(res as SelectRequestStrategy<T, D>);
+        const reqExecutor: RequestExecutor<SelectRequestStrategy<T, D>> = () => [reqPromise, abortControler];
+        promiseExecutor.resolve(res as SelectRequestStrategy<T, D>);
 
         return reqExecutor;
       }
     }
 
     const [reqPromise, abortControler] = requestExecutor(true);
-    // console.log("caching");
 
     const newPromise = reqPromise.then(
-      this.promiseCallbackFactory(requestKey, cache, { payload, expiration: expiration ?? currentT + 1000000 }),
+      this.promiseCallbackFactory(requestKey, cache, {
+        payload,
+        expiration: (expiration ?? currentT) + 1000 * 60 * 10,
+      }),
     );
 
     return () => [newPromise, abortControler];
@@ -70,7 +62,7 @@ export default class CachePipe implements RequestPipe {
   ) {
     return (res: SelectRequestStrategy<T, D>) => {
       const data = { ...cacheData, res };
-      this.scheduledTask.addTask((now) => cache.scheduledTask(now));
+      this.scheduledTask.addSingletonTask("cache", (now) => cache.scheduledTask(now));
       cache.set(requestKey, data);
 
       return res;

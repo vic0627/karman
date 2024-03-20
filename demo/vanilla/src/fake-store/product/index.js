@@ -23,6 +23,8 @@ export default defineKarman({
       onBeforeRequest(_, payload) {
         if (!payload.limit) payload.limit = 10;
       },
+      cache: true,
+      cacheExpireTime: 5000,
     }),
     /**
      * ### get single product by id

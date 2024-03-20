@@ -10,12 +10,16 @@ import RequestDetail, {
   RequestExecutor,
   XhrHooksHandler,
 } from "@/types/http.type";
+import Template from "@/utils/template.provider";
 import TypeCheck from "@/utils/type-check.provider";
 import { cloneDeep } from "lodash-es";
 
 @Injectable()
 export default class Xhr implements RequestStrategy {
-  constructor(private readonly typeCheck: TypeCheck) {}
+  constructor(
+    private readonly typeCheck: TypeCheck,
+    private readonly template: Template,
+  ) {}
 
   public request<D, T extends ReqStrategyTypes>(payload: HttpBody, config: HttpConfig<T>): RequestDetail<D, T> {
     const { url = "", method = "GET" } = config;
@@ -25,7 +29,6 @@ export default class Xhr implements RequestStrategy {
 
     const requestExecutor: RequestExecutor<D> = (send?: boolean) => {
       if (xhr && send) xhr.send(payload ?? null);
-      else cleanup();
 
       return reqExecutor();
     };
@@ -92,11 +95,11 @@ export default class Xhr implements RequestStrategy {
     cleanup: () => void,
     config: HttpConfig<T>,
   ): [requestExecuter: RequestExecutor<D>, promiseExecutor: PromiseExecutor<D>] {
-    let promiseExecutor: PromiseExecutor<D> = { resolve: cleanup, reject: cleanup };
+    const promiseExecutor: PromiseExecutor<D> = { resolve: cleanup, reject: cleanup };
 
     const requestExecuter: RequestExecutor<D> = () => {
       let abortController = () => {
-        console.warn("Failed to abort request.");
+        this.template.warn("Failed to abort request.");
       };
 
       const requestPromise = new Promise<D>((_resolve, _reject) => {
@@ -115,7 +118,8 @@ export default class Xhr implements RequestStrategy {
           reject(reason);
         };
 
-        promiseExecutor = { resolve, reject };
+        promiseExecutor.resolve = resolve;
+        promiseExecutor.reject = reject;
         xhr.onloadend = this.hooksHandlerFactory<D, T>(xhr, config, promiseExecutor, this.handleLoadend);
         xhr.onabort = this.hooksHandlerFactory<D, T>(xhr, config, promiseExecutor, this.handleAbort);
         xhr.ontimeout = this.hooksHandlerFactory<D, T>(xhr, config, promiseExecutor, this.handleTimeout);
