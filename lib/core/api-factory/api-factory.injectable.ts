@@ -145,50 +145,25 @@ export default class ApiFactory {
           ...requestConfig,
         },
       );
-      const [requestPromise, abortController] = requestExecutor();
-
-      // 4. hooks installing
-      const _requestPromise = requestPromise
-        .then((res) => {
-          if (this._typeCheck.isFunction(onResponse)) onResponse.call(this, res as any);
-          return res;
-        })
-        .catch(
-          (err) =>
-            new Promise((resolve, reject) => {
-              if (this._typeCheck.isFunction(onError)) resolve(onError.call(this, err));
-              else reject(err);
-            }),
-        )
-        .finally(
-          () =>
-            new Promise((resolve) => {
-              if (this._typeCheck.isFunction(onFinally)) resolve(onFinally.call(this));
-              else resolve(void 0);
-            }),
-        );
-      const _requestExecutor: RequestExecutor<SelectRequestStrategy<T, D>> = () => [
-        _requestPromise as Promise<SelectRequestStrategy<T, D>>,
-        abortController,
-      ];
 
       // 5. cache pipe
       if (cacheConfig?.cache) {
         const { cacheExpireTime, cacheStrategy } = cacheConfig;
         const executer = _af.cachePipe.chain(
-          { requestKey, requestExecutor: _requestExecutor, promiseExecutor, config, payload },
+          { requestKey, requestExecutor, promiseExecutor, config, payload },
           { cacheStrategyType: cacheStrategy, expiration: cacheExpireTime },
         );
         const [chainPromise, abortController] = executer();
-        const _chainPromise = chainPromise.then(_af.successChaining(this, onSuccess));
+        const _chainPromise = _af.installHooks(this, chainPromise, { onSuccess, onError, onFinally, onResponse });
+        executer?.resolveCache?.();
 
-        return [_chainPromise as Promise<SelectRequestStrategy<T, D>>, abortController];
+        return [_chainPromise, abortController];
       }
 
-      return [
-        _requestPromise.then(_af.successChaining(this, onSuccess)) as Promise<SelectRequestStrategy<T, D>>,
-        abortController,
-      ];
+      const [requestPromise, abortController] = requestExecutor(true);
+      const _requestPromise = _af.installHooks(this, requestPromise, { onSuccess, onError, onFinally, onResponse });
+
+      return [_requestPromise, abortController];
     }
 
     return finalAPI;
@@ -259,6 +234,39 @@ export default class ApiFactory {
         if (this.typeCheck.isFunction(onSuccess)) resolve(onSuccess.call(k, res as Response));
         else resolve(res);
       });
+  }
+
+  private installHooks<D, T extends ReqStrategyTypes>(
+    k: Karman,
+    reqPromise: Promise<SelectRequestStrategy<T, D>>,
+    { onSuccess, onError, onFinally, onResponse }: AsyncHooks & Pick<KarmanInterceptors, "onResponse">,
+  ) {
+    return reqPromise
+      .then((res) => {
+        if (this.typeCheck.isFunction(onResponse)) onResponse.call(k, res as any);
+        return res;
+      })
+      .then(
+        (res) =>
+          new Promise((resolve) => {
+            if (this.typeCheck.isFunction(onSuccess)) resolve(onSuccess.call(k, res as Response));
+            else resolve(res);
+          }),
+      )
+      .catch(
+        (err) =>
+          new Promise((resolve, reject) => {
+            if (this.typeCheck.isFunction(onError)) resolve(onError.call(k, err));
+            else reject(err);
+          }),
+      )
+      .finally(
+        () =>
+          new Promise((resolve) => {
+            if (this.typeCheck.isFunction(onFinally)) resolve(onFinally.call(this));
+            else resolve(void 0);
+          }),
+      ) as Promise<SelectRequestStrategy<T, D>>;
   }
 
   private requestStrategySelector(requestStrategy?: ReqStrategyTypes): RequestStrategy {

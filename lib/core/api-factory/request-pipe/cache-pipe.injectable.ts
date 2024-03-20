@@ -26,18 +26,30 @@ export default class CachePipe implements RequestPipe {
     const { resolve } = promiseExecutor;
     const currentT = Date.now();
 
-    if (cacheData && cacheData.expiration < currentT) {
+    if (cacheData && cacheData.expiration > currentT) {
+      // console.log("cache data", cacheData);
       const { res } = cacheData;
       const isSameRequest = isEqual(payload, cacheData.payload);
 
       if (isSameRequest) {
-        resolve(res as SelectRequestStrategy<T, D>);
+        // console.log("cache res", res);
+        const [reqPromise, abortControler] = requestExecutor(false);
 
-        return requestExecutor;
+        const reqExecutor: RequestExecutor<SelectRequestStrategy<T, D>> = () => {
+          return [reqPromise, abortControler];
+        };
+
+        /**
+         * @todo resolve cache data
+         */
+        reqExecutor.resolveCache = () => resolve(res as SelectRequestStrategy<T, D>);
+
+        return reqExecutor;
       }
     }
 
-    const [reqPromise, abortControler] = requestExecutor();
+    const [reqPromise, abortControler] = requestExecutor(true);
+    // console.log("caching");
 
     const newPromise = reqPromise.then(
       this.promiseCallbackFactory(requestKey, cache, { payload, expiration: expiration ?? currentT + 1000000 }),

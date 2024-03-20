@@ -23,8 +23,9 @@ export default class Xhr implements RequestStrategy {
     this.setBasicSettings(xhr, config);
     const [reqExecutor, promiseExecutor] = this.buildPromise<D, T>(xhr, cleanup, config);
 
-    const requestExecutor: RequestExecutor<D> = () => {
-      if (xhr) xhr.send(payload ?? null);
+    const requestExecutor: RequestExecutor<D> = (send?: boolean) => {
+      if (xhr && send) xhr.send(payload ?? null);
+      else cleanup();
 
       return reqExecutor();
     };

@@ -1,11 +1,10 @@
 import rootKarman from "./root-karman";
 
+const btn = document.getElementById("btn");
+
 const request = async () => {
   try {
-    const [resPromise] = rootKarman.fakeStore.stringTest({
-      param01: "l",
-      param02: 2,
-    });
+    const [resPromise] = rootKarman.fakeStore.product.getAll(null, { cache: true });
 
     console.log(await resPromise);
   } catch (error) {
@@ -13,4 +12,6 @@ const request = async () => {
   }
 };
 
-request();
+btn.addEventListener("click", () => {
+  request();
+});

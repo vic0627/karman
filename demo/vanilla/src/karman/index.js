@@ -1848,17 +1848,24 @@ let CachePipe = class CachePipe {
       resolve
     } = promiseExecutor;
     const currentT = Date.now();
-    if (cacheData && cacheData.expiration < currentT) {
+    if (cacheData && cacheData.expiration > currentT) {
+      console.log("cache data", cacheData);
       const {
         res
       } = cacheData;
       const isSameRequest = isEqual(payload, cacheData.payload);
       if (isSameRequest) {
-        resolve(res);
-        return requestExecutor;
+        console.log("cache res", res);
+        const [reqPromise, abortControler] = requestExecutor(false);
+        const reqExecutor = () => {
+          return [reqPromise, abortControler];
+        };
+        reqExecutor.resolveCache = () => resolve(res);
+        return reqExecutor;
       }
     }
-    const [reqPromise, abortControler] = requestExecutor();
+    const [reqPromise, abortControler] = requestExecutor(true);
+    console.log("caching");
     const newPromise = reqPromise.then(this.promiseCallbackFactory(requestKey, cache, {
       payload,
       expiration: expiration ?? currentT + 1000000
@@ -2282,8 +2289,8 @@ let Xhr = class Xhr {
     });
     this.setBasicSettings(xhr, config);
     const [reqExecutor, promiseExecutor] = this.buildPromise(xhr, cleanup, config);
-    const requestExecutor = () => {
-      if (xhr) xhr.send(payload ?? null);
+    const requestExecutor = send => {
+      if (xhr && send) xhr.send(payload ?? null);else cleanup();
       return reqExecutor();
     };
     return {
@@ -3360,16 +3367,6 @@ let ApiFactory = class ApiFactory {
         method,
         ...requestConfig
       });
-      const [requestPromise, abortController] = requestExecutor();
-      const _requestPromise = requestPromise.then(res => {
-        if (this._typeCheck.isFunction(onResponse)) onResponse.call(this, res);
-        return res;
-      }).catch(err => new Promise((resolve, reject) => {
-        if (this._typeCheck.isFunction(onError)) resolve(onError.call(this, err));else reject(err);
-      })).finally(() => new Promise(resolve => {
-        if (this._typeCheck.isFunction(onFinally)) resolve(onFinally.call(this));else resolve(void 0);
-      }));
-      const _requestExecutor = () => [_requestPromise, abortController];
       if (cacheConfig?.cache) {
         const {
           cacheExpireTime,
@@ -3377,7 +3374,7 @@ let ApiFactory = class ApiFactory {
         } = cacheConfig;
         const executer = _af.cachePipe.chain({
           requestKey,
-          requestExecutor: _requestExecutor,
+          requestExecutor,
           promiseExecutor,
           config,
           payload
@@ -3386,10 +3383,23 @@ let ApiFactory = class ApiFactory {
           expiration: cacheExpireTime
         });
         const [chainPromise, abortController] = executer();
-        const _chainPromise = chainPromise.then(_af.successChaining(this, onSuccess));
+        const _chainPromise = _af.installHooks(this, chainPromise, {
+          onSuccess,
+          onError,
+          onFinally,
+          onResponse
+        });
+        executer?.resolveCache?.();
         return [_chainPromise, abortController];
       }
-      return [_requestPromise.then(_af.successChaining(this, onSuccess)), abortController];
+      const [requestPromise, abortController] = requestExecutor(true);
+      const _requestPromise = _af.installHooks(this, requestPromise, {
+        onSuccess,
+        onError,
+        onFinally,
+        onResponse
+      });
+      return [_requestPromise, abortController];
     }
     return finalAPI;
   }
@@ -3470,6 +3480,23 @@ let ApiFactory = class ApiFactory {
     return res => new Promise(resolve => {
       if (this.typeCheck.isFunction(onSuccess)) resolve(onSuccess.call(k, res));else resolve(res);
     });
+  }
+  installHooks(k, reqPromise, {
+    onSuccess,
+    onError,
+    onFinally,
+    onResponse
+  }) {
+    return reqPromise.then(res => {
+      if (this.typeCheck.isFunction(onResponse)) onResponse.call(k, res);
+      return res;
+    }).then(res => new Promise(resolve => {
+      if (this.typeCheck.isFunction(onSuccess)) resolve(onSuccess.call(k, res));else resolve(res);
+    })).catch(err => new Promise((resolve, reject) => {
+      if (this.typeCheck.isFunction(onError)) resolve(onError.call(k, err));else reject(err);
+    })).finally(() => new Promise(resolve => {
+      if (this.typeCheck.isFunction(onFinally)) resolve(onFinally.call(this));else resolve(void 0);
+    }));
   }
   requestStrategySelector(requestStrategy) {
     if (requestStrategy === "xhr" && !this.typeCheck.isUndefinedOrNull(XMLHttpRequest)) return this.xhr;else if (requestStrategy === "fetch" && !this.typeCheck.isUndefinedOrNull(fetch)) return this.xhr;else throw new Error("strategy not found.");
