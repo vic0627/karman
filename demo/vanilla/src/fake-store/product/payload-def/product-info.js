@@ -11,8 +11,9 @@ export default (required) => {
      * @type {string}
      */
     title: {
+      required,
       body,
-      rules: ["string", { required, min: 1, max: 20 }],
+      rules: ["string", { min: 1, max: 20, measurement: "length" }],
     },
     /**
      * 價格
@@ -20,8 +21,9 @@ export default (required) => {
      * @type {number}
      */
     price: {
+      required,
       body,
-      rules: ["number", { required, min: 1, measurement: "self" }],
+      rules: ["number", { min: 1 }],
     },
     /**
      * 說明
@@ -30,8 +32,9 @@ export default (required) => {
      * @type {string}
      */
     description: {
+      required,
       body,
-      rules: ["string", { required, min: 1, max: 100 }],
+      rules: ["string", { min: 1, max: 100, measurement: "length" }],
     },
     /**
      * 圖片
@@ -39,8 +42,9 @@ export default (required) => {
      * @type {File}
      */
     image: {
+      required,
       body,
-      rules: [File, { required, measurement: "size", max: 1024 * 1024 * 5 }],
+      rules: [File, { measurement: "size", max: 1024 * 1024 * 5 }],
     },
   };
 

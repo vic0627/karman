@@ -11,17 +11,11 @@ const getPath = (...paths) => resolve(__dirname, relativePathToRoot, ...paths);
 
 const input = getPath("./lib/index.ts");
 
-const privateFieldIndentifier = /^#[^#]+$/i;
+// const privateFieldIndentifier = /^#[^#]+$/i;
 
 /** @type {import('@rollup/plugin-terser').Options} */
 const terserOptions = {
-  mangle: {
-    keep_classnames: true,
-    properties: {
-      regex: privateFieldIndentifier,
-      keep_quoted: true,
-    },
-  },
+  mangle: false,
 };
 
 /** @type {import("rollup-plugin-cleanup").Options} */
@@ -37,30 +31,37 @@ const babelOptions = {
 
 const babelPlugin = babel(babelOptions);
 
-const baseFileName = "demo/vanilla/src/karman/index";
+const baseFileName = "dist/karman";
+const name = "karman";
 
 /** @type {import("rollup").OutputOptions[]} */
 const output = [
   {
-    name: "karman",
+    name,
     file: getPath(`${baseFileName}.js`),
     format: "es",
     exports: "named",
   },
-  // {
-  //   name: "karman",
-  //   file: getPath(`${baseFileName}.min.js`),
-  //   format: "iife",
-  //   exports: "named",
-  //   /** @todo fix terser option */
-  //   plugins: [terser(terserOptions)],
-  // },
-  // {
-  //   name: "karman",
-  //   file: getPath(`${baseFileName}.cjs`),
-  //   format: "commonjs",
-  //   exports: "named",
-  // },
+  {
+    name,
+    file: getPath("demo/vanilla/src/karman/index.js"),
+    format: "es",
+    exports: "named",
+  },
+  {
+    name,
+    file: getPath(`${baseFileName}.min.js`),
+    format: "iife",
+    exports: "named",
+    /** @todo fix terser option */
+    plugins: [terser(terserOptions)],
+  },
+  {
+    name,
+    file: getPath(`${baseFileName}.cjs`),
+    format: "commonjs",
+    exports: "named",
+  },
 ];
 
 /** @type {import('@rollup/plugin-typescript').RollupTypescriptOptions} */

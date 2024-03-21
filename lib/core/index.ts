@@ -13,6 +13,9 @@ import ValidationEngine from "./validation-engine/validation-engine.injectable";
 import PathResolver from "@/utils/path-rosolver.provider";
 import TypeCheck from "@/utils/type-check.provider";
 import Template from "@/utils/template.provider";
+import LocalStorageCache from "./api-factory/request-pipe/cache-strategy/local-storage-cache.provider";
+import SessionStorageCache from "./api-factory/request-pipe/cache-strategy/session-storage-cache.provider";
+import Fetch from "./request-strategy/fetch.injectable";
 
 @IOCContainer({
   imports: [
@@ -20,6 +23,7 @@ import Template from "@/utils/template.provider";
     ApiFactory,
     LayerBuilder,
     Xhr,
+    Fetch,
     ScheduledTask,
     FunctionalValidator,
     ParameterDescriptorValidator,
@@ -27,7 +31,7 @@ import Template from "@/utils/template.provider";
     TypeValidator,
     ValidationEngine,
   ],
-  provides: [MemoryCache, PathResolver, TypeCheck, Template],
+  provides: [MemoryCache, LocalStorageCache, SessionStorageCache, PathResolver, TypeCheck, Template],
   exports: [ApiFactory, LayerBuilder, ValidationEngine],
 })
 export default class {

@@ -768,6 +768,7 @@ function IOCContainer(options = {}) {
 }
 
 class MemoryCache {
+  name = "memory";
   store = new Map();
   set(requestKey, cacheData) {
     this.store.set(requestKey, cacheData);
@@ -1233,7 +1234,6 @@ function equalArrays(array, other, bitmask, customizer, equalFunc, stack) {
 }
 
 var Uint8Array$1 = root.Uint8Array;
-var Uint8Array$2 = Uint8Array$1;
 
 function mapToArray(map) {
   var index = -1,
@@ -1277,7 +1277,7 @@ function equalByTag(object, other, tag, bitmask, customizer, equalFunc, stack) {
       object = object.buffer;
       other = other.buffer;
     case arrayBufferTag$3:
-      if (object.byteLength != other.byteLength || !equalFunc(new Uint8Array$2(object), new Uint8Array$2(other))) {
+      if (object.byteLength != other.byteLength || !equalFunc(new Uint8Array$1(object), new Uint8Array$1(other))) {
         return false;
       }
       return true;
@@ -1775,7 +1775,7 @@ let ScheduledTask = class ScheduledTask {
     this.typeCheck = typeCheck;
   }
   execute() {
-    this.#runTasks();
+    this.runTasks();
   }
   setInterval(interval) {
     if (this.typeCheck.isUndefinedOrNull(interval) || interval <= 0) {
@@ -1785,32 +1785,32 @@ let ScheduledTask = class ScheduledTask {
   }
   addTask(task) {
     this.#tasks.set(Math.random().toString(), task);
-    this.#startSchedule();
+    this.startSchedule();
   }
   addSingletonTask(key, task) {
     if (this.#tasks.has(key)) {
       return;
     }
     this.#tasks.set(key, task);
-    this.#startSchedule();
+    this.startSchedule();
   }
   clearSchedule() {
     clearInterval(this.#timer);
     this.#timer = undefined;
     this.#tasks.clear();
   }
-  #startSchedule() {
+  startSchedule() {
     if (!this.typeCheck.isUndefinedOrNull(this.#timer)) {
       return;
     }
     this.#timer = setInterval(() => {
-      const size = this.#runTasks();
+      const size = this.runTasks();
       if (!size) {
         this.clearSchedule();
       }
     }, this.interval);
   }
-  #runTasks() {
+  runTasks() {
     const now = Date.now();
     this.#tasks.forEach((task, token) => {
       const popSignal = task(now);
@@ -1824,12 +1824,118 @@ let ScheduledTask = class ScheduledTask {
 ScheduledTask = __decorate([Injectable(), __metadata("design:paramtypes", [TypeCheck])], ScheduledTask);
 var ScheduledTask$1 = ScheduledTask;
 
+class LocalStorageCache {
+  name = "localStorage";
+  keyStore = new Set();
+  set(requestKey, cacheData) {
+    this.keyStore.add(requestKey);
+    localStorage.setItem(requestKey, JSON.stringify(cacheData));
+  }
+  delete(requestKey) {
+    this.keyStore.delete(requestKey);
+    localStorage.removeItem(requestKey);
+  }
+  has(requestKey) {
+    return this.keyStore.has(requestKey);
+  }
+  get(requestKey) {
+    let data = localStorage.getItem(requestKey);
+    if (!data) return;
+    data = JSON.parse(data);
+    const existed = this.checkExpiration(requestKey, data);
+    if (existed) return data;
+  }
+  clear() {
+    this.keyStore.forEach(key => {
+      localStorage.removeItem(key);
+    });
+    this.keyStore.clear();
+  }
+  scheduledTask(now) {
+    this.keyStore.forEach(key => {
+      const data = this.get(key);
+      if (!data) {
+        this.keyStore.delete(key);
+        return;
+      }
+      if (now > data.expiration) {
+        this.delete(key);
+        this.keyStore.delete(key);
+      }
+    });
+    return !this.keyStore.size;
+  }
+  checkExpiration(requestKey, cacheData) {
+    if (!cacheData) return false;
+    if (Date.now() > cacheData.expiration) {
+      this.delete(requestKey);
+      return false;
+    }
+    return true;
+  }
+}
+
+class SessionStorageCache {
+  name = "sessionStorage";
+  keyStore = new Set();
+  set(requestKey, cacheData) {
+    this.keyStore.add(requestKey);
+    sessionStorage.setItem(requestKey, JSON.stringify(cacheData));
+  }
+  delete(requestKey) {
+    this.keyStore.delete(requestKey);
+    sessionStorage.removeItem(requestKey);
+  }
+  has(requestKey) {
+    return this.keyStore.has(requestKey);
+  }
+  get(requestKey) {
+    let data = sessionStorage.getItem(requestKey);
+    if (!data) return;
+    data = JSON.parse(data);
+    const existed = this.checkExpiration(requestKey, data);
+    if (existed) return data;
+  }
+  clear() {
+    this.keyStore.forEach(key => {
+      sessionStorage.removeItem(key);
+    });
+    this.keyStore.clear();
+  }
+  scheduledTask(now) {
+    this.keyStore.forEach(key => {
+      const data = this.get(key);
+      if (!data) {
+        this.keyStore.delete(key);
+        return;
+      }
+      if (now > data.expiration) {
+        this.delete(key);
+        this.keyStore.delete(key);
+      }
+    });
+    return !this.keyStore.size;
+  }
+  checkExpiration(requestKey, cacheData) {
+    if (!cacheData) return false;
+    if (Date.now() > cacheData.expiration) {
+      this.delete(requestKey);
+      return false;
+    }
+    return true;
+  }
+}
+
 let CachePipe = class CachePipe {
   scheduledTask;
   memoryCache;
-  constructor(scheduledTask, memoryCache) {
+  localStorageCache;
+  sessionStorageCache;
+  constructor(scheduledTask, memoryCache, localStorageCache, sessionStorageCache) {
     this.scheduledTask = scheduledTask;
     this.memoryCache = memoryCache;
+    this.localStorageCache = localStorageCache;
+    this.sessionStorageCache = sessionStorageCache;
   }
   chain(requestDetail, options) {
     const {
@@ -1860,12 +1966,12 @@ let CachePipe = class CachePipe {
     const [reqPromise, abortControler] = requestExecutor(true);
     const newPromise = reqPromise.then(this.promiseCallbackFactory(requestKey, cache, {
       payload,
-      expiration: (expiration ?? currentT) + 1000 * 60 * 10
+      expiration: (expiration ?? 1000 * 60 * 10) + currentT
     }));
     return () => [newPromise, abortControler];
   }
   getCacheStrategy(type) {
-    if (type === "memory") return this.memoryCache;else throw new Error(`failed to use "${type}" cache strategy.`);
+    if (type === "memory") return this.memoryCache;else if (type === "localStorage") return this.localStorageCache;else if (type === "sessionStorage") return this.sessionStorageCache;else throw new Error(`failed to use "${type}" cache strategy.`);
   }
   promiseCallbackFactory(requestKey, cache, cacheData) {
     return res => {
@@ -1873,13 +1979,13 @@ let CachePipe = class CachePipe {
         ...cacheData,
         res
       };
-      this.scheduledTask.addSingletonTask("cache", now => cache.scheduledTask(now));
+      this.scheduledTask.addSingletonTask(cache.name, now => cache.scheduledTask(now));
       cache.set(requestKey, data);
       return res;
     };
   }
 };
-CachePipe = __decorate([Injectable(), __metadata("design:paramtypes", [ScheduledTask$1, MemoryCache])], CachePipe);
+CachePipe = __decorate([Injectable(), __metadata("design:paramtypes", [ScheduledTask$1, MemoryCache, LocalStorageCache, SessionStorageCache])], CachePipe);
 var CachePipe$1 = CachePipe;
 
 function arrayEach(array, iteratee) {
@@ -2045,7 +2151,7 @@ function initCloneArray(array) {
 
 function cloneArrayBuffer(arrayBuffer) {
   var result = new arrayBuffer.constructor(arrayBuffer.byteLength);
-  new Uint8Array$2(result).set(new Uint8Array$2(arrayBuffer));
+  new Uint8Array$1(result).set(new Uint8Array$1(arrayBuffer));
   return result;
 }
 
@@ -2271,7 +2377,7 @@ class Template {
       type = "warn",
       messages
     } = options;
-    let t = `[karman warn] ${type}`;
+    let t = `[karman ${type}] `;
     for (const item of messages) {
       t += item;
     }
@@ -2298,7 +2404,7 @@ let Xhr = class Xhr {
   }
   request(payload, config) {
     const {
-      url = "",
+      url,
       method = "GET"
     } = config;
     const [xhr, cleanup, requestKey] = this.initXhr({
@@ -2323,7 +2429,7 @@ let Xhr = class Xhr {
     const {
       url
     } = options;
-    const requestKey = `${method}:${url}`;
+    const requestKey = `xhr:${method}:${url}`;
     let xhr = new XMLHttpRequest();
     xhr.open(method, url, true);
     const cleanup = () => {
@@ -2830,6 +2936,11 @@ function configInherit(baseObj, ...objs) {
   return combination;
 }
 
+var stringTag = '[object String]';
+function isString(value) {
+  return typeof value == 'string' || !isArray(value) && isObjectLike(value) && baseGetTag(value) == stringTag;
+}
+
 function isNull(value) {
   return value === null;
 }
@@ -2842,25 +2953,28 @@ const existValue = value => !isUndefined(value) && !isNull(value);
 class ValidationError extends Error {
   name = "ValidationError";
   constructor(options) {
-    const {
-      value,
-      min,
-      max,
-      equality,
-      measurement,
-      required,
-      type,
-      instance
-    } = options;
-    let {
-      prop,
-      message = ""
-    } = options;
-    if (measurement && measurement !== "self") prop += `.${measurement}`;
-    if (!message) {
-      message = `Parameter '${prop}' `;
-      if (required) message += "is required";else if (existValue(type)) message += `should be '${type}' type`;else if (existValue(instance)) message += `should be instance of '${instance}'`;else if (existValue(equality)) message += `should be equal to '${equality}'`;else if (existValue(min) && !existValue(max)) message += `should be greater than or equal to '${min}'`;else if (existValue(max) && !existValue(min)) message += `should be less than or equal to '${max}'`;else if (existValue(min) && existValue(max)) message += `should be within the range of '${min}' and '${max}'`;else message += "validaiton failed";
-      message += `, but received '${value}'.`;
+    let message = "";
+    if (isString(options)) message = options;else {
+      const {
+        value,
+        min,
+        max,
+        equality,
+        measurement,
+        required,
+        type,
+        instance
+      } = options;
+      let {
+        prop
+      } = options;
+      message = options?.message ?? "";
+      if (measurement && measurement !== "self") prop += `.${measurement}`;
+      if (!message) {
+        message = `Parameter '${prop}' `;
+        if (required) message += "is required";else if (existValue(type)) message += `should be '${type}' type`;else if (existValue(instance)) message += `should be instance of '${instance}'`;else if (existValue(equality)) message += `should be equal to '${equality}'`;else if (existValue(min) && !existValue(max)) message += `should be greater than or equal to '${min}'`;else if (existValue(max) && !existValue(min)) message += `should be less than or equal to '${max}'`;else if (existValue(min) && existValue(max)) message += `should be within the range of '${min}' and '${max}'`;else message += "validaiton failed";
+        message += `, but received '${value}'.`;
+      }
     }
     super(message);
   }
@@ -2959,7 +3073,8 @@ let ParameterDescriptorValidator = class ParameterDescriptorValidator {
       min,
       max,
       value,
-      param
+      param,
+      measurement
     } = option;
     let valid = null;
     if (!this.typeCheck.isUndefinedOrNull(equality)) {
@@ -2969,8 +3084,9 @@ let ParameterDescriptorValidator = class ParameterDescriptorValidator {
     } else if (!this.typeCheck.isUndefinedOrNull(max)) {
       valid = max >= value;
     }
+    const prop = measurement && measurement !== "self" ? `${param}.${measurement}` : param;
     if (!this.typeCheck.isNull(valid) && !valid) throw new ValidationError({
-      prop: param,
+      prop,
       value,
       equality,
       min,
@@ -3153,6 +3269,9 @@ let ValidationEngine = class ValidationEngine {
     this.typeCheck = typeCheck;
     this.template = template;
   }
+  isValidationError(error) {
+    return error instanceof ValidationError;
+  }
   defineCustomValidator(validatefn) {
     if (!this.typeCheck.isFunction(validatefn)) {
       throw new TypeError("Invalid validator type.");
@@ -3255,17 +3374,200 @@ let ValidationEngine = class ValidationEngine {
 ValidationEngine = __decorate([Injectable(), __metadata("design:paramtypes", [FunctionalValidator$1, ParameterDescriptorValidator$1, RegExpValidator, TypeValidator$1, TypeCheck, Template])], ValidationEngine);
 var ValidationEngine$1 = ValidationEngine;
 
+let Fetch = class Fetch {
+  typeCheck;
+  template;
+  constructor(typeCheck, template) {
+    this.typeCheck = typeCheck;
+    this.template = template;
+  }
+  request(payload, config) {
+    const {
+      url,
+      method = "GET",
+      auth,
+      timeout,
+      timeoutErrorMessage,
+      responseType,
+      headers,
+      credentials,
+      integrity,
+      keepalive,
+      mode,
+      redirect,
+      referrer,
+      referrerPolicy,
+      requestCache,
+      window
+    } = config;
+    const _method = method.toUpperCase();
+    const _headers = this.getHeaders(headers, auth);
+    const fetchConfig = {
+      method: _method,
+      headers: _headers,
+      body: payload,
+      credentials,
+      integrity,
+      keepalive,
+      mode,
+      redirect,
+      referrer,
+      referrerPolicy,
+      cache: requestCache,
+      window
+    };
+    const initObject = this.initFetch(url, fetchConfig, {
+      responseType,
+      timeout,
+      timeoutErrorMessage
+    });
+    return {
+      ...initObject,
+      config
+    };
+  }
+  buildTimeout(timeoutOptions) {
+    const {
+      timeout,
+      timeoutErrorMessage,
+      abortObject
+    } = timeoutOptions;
+    if (!this.typeCheck.isNumber(timeout) || timeout < 1) return;
+    const t = setTimeout(() => {
+      abortObject.abort();
+      clearTimeout(t);
+    }, timeout);
+    return {
+      clearTimer: () => clearTimeout(t),
+      TOMessage: timeoutErrorMessage || `time of ${timeout}ms exceeded`
+    };
+  }
+  initFetch(url, config, addition) {
+    const promiseUninitWarn = () => this.template.warn("promise resolver hasn't been initialized");
+    const {
+      responseType,
+      timeout,
+      timeoutErrorMessage
+    } = addition;
+    const {
+      method
+    } = config;
+    const requestKey = `fetch:${method}:${url}`;
+    if (method === "GET" || method === "HEAD") config.body = null;
+    const abortObject = {
+      abort: () => this.template.warn("Failed to abort request.")
+    };
+    const {
+      clearTimer,
+      TOMessage
+    } = this.buildTimeout({
+      timeout,
+      timeoutErrorMessage,
+      abortObject
+    }) ?? {};
+    const request = () => {
+      const abortController = new AbortController();
+      const signal = abortController.signal;
+      abortObject.abort = abortController.abort.bind(abortController);
+      return fetch(url, {
+        ...config,
+        signal
+      });
+    };
+    const promiseExecutor = {
+      resolve: promiseUninitWarn,
+      reject: promiseUninitWarn
+    };
+    let response = null;
+    const requestPromise = new Promise((_resolve, _reject) => {
+      promiseExecutor.resolve = value => {
+        _resolve(value);
+        clearTimer?.();
+      };
+      promiseExecutor.reject = reason => {
+        _reject(reason);
+        clearTimer?.();
+      };
+      abortObject.abort = reason => {
+        if (this.typeCheck.isString(reason)) reason = new Error(reason);
+        _reject(reason);
+      };
+    }).then(res => {
+      if (!(res instanceof Response)) return res;
+      const type = res.headers.get("Content-Type");
+      if (!response) response = {};
+      response.url = res.url;
+      response.bodyUsed = res.bodyUsed;
+      response.headers = res.headers;
+      response.ok = res.ok;
+      response.redirected = res.redirected;
+      response.status = res.status;
+      response.statusText = res.statusText;
+      response.type = res.type;
+      if (type?.includes("json") || responseType === "json") return res.json();
+      if (responseType === "blob") return res.blob();
+      if (responseType === "arraybuffer") return res.arrayBuffer();
+      return res;
+    }).then(body => {
+      if (!(body instanceof Response) && response) return {
+        ...response,
+        body
+      };
+      return body;
+    });
+    const requestWrapper = async () => {
+      try {
+        promiseExecutor.resolve(await request());
+      } catch (error) {
+        let _error = null;
+        if (error instanceof DOMException && error.message.includes("abort") && TOMessage) _error = new Error(TOMessage);
+        promiseExecutor.reject(_error ?? error);
+      }
+    };
+    const requestExecutor = send => {
+      if (send) requestWrapper();
+      return [requestPromise, abortObject.abort];
+    };
+    return {
+      requestKey,
+      promiseExecutor,
+      requestExecutor
+    };
+  }
+  getHeaders(headers, auth) {
+    return merge({}, headers, this.getAuthHeaders(auth));
+  }
+  getAuthHeaders(auth) {
+    let {
+      password
+    } = auth ?? {};
+    const {
+      username
+    } = auth ?? {};
+    if (this.typeCheck.isUndefinedOrNull(username) || this.typeCheck.isUndefinedOrNull(password)) return;
+    password = decodeURIComponent(encodeURIComponent(password));
+    const Authorization = "Basic " + btoa(username + ":" + password);
+    return {
+      Authorization
+    };
+  }
+};
+Fetch = __decorate([Injectable(), __metadata("design:paramtypes", [TypeCheck, Template])], Fetch);
+var Fetch$1 = Fetch;
+
 let ApiFactory = class ApiFactory {
   typeCheck;
   pathResolver;
   validationEngine;
   xhr;
+  fetch;
   cachePipe;
-  constructor(typeCheck, pathResolver, validationEngine, xhr, cachePipe) {
+  constructor(typeCheck, pathResolver, validationEngine, xhr, fetch, cachePipe) {
     this.typeCheck = typeCheck;
     this.pathResolver = pathResolver;
     this.validationEngine = validationEngine;
     this.xhr = xhr;
+    this.fetch = fetch;
     this.cachePipe = cachePipe;
   }
   createAPI(apiConfig) {
@@ -3364,7 +3666,7 @@ let ApiFactory = class ApiFactory {
           cacheExpireTime,
           cacheStrategy
         } = cacheConfig;
-        const executer = _af.cachePipe.chain({
+        const cacheExecuter = _af.cachePipe.chain({
           requestKey,
           requestExecutor,
           promiseExecutor,
@@ -3374,7 +3676,7 @@ let ApiFactory = class ApiFactory {
           cacheStrategyType: cacheStrategy,
           expiration: cacheExpireTime
         });
-        const [chainPromise, abortController] = executer();
+        const [chainPromise, abortController] = cacheExecuter();
         const _chainPromise = _af.installHooks(this, chainPromise, {
           onSuccess,
           onError,
@@ -3467,11 +3769,6 @@ let ApiFactory = class ApiFactory {
     });
     return [requestURL, requestBody];
   }
-  successChaining(k, onSuccess) {
-    return res => new Promise(resolve => {
-      if (this.typeCheck.isFunction(onSuccess)) resolve(onSuccess.call(k, res));else resolve(res);
-    });
-  }
   installHooks(k, reqPromise, {
     onSuccess,
     onError,
@@ -3490,7 +3787,7 @@ let ApiFactory = class ApiFactory {
     }));
   }
   requestStrategySelector(requestStrategy) {
-    if (requestStrategy === "xhr" && !this.typeCheck.isUndefinedOrNull(XMLHttpRequest)) return this.xhr;else if (requestStrategy === "fetch" && !this.typeCheck.isUndefinedOrNull(fetch)) return this.xhr;else throw new Error("strategy not found.");
+    if (requestStrategy === "xhr" && !this.typeCheck.isUndefinedOrNull(XMLHttpRequest)) return this.xhr;else if (requestStrategy === "fetch" && !this.typeCheck.isUndefinedOrNull(fetch)) return this.fetch;else throw new Error("strategy not found.");
   }
   runtimeOptionsParser(runtimeOptions) {
     const {
@@ -3502,6 +3799,15 @@ let ApiFactory = class ApiFactory {
       headerMap,
       withCredentials,
       requestStrategy,
+      credentials,
+      integrity,
+      keepalive,
+      mode,
+      redirect,
+      referrer,
+      referrerPolicy,
+      requestCache,
+      window,
       cache,
       cacheExpireTime,
       cacheStrategy,
@@ -3513,6 +3819,7 @@ let ApiFactory = class ApiFactory {
       onFinally
     } = runtimeOptions ?? {};
     const $$$requestConfig = {
+      requestStrategy,
       headers,
       auth,
       timeout,
@@ -3520,7 +3827,15 @@ let ApiFactory = class ApiFactory {
       responseType,
       headerMap,
       withCredentials,
-      requestStrategy
+      credentials,
+      integrity,
+      keepalive,
+      mode,
+      redirect,
+      referrer,
+      referrerPolicy,
+      requestCache,
+      window
     };
     const $$$cacheConfig = {
       cache,
@@ -3549,6 +3864,7 @@ let ApiFactory = class ApiFactory {
       endpoint,
       method,
       payloadDef,
+      requestStrategy,
       headers,
       auth,
       timeout,
@@ -3556,7 +3872,15 @@ let ApiFactory = class ApiFactory {
       responseType,
       headerMap,
       withCredentials,
-      requestStrategy,
+      credentials,
+      integrity,
+      keepalive,
+      mode,
+      redirect,
+      referrer,
+      referrerPolicy,
+      requestCache,
+      window,
       cache,
       cacheExpireTime,
       cacheStrategy,
@@ -3581,7 +3905,16 @@ let ApiFactory = class ApiFactory {
       responseType,
       headerMap,
       withCredentials,
-      requestStrategy
+      requestStrategy,
+      credentials,
+      integrity,
+      keepalive,
+      mode,
+      redirect,
+      referrer,
+      referrerPolicy,
+      requestCache,
+      window
     };
     const $$cacheConfig = {
       cache,
@@ -3608,17 +3941,12 @@ let ApiFactory = class ApiFactory {
     });
   }
 };
-ApiFactory = __decorate([Injectable(), __metadata("design:paramtypes", [TypeCheck, PathResolver, ValidationEngine$1, Xhr$1, CachePipe$1])], ApiFactory);
+ApiFactory = __decorate([Injectable(), __metadata("design:paramtypes", [TypeCheck, PathResolver, ValidationEngine$1, Xhr$1, Fetch$1, CachePipe$1])], ApiFactory);
 var ApiFactory$1 = ApiFactory;
 
 var numberTag = '[object Number]';
 function isNumber(value) {
   return typeof value == 'number' || isObjectLike(value) && baseGetTag(value) == numberTag;
-}
-
-var stringTag = '[object String]';
-function isString(value) {
-  return typeof value == 'string' || !isArray(value) && isObjectLike(value) && baseGetTag(value) == stringTag;
 }
 
 var boolTag = '[object Boolean]';
@@ -3690,6 +4018,15 @@ class Karman {
       responseType,
       headerMap,
       withCredentials,
+      credentials,
+      integrity,
+      keepalive,
+      mode,
+      redirect,
+      referrer,
+      referrerPolicy,
+      requestCache,
+      window,
       onRequest,
       onResponse
     } = config ?? {};
@@ -3709,7 +4046,16 @@ class Karman {
       timeoutErrorMessage,
       responseType,
       headerMap,
-      withCredentials
+      withCredentials,
+      credentials,
+      integrity,
+      keepalive,
+      mode,
+      redirect,
+      referrer,
+      referrerPolicy,
+      requestCache,
+      window
     };
     this.$interceptors = {
       onRequest,
@@ -3722,8 +4068,8 @@ class Karman {
     });
   }
   $use(plugin) {
-    if (!this.$root) throw new Error("[karman] plugins can only be installed from the root Karman!");
-    if (!isFunction(plugin?.install)) throw new TypeError("[karman] plugin must has an install function!");
+    if (!this.$root) throw new Error("[karman error] plugins can only be installed from the root Karman!");
+    if (!isFunction(plugin?.install)) throw new TypeError("[karman error] plugin must has an install function!");
     plugin.install(this);
     const onTraverse = k => {
       if (!(k instanceof Karman)) return;
@@ -3760,6 +4106,13 @@ class Karman {
     deps.forEach(dep => {
       if (dep instanceof TypeCheck) this._typeCheck = dep;else if (dep instanceof PathResolver) this._pathResolver = dep;
     });
+  }
+  $requestGuard(request) {
+    return (...args) => {
+      if (!this.#inherited) console.warn(
+      "[karman warn] Inherit event on Karman tree hasn't been triggered, please make sure you have specified the root Karman layer.");
+      return request(...args);
+    };
   }
   $invokeChildrenInherit() {
     this.$traverseInstanceTree({
@@ -3807,6 +4160,15 @@ let LayerBuilder = class LayerBuilder {
       responseType,
       headerMap,
       withCredentials,
+      credentials,
+      integrity,
+      keepalive,
+      mode,
+      redirect,
+      referrer,
+      referrerPolicy,
+      requestCache,
+      window,
       onRequest,
       onResponse,
       api,
@@ -3826,6 +4188,15 @@ let LayerBuilder = class LayerBuilder {
       responseType,
       headerMap,
       withCredentials,
+      credentials,
+      integrity,
+      keepalive,
+      mode,
+      redirect,
+      referrer,
+      referrerPolicy,
+      requestCache,
+      window,
       onRequest,
       onResponse
     });
@@ -3840,7 +4211,7 @@ let LayerBuilder = class LayerBuilder {
     });
     if (this.typeCheck.isObjectLiteral(api)) Object.entries(api).forEach(([key, value]) => {
       Object.defineProperty(currentKarman, key, {
-        value: value.bind(currentKarman),
+        value: currentKarman.$requestGuard(value.bind(currentKarman)),
         enumerable: true
       });
     });
@@ -3863,8 +4234,8 @@ let default_1 = class {
   ValidationEngine;
 };
 default_1 = __decorate([IOCContainer({
-  imports: [CachePipe$1, ApiFactory$1, LayerBuilder$1, Xhr$1, ScheduledTask$1, FunctionalValidator$1, ParameterDescriptorValidator$1, RegExpValidator, TypeValidator$1, ValidationEngine$1],
-  provides: [MemoryCache, PathResolver, TypeCheck, Template],
+  imports: [CachePipe$1, ApiFactory$1, LayerBuilder$1, Xhr$1, Fetch$1, ScheduledTask$1, FunctionalValidator$1, ParameterDescriptorValidator$1, RegExpValidator, TypeValidator$1, ValidationEngine$1],
+  provides: [MemoryCache, LocalStorageCache, SessionStorageCache, PathResolver, TypeCheck, Template],
   exports: [ApiFactory$1, LayerBuilder$1, ValidationEngine$1]
 })], default_1);
 var core = default_1;
@@ -3872,8 +4243,9 @@ var core = default_1;
 const facade = new core();
 const defineKarman = facade.LayerBuilder.configure.bind(facade.LayerBuilder);
 const defineAPI = facade.ApiFactory.createAPI.bind(facade.ApiFactory);
+const isValidationError = facade.ValidationEngine.isValidationError.bind(facade.ValidationEngine);
 const defineCustomValidator = facade.ValidationEngine.defineCustomValidator.bind(facade.ValidationEngine);
 const defineIntersectionRules = facade.ValidationEngine.defineIntersectionRules.bind(facade.ValidationEngine);
 const defineUnionRules = facade.ValidationEngine.defineUnionRules.bind(facade.ValidationEngine);
 
-export { defineAPI, defineCustomValidator, defineIntersectionRules, defineKarman, defineUnionRules };
+export { Karman, ValidationError, defineAPI, defineCustomValidator, defineIntersectionRules, defineKarman, defineUnionRules, isValidationError };

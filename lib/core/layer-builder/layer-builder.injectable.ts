@@ -19,11 +19,14 @@ export default class LayerBuilder {
     const {
       root,
       url,
+      // util config
       validation,
       scheduleInterval,
+      // cache config
       cache,
       cacheExpireTime,
       cacheStrategy,
+      // request config
       headers,
       auth,
       timeout,
@@ -31,8 +34,19 @@ export default class LayerBuilder {
       responseType,
       headerMap,
       withCredentials,
+      credentials,
+      integrity,
+      keepalive,
+      mode,
+      redirect,
+      referrer,
+      referrerPolicy,
+      requestCache,
+      window,
+      // hooks
       onRequest,
       onResponse,
+      // dependent types
       api,
       route,
     } = k;
@@ -51,6 +65,15 @@ export default class LayerBuilder {
       responseType,
       headerMap,
       withCredentials,
+      credentials,
+      integrity,
+      keepalive,
+      mode,
+      redirect,
+      referrer,
+      referrerPolicy,
+      requestCache,
+      window,
       onRequest,
       onResponse,
     });
@@ -68,7 +91,10 @@ export default class LayerBuilder {
 
     if (this.typeCheck.isObjectLiteral(api))
       Object.entries(api as Record<string, Function>).forEach(([key, value]) => {
-        Object.defineProperty(currentKarman, key, { value: value.bind(currentKarman), enumerable: true });
+        Object.defineProperty(currentKarman, key, {
+          value: currentKarman.$requestGuard(value.bind(currentKarman)),
+          enumerable: true,
+        });
       });
 
     if (root) {

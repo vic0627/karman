@@ -22,7 +22,7 @@ export default class Xhr implements RequestStrategy {
   ) {}
 
   public request<D, T extends ReqStrategyTypes>(payload: HttpBody, config: HttpConfig<T>): RequestDetail<D, T> {
-    const { url = "", method = "GET" } = config;
+    const { url, method = "GET" } = config;
     const [xhr, cleanup, requestKey] = this.initXhr({ method, url });
     this.setBasicSettings(xhr, config);
     const [reqExecutor, promiseExecutor] = this.buildPromise<D, T>(xhr, cleanup, config);
@@ -46,7 +46,7 @@ export default class Xhr implements RequestStrategy {
   ): [xhr: XMLHttpRequest, cleanup: () => void, requestKey: string] {
     const method = options.method?.toUpperCase() ?? "GET";
     const { url } = options;
-    const requestKey = `${method}:${url}`;
+    const requestKey = `xhr:${method}:${url}`;
     let xhr: XMLHttpRequest | null = new XMLHttpRequest();
     xhr.open(method, url, true);
 

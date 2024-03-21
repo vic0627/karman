@@ -12,6 +12,7 @@ export interface CacheData<T extends ReqStrategyTypes, D> {
 }
 
 export default abstract class CacheStrategy {
+  abstract name: string;
   /** 設置快取 */
   abstract set<T extends ReqStrategyTypes, D>(requestKey: string, cacheData: CacheData<T, D>): void;
   /** 刪除快取 */

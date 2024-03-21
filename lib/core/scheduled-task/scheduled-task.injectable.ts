@@ -1,4 +1,4 @@
-import type { Task } from "@/types/scheduledTask.type";
+import type { Task } from "@/types/scheduled-task.type";
 import Injectable from "@/decorator/Injectable.decorator";
 import TypeCheck from "@/utils/type-check.provider";
 
@@ -23,7 +23,7 @@ export default class ScheduledTask {
   constructor(private readonly typeCheck: TypeCheck) {}
 
   execute() {
-    this.#runTasks();
+    this.runTasks();
   }
 
   /**
@@ -45,7 +45,7 @@ export default class ScheduledTask {
    */
   addTask(task: Task) {
     this.#tasks.set(Math.random().toString(), task);
-    this.#startSchedule();
+    this.startSchedule();
   }
 
   /**
@@ -60,7 +60,7 @@ export default class ScheduledTask {
     }
 
     this.#tasks.set(key, task);
-    this.#startSchedule();
+    this.startSchedule();
   }
 
   /** 清除所有排程任務 */
@@ -71,7 +71,7 @@ export default class ScheduledTask {
   }
 
   /** 開始執行排程任務 */
-  #startSchedule() {
+  private startSchedule() {
     // 1. 當排程計時器運行中，就不初始化計時器
     if (!this.typeCheck.isUndefinedOrNull(this.#timer)) {
       return;
@@ -82,7 +82,7 @@ export default class ScheduledTask {
     // 2. 排程計時器初始化
     this.#timer = setInterval(() => {
       // 2-1. 執行排程任務
-      const size = this.#runTasks();
+      const size = this.runTasks();
 
       // 2-2. 當所有任務結束，清除計時器
       if (!size) {
@@ -95,7 +95,7 @@ export default class ScheduledTask {
    * 運行排程任務
    * @returns
    */
-  #runTasks() {
+  private runTasks() {
     // 1. 取得當前時間戳
     const now = Date.now();
     // console.log("啟動排程");

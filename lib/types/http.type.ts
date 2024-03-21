@@ -50,7 +50,8 @@ export interface HeadersConfig {
 
 export type ReqStrategyTypes = "xhr" | "fetch";
 
-export interface RequestConfig<T extends ReqStrategyTypes> {
+export interface RequestConfig<T extends ReqStrategyTypes>
+  extends Omit<RequestInit, "cache" | "method" | "signal" | "body"> {
   headers?: HeadersConfig;
   auth?: Partial<HttpAuthentication>;
   timeout?: number;
@@ -59,6 +60,10 @@ export interface RequestConfig<T extends ReqStrategyTypes> {
   headerMap?: boolean;
   withCredentials?: boolean;
   requestStrategy?: T;
+  /**
+   * Only available on fetch
+   */
+  requestCache?: RequestCache;
 }
 
 export interface ApiConfig<D, T extends ReqStrategyTypes, P extends PayloadDef>
@@ -92,7 +97,7 @@ export type XhrHooksHandler<D, T extends ReqStrategyTypes> = (
   executer: PromiseExecutor<D>,
 ) => void;
 
-export type RequestExecutor<D> = ((send?: boolean) => [requestPromise: Promise<D>, abortController: () => void]);
+export type RequestExecutor<D> = (send?: boolean) => [requestPromise: Promise<D>, abortController: () => void];
 
 export interface XhrResponse<D, T extends ReqStrategyTypes> {
   data: D;

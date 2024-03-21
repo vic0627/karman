@@ -6,21 +6,21 @@ import { defineCustomValidator } from "@karman";
 export default (required) => ({
   /**
    * 回傳筆數
-   * @type {R extends true ? number : import("@/karman").Optional<number>}
+   * @type {R extends true ? number : import("@karman").Optional<number>}
    */
-  limit: { query: true, rules: ["int", { min: 1, measurement: "self", required }] },
+  limit: { required, query: true, rules: ["int", { min: 1, measurement: "self" }] },
   /**
    * 排序策略
-   * @type {R extends true ? "asc" | "desc" | undefined : import("@/karman").Optional<"asc" | "desc" | undefined>}
+   * @type {R extends true ? "asc" | "desc" | undefined : import("@karman").Optional<"asc" | "desc" | undefined>}
    */
   sort: {
+    required,
     query: true,
     rules: [
       "string",
       defineCustomValidator((prop, value) => {
         if (!["asc", "desc"].includes(value)) throw new TypeError(`parameter "${prop}" must be "asc" or "desc"`);
       }),
-      { required },
     ],
   },
 });

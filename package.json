@@ -1,8 +1,8 @@
 {
   "name": "karman",
-  "version": "0.0.1",
-  "description": "",
-  "main": "dist/index.d.ts",
+  "version": "0.1.0",
+  "description": "API abstract layer / API centralized management builder",
+  "main": "dist/karman",
   "scripts": {
     "test": "jest",
     "lint": "eslint lib",
@@ -14,7 +14,12 @@
     "build": "node scripts/rollup/rollupBundle.js --manual",
     "prepare": "husky install"
   },
-  "keywords": [],
+  "keywords": [
+    "api",
+    "abstract",
+    "framework",
+    "centralized management"
+  ],
   "author": "VICTOR HSU",
   "license": "ISC",
   "devDependencies": {
@@ -52,5 +57,8 @@
     "reflect-metadata": "^0.1.13",
     "socket.io": "^4.7.2",
     "tslib": "^2.6.2"
+  },
+  "engines": {
+    "node": "20.9.0"
   }
 }

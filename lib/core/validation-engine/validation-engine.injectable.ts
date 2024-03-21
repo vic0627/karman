@@ -24,6 +24,10 @@ export default class ValidationEngine {
     private readonly template: Template,
   ) {}
 
+  public isValidationError(error: unknown): error is ValidationError {
+    return error instanceof ValidationError;
+  }
+
   public defineCustomValidator(validatefn: (param: string, value: any) => void): CustomValidator {
     if (!this.typeCheck.isFunction(validatefn)) {
       throw new TypeError("Invalid validator type.");

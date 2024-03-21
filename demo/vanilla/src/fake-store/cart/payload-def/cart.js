@@ -1,5 +1,5 @@
-import { defineCustomValidator } from "@karman";
-import { dateRegexp } from "../../payload-def/date-range"; 
+import { defineCustomValidator, ValidationError } from "@karman";
+import { dateRule } from "../../payload-def/date-range";
 import dtoCartProduct from "../dto/dto-cart-product";
 
 const body = true;
@@ -12,32 +12,36 @@ export default {
    * @type {number}
    */
   userId: {
+    required,
     body,
-    rules: ["int", { required, min: 1, measurement: "self" }],
+    rules: ["int", { min: 1 }],
   },
   /**
    * update date
    * @type {string}
    */
   date: {
+    required,
     body,
-    rules: ["string", dateRegexp, { required }],
+    rules: ["string", dateRule],
   },
   /**
    * products
    * @type {dtoCartProduct[]}
    */
   products: {
+    required,
     body,
     rules: [
       "array",
       defineCustomValidator((_, value) => {
         value.forEach(({ productId, quantity }) => {
-          if (typeof productId !== "number" || productId < 1) throw new Error("'productId' must be a positive number.");
-          if (typeof quantity !== "number" || quantity < 1) throw new Error("'quantity' must be a positive number.");
+          if (typeof productId !== "number" || productId < 1)
+            throw new ValidationError("'productId' must be a positive number.");
+          if (typeof quantity !== "number" || quantity < 1)
+            throw new ValidationError("'quantity' must be a positive number.");
         });
       }),
-      { required },
     ],
   },
 };

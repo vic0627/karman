@@ -1,4 +1,4 @@
-import { defineCustomValidator } from "@karman";
+import { defineCustomValidator, ValidationError } from "@karman";
 import category from "../dto/dto-category";
 
 export default (required, { path, query, body } = {}) => {
@@ -8,13 +8,13 @@ export default (required, { path, query, body } = {}) => {
      * @type {category}
      */
     category: {
+      required,
       rules: [
         "string",
         defineCustomValidator((_, value) => {
           if (!["electronics", "jewelery", "men's clothing", "women's clothing"].includes(value))
-            throw new TypeError("invalid category");
+            throw new ValidationError("invalid category");
         }),
-        { required },
       ],
     },
   };

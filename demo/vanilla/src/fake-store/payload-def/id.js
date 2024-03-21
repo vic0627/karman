@@ -5,7 +5,7 @@ export default (required, { path, query, body } = {}) => {
      * @min 1
      * @type {number}
      */
-    id: { rules: ["int", { min: 1, required, measurement: "self" }] },
+    id: { required, rules: ["int", { min: 1, measurement: "self" }] },
   };
 
   if (path !== undefined) rule.id.path = path;

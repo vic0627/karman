@@ -1,4 +1,4 @@
-import { AsyncHooks, KarmanInterceptors, SyncHooks } from "@/types/hooks.type";
+import { KarmanInterceptors } from "@/types/hooks.type";
 import { ReqStrategyTypes, RequestConfig } from "@/types/http.type";
 import { CacheConfig, KarmanInstanceConfig } from "@/types/karman.type";
 import { configInherit } from "@/core/out-of-paradigm/config-inherit";
@@ -78,6 +78,15 @@ export default class Karman {
       responseType,
       headerMap,
       withCredentials,
+      credentials,
+      integrity,
+      keepalive,
+      mode,
+      redirect,
+      referrer,
+      referrerPolicy,
+      requestCache,
+      window,
       onRequest,
       onResponse,
     } = config ?? {};
@@ -94,6 +103,15 @@ export default class Karman {
       responseType,
       headerMap,
       withCredentials,
+      credentials,
+      integrity,
+      keepalive,
+      mode,
+      redirect,
+      referrer,
+      referrerPolicy,
+      requestCache,
+      window,
     };
     this.$interceptors = { onRequest, onResponse };
   }
@@ -103,9 +121,9 @@ export default class Karman {
   }
 
   public $use<T extends { install(k: Karman): void }>(plugin: T) {
-    if (!this.$root) throw new Error("[karman] plugins can only be installed from the root Karman!");
+    if (!this.$root) throw new Error("[karman error] plugins can only be installed from the root Karman!");
 
-    if (!isFunction(plugin?.install)) throw new TypeError("[karman] plugin must has an install function!");
+    if (!isFunction(plugin?.install)) throw new TypeError("[karman error] plugin must has an install function!");
 
     plugin.install(this);
 
@@ -146,6 +164,18 @@ export default class Karman {
       if (dep instanceof TypeCheck) this._typeCheck = dep;
       else if (dep instanceof PathResolver) this._pathResolver = dep;
     });
+  }
+
+  public $requestGuard(request: Function) {
+    return (...args: any[]) => {
+      if (!this.#inherited)
+        console.warn(
+          // eslint-disable-next-line @stylistic/max-len
+          "[karman warn] Inherit event on Karman tree hasn't been triggered, please make sure you have specified the root Karman layer.",
+        );
+
+      return request(...args);
+    };
   }
 
   private $invokeChildrenInherit(): void {

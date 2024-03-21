@@ -1,7 +1,7 @@
 export default class Template {
   public withPrefix(options: { type?: "warn" | "error"; messages: (string | number)[] }) {
     const { type = "warn", messages } = options;
-    let t = `[karman warn] ${type}`;
+    let t = `[karman ${type}] `;
 
     for (const item of messages) {
       t += item;

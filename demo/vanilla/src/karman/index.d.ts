@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-type-constraint */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 type Primitive = string | number | boolean | bigint | symbol | undefined | object;
 
 type SelectPrimitive<T, D = any> = T extends Primitive ? T : D;
@@ -279,7 +277,7 @@ interface HeadersConfig {
   ["Authorization"]?: `Basic ${string}:${string}`;
 }
 
-interface RequestConfig<ST> {
+interface RequestConfig<ST> extends Omit<RequestInit, "cache" | "method" | "signal" | "body"> {
   headers?: HeadersConfig;
   auth?: Partial<HttpAuthentication>;
   timeout?: number;
@@ -288,6 +286,8 @@ interface RequestConfig<ST> {
   headerMap?: boolean;
   withCredentials?: boolean;
   requestStrategy?: ST;
+
+  requestCache?: RequestCache;
 }
 
 interface HttpConfig<ST> extends RequestConfig<ST> {
@@ -308,6 +308,21 @@ interface UtilConfig {
   scheduleInterval?: number;
 }
 
+interface ValidationErrorOptions extends ParameterDescriptor {
+  prop: string;
+  value: any;
+  message?: string;
+  type?: string;
+  instance?: ClassSignature;
+  required?: boolean;
+}
+
+export declare class ValidationError {
+  public readonly name: "ValidationError";
+
+  constructor(options: ValidationErrorOptions | string);
+}
+
 interface XhrResponse<D, ST> {
   data: D;
   status: number;
@@ -317,8 +332,22 @@ interface XhrResponse<D, ST> {
   request: XMLHttpRequest;
 }
 
-interface FetchResponse<D> extends Response {
-  json(): Promise<D>;
+interface FetchResponse<D> {
+  readonly headers: Headers;
+  readonly ok: boolean;
+  readonly redirected: boolean;
+  readonly status: number;
+  readonly statusText: string;
+  readonly type: ResponseType;
+  readonly url: string;
+  readonly body: D extends Primitive ? D : ReadableStream<Uint8Array> | ArrayBuffer | Blob | null;
+  readonly bodyUsed: boolean;
+  clone?(): FetchResponse<D>;
+  arrayBuffer?(): Promise<ArrayBuffer>;
+  blob?(): Promise<Blob>;
+  formData?(): Promise<FormData>;
+  text?(): Promise<string>;
+  json?(): Promise<D>;
 }
 
 type SelectResponseForm<ST, D> = ST extends "xhr" ? XhrResponse<D, ST> : ST extends "fetch" ? FetchResponse<D> : never;
@@ -344,29 +373,9 @@ interface IKarman {
   _pathResolver: PathResolver;
 }
 
-declare class Karman extends IKarman {
-  public _typeCheck: TypeCheck;
-  public _pathResolver: PathResolver;
-
-  private get $root(): boolean;
-  private set $root(value: boolean);
-  private get $baseURL(): string;
-  private set $baseURL(value: string);
-  private get $parent(): Karman | null;
-  private set $parent(value: Karman | null);
-  private $cacheConfig: CacheConfig;
-  private $requestConfig: RequestConfig<ReqStrategyTypes>;
-  private $hooks: Hooks<ReqStrategyTypes>;
-  private get $validation(): boolean | undefined;
-  private set $validation(value: boolean | undefined);
-  private get $scheduleInterval(): number | undefined;
-  private set $scheduleInterval(value: number | undefined);
-
+export declare class Karman implements IKarman {
   public $mount<O extends object>(o: O, name?: string): void;
   public $use<T extends { install(k: Karman): void }>(dependency: T): void;
-  private $inherit(): void;
-  private $setDependencies(...deps: (TypeCheck | PathResolver)[]): void;
-  private $invokeChildrenInherit(): void;
 }
 
 interface ApiOptions<ST, P, D, S, E> extends Hooks<ST, P, D, S, E>, UtilConfig, CacheConfig, RequestConfig<ST> {
@@ -390,14 +399,6 @@ interface ApiOptions<ST, P, D, S, E> extends Hooks<ST, P, D, S, E>, UtilConfig, 
    */
   dto?: D;
 }
-
-export function defineAPI<
-  ST extends ReqStrategyTypes = "xhr",
-  P extends unknown,
-  D extends unknown,
-  S extends unknown,
-  E extends unknown,
->(options: ApiOptions<ST, P, D, S, E>): FinalAPI<ST, P, D, S, E>;
 
 interface KarmanInterceptors {
   onRequest?(this: Karman, req: HttpConfig<ReqStrategyTypes>): void;
@@ -427,6 +428,14 @@ interface KarmanOptions<A, R>
    */
   route?: R;
 }
+
+export function defineAPI<
+  ST extends ReqStrategyTypes = "xhr",
+  P extends unknown,
+  D extends unknown,
+  S extends unknown,
+  E extends unknown,
+>(options: ApiOptions<ST, P, D, S, E>): FinalAPI<ST, P, D, S, E>;
 
 export function defineKarman<A extends unknown, R extends unknown>(
   options: KarmanOptions<A, R>,

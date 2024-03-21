@@ -42,8 +42,12 @@ export default defineKarman({
      */
     modify: defineAPI({
       method: "PUT",
-      payloadDef: user(false),
+      payloadDef: { ...user(false), ...id(true, { path: 0 }) },
       dto: dtoUser,
+      requestStrategy: "fetch",
+      onSuccess(res) {
+        return res.body;
+      },
     }),
     /**
      * ### delete a user

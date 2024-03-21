@@ -1,11 +1,27 @@
-import { defineAPI, defineKarman } from "@karman";
+import { defineAPI, defineIntersectionRules, defineKarman, defineUnionRules } from "@karman";
 import product from "./product";
 import cart from "./cart";
 import user from "./user";
 
 export default defineKarman({
   url: "https://fakestoreapi.com",
+  headers: {
+    "Content-Type": "application/json; charset=utf-8",
+  },
+  timeout: 0,
   api: {
+    ruleSetTest: defineAPI({
+      payloadDef: {
+        /** @type {string | number} */
+        param01: {
+          rules: defineUnionRules("char", "string", "number"),
+        },
+        /** @type {number} */
+        param02: {
+          rules: defineIntersectionRules("int", "number"),
+        },
+      },
+    }),
     stringTest: defineAPI({
       payloadDef: {
         /** @type {string} */

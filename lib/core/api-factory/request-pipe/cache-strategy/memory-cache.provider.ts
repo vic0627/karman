@@ -2,6 +2,7 @@ import CacheStrategy, { CacheData } from "@/abstract/cache-strategy.abstract";
 import { ReqStrategyTypes } from "@/types/http.type";
 
 export default class MemoryCache implements CacheStrategy {
+  public readonly name = "memory";
   private readonly store: Map<string, any> = new Map();
 
   set<T extends ReqStrategyTypes, D>(requestKey: string, cacheData: CacheData<T, D>): void {

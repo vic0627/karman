@@ -50,7 +50,7 @@ export default class ParameterDescriptorValidator implements Validator {
   }
 
   private rangeValidator(option: RangeValidateOption) {
-    const { equality, min, max, value, param } = option;
+    const { equality, min, max, value, param, measurement } = option;
 
     let valid: boolean | null = null;
 
@@ -62,6 +62,8 @@ export default class ParameterDescriptorValidator implements Validator {
       valid = max >= value;
     }
 
-    if (!this.typeCheck.isNull(valid) && !valid) throw new ValidationError({ prop: param, value, equality, min, max });
+    const prop = measurement && measurement !== "self" ? `${param}.${measurement}` : param;
+
+    if (!this.typeCheck.isNull(valid) && !valid) throw new ValidationError({ prop, value, equality, min, max });
   }
 }

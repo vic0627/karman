@@ -7,12 +7,16 @@ import { SelectRequestStrategy } from "@/abstract/request-strategy.abstract";
 import ScheduledTask from "@/core/scheduled-task/scheduled-task.injectable";
 import Injectable from "@/decorator/Injectable.decorator";
 import { isEqual } from "lodash-es";
+import LocalStorageCache from "./cache-strategy/local-storage-cache.provider";
+import SessionStorageCache from "./cache-strategy/session-storage-cache.provider";
 
 @Injectable()
 export default class CachePipe implements RequestPipe {
   constructor(
     private readonly scheduledTask: ScheduledTask,
     private readonly memoryCache: MemoryCache,
+    private readonly localStorageCache: LocalStorageCache,
+    private readonly sessionStorageCache: SessionStorageCache,
   ) {}
 
   public chain<D, T extends ReqStrategyTypes>(
@@ -43,7 +47,7 @@ export default class CachePipe implements RequestPipe {
     const newPromise = reqPromise.then(
       this.promiseCallbackFactory(requestKey, cache, {
         payload,
-        expiration: (expiration ?? currentT) + 1000 * 60 * 10,
+        expiration: (expiration ?? 1000 * 60 * 10) + currentT,
       }),
     );
 
@@ -52,6 +56,8 @@ export default class CachePipe implements RequestPipe {
 
   private getCacheStrategy(type: CacheStrategyTypes): CacheStrategy {
     if (type === "memory") return this.memoryCache;
+    else if (type === "localStorage") return this.localStorageCache;
+    else if (type === "sessionStorage") return this.sessionStorageCache;
     else throw new Error(`failed to use "${type}" cache strategy.`);
   }
 
@@ -62,7 +68,7 @@ export default class CachePipe implements RequestPipe {
   ) {
     return (res: SelectRequestStrategy<T, D>) => {
       const data = { ...cacheData, res };
-      this.scheduledTask.addSingletonTask("cache", (now) => cache.scheduledTask(now));
+      this.scheduledTask.addSingletonTask(cache.name, (now) => cache.scheduledTask(now));
       cache.set(requestKey, data);
 
       return res;

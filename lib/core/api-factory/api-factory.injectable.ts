@@ -3,7 +3,7 @@ import Xhr from "../request-strategy/xhr.injectable";
 import TypeCheck from "@/utils/type-check.provider";
 import { RuntimeOptions } from "@/types/final-api.type";
 import Karman from "../karman/karman";
-import { ApiConfig, HttpBody, ReqStrategyTypes, RequestConfig, RequestExecutor } from "@/types/http.type";
+import { ApiConfig, HttpBody, ReqStrategyTypes, RequestConfig } from "@/types/http.type";
 import PathResolver from "@/utils/path-rosolver.provider";
 import { CacheConfig, UtilConfig } from "@/types/karman.type";
 import { AsyncHooks, KarmanInterceptors, SyncHooks } from "@/types/hooks.type";
@@ -13,6 +13,7 @@ import CachePipe from "./request-pipe/cache-pipe.injectable";
 import Injectable from "@/decorator/Injectable.decorator";
 import { PayloadDef } from "@/types/payload-def.type";
 import { isEqual, cloneDeep } from "lodash-es";
+import Fetch from "../request-strategy/fetch.injectable";
 
 export type ApiReturns<D> = [resPromise: Promise<D>, abortControler: () => void];
 
@@ -52,6 +53,7 @@ export default class ApiFactory {
     private readonly pathResolver: PathResolver,
     private readonly validationEngine: ValidationEngine,
     private readonly xhr: Xhr,
+    private readonly fetch: Fetch,
     private readonly cachePipe: CachePipe,
   ) {}
 
@@ -149,11 +151,11 @@ export default class ApiFactory {
       // 5. cache pipe
       if (cacheConfig?.cache) {
         const { cacheExpireTime, cacheStrategy } = cacheConfig;
-        const executer = _af.cachePipe.chain(
+        const cacheExecuter = _af.cachePipe.chain(
           { requestKey, requestExecutor, promiseExecutor, config, payload },
           { cacheStrategyType: cacheStrategy, expiration: cacheExpireTime },
         );
-        const [chainPromise, abortController] = executer();
+        const [chainPromise, abortController] = cacheExecuter();
         const _chainPromise = _af.installHooks(this, chainPromise, { onSuccess, onError, onFinally, onResponse });
 
         return [_chainPromise, abortController];
@@ -227,14 +229,6 @@ export default class ApiFactory {
     return [requestURL, requestBody];
   }
 
-  private successChaining<T extends ReqStrategyTypes, D>(k: Karman, onSuccess?: (res: Response) => any) {
-    return (res: SelectRequestStrategy<T, D>) =>
-      new Promise((resolve) => {
-        if (this.typeCheck.isFunction(onSuccess)) resolve(onSuccess.call(k, res as Response));
-        else resolve(res);
-      });
-  }
-
   private installHooks<D, T extends ReqStrategyTypes>(
     k: Karman,
     reqPromise: Promise<SelectRequestStrategy<T, D>>,
@@ -270,7 +264,7 @@ export default class ApiFactory {
 
   private requestStrategySelector(requestStrategy?: ReqStrategyTypes): RequestStrategy {
     if (requestStrategy === "xhr" && !this.typeCheck.isUndefinedOrNull(XMLHttpRequest)) return this.xhr;
-    else if (requestStrategy === "fetch" && !this.typeCheck.isUndefinedOrNull(fetch)) return this.xhr;
+    else if (requestStrategy === "fetch" && !this.typeCheck.isUndefinedOrNull(fetch)) return this.fetch;
     else throw new Error("strategy not found.");
   }
 
@@ -286,6 +280,15 @@ export default class ApiFactory {
       headerMap,
       withCredentials,
       requestStrategy,
+      credentials,
+      integrity,
+      keepalive,
+      mode,
+      redirect,
+      referrer,
+      referrerPolicy,
+      requestCache,
+      window,
       // CacheConfig
       cache,
       cacheExpireTime,
@@ -301,6 +304,7 @@ export default class ApiFactory {
     } = runtimeOptions ?? {};
 
     const $$$requestConfig = {
+      requestStrategy,
       headers,
       auth,
       timeout,
@@ -308,7 +312,15 @@ export default class ApiFactory {
       responseType,
       headerMap,
       withCredentials,
-      requestStrategy,
+      credentials,
+      integrity,
+      keepalive,
+      mode,
+      redirect,
+      referrer,
+      referrerPolicy,
+      requestCache,
+      window,
     } as RequestConfig<T>;
 
     const $$$cacheConfig = {
@@ -343,6 +355,7 @@ export default class ApiFactory {
       method,
       payloadDef,
       // RequestConfig
+      requestStrategy,
       headers,
       auth,
       timeout,
@@ -350,7 +363,15 @@ export default class ApiFactory {
       responseType,
       headerMap,
       withCredentials,
-      requestStrategy,
+      credentials,
+      integrity,
+      keepalive,
+      mode,
+      redirect,
+      referrer,
+      referrerPolicy,
+      requestCache,
+      window,
       // CacheConfig
       cache,
       cacheExpireTime,
@@ -381,6 +402,15 @@ export default class ApiFactory {
       headerMap,
       withCredentials,
       requestStrategy,
+      credentials,
+      integrity,
+      keepalive,
+      mode,
+      redirect,
+      referrer,
+      referrerPolicy,
+      requestCache,
+      window,
     } as RequestConfig<T>;
 
     const $$cacheConfig = {
