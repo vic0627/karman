@@ -1,8 +1,29 @@
-<h1 style="width: 100%; text-align: center; font-size: 45px;">karman</h1>
-<p style="width: 100%; text-align: center;">HTTP client / API centralized management / API abstract layer builder</p>
+# karman
 
-## Table of Contents
+HTTP 客戶端 / API 中心化管理 / API 抽象層
 
-- Features
+## 目錄
 
-## Features
+- [特色](#特色)
+- [開始](#開始)
+
+## 特色
+
+- 彙整瀏覽器 XMLHttpRequest 與 fetch 請求策略
+- 樹狀結構路由管理
+- 配置的繼承與複寫
+- 請求與響應的攔截
+- 請求方法的生命週期
+- 響應的快取機制
+- 取消請求方法
+- 統一請求方法的 I/O 介面
+- 依值型別實現請求方法的 I/O 介面的 DTO
+- 參數驗證引擎
+
+## 開始
+
+### 什麼是 karman ？
+
+> karman 取自於地球與外太空的交界處「卡門線 Kármán line」，用來比喻前後端交界處的抽象概念。
+
+karman 是一款用於建構 API 抽象層的 JavaScript 套件，以樹狀結構管理 API 的路由、路由上的方法、與配置，並提供
