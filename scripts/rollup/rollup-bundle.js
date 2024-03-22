@@ -1,8 +1,14 @@
 const { rollup } = require("rollup");
-const emptyDirectory = require("../utils/emptyDirectory.js");
-const timeLog = require("../utils/timeLog.js");
+const { resolve } = require("path");
+const emptyDirectory = require("../utils/empty-directory.js");
+const timeLog = require("../utils/time-log.js");
+const copyFile = require("../utils/copy-file.js");
 
 const MANUAL_BUILD = process.argv[2] === "--manual";
+
+const relativePathToRoot = "../../";
+
+const getPath = (...paths) => resolve(__dirname, relativePathToRoot, ...paths);
 
 const build = async (callback) => {
   /** @type {import('rollup').RollupBuild | undefined} */
@@ -16,7 +22,7 @@ const build = async (callback) => {
 
     if (!clean) throw new Error('failed to clean up "dist" dir');
 
-    const { input, output, plugins } = require("./rollupConfig.js");
+    const { input, output, plugins } = require("./rollup-config.js");
 
     /** @param {import('rollup').RollupBuild} bundle  */
     const generateOutputs = async (bundle) => {
@@ -38,6 +44,7 @@ const build = async (callback) => {
   }
 
   if (bundle) {
+    copyFile(getPath("./declrations/index.d.ts"), getPath("./dist/karman.d.ts"));
     await bundle.close();
   }
 

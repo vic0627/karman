@@ -9,9 +9,9 @@
     "lint:ts": "tsc --strict --noEmit",
     "lint:fix": "eslint lib --fix",
     "format": "prettier . --write",
-    "dev": "rollup -c scripts/rollup/rollupConfig.js --watch",
-    "dev:browser": "node scripts/browserServer.js",
-    "build": "node scripts/rollup/rollupBundle.js --manual",
+    "dev": "rollup -c scripts/rollup/rollup-config.js --watch",
+    "dev:browser": "node scripts/browser-server.js",
+    "build": "node scripts/rollup/rollup-bundle.js --manual",
     "prepare": "husky install"
   },
   "keywords": [

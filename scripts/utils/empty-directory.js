@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const { promisify } = require("util");
-const timeLog = require("../utils/timeLog.js");
+const timeLog = require("./time-log.js");
 const readdir = promisify(fs.readdir);
 const unlink = promisify(fs.unlink);
 const rmdir = promisify(fs.rmdir);

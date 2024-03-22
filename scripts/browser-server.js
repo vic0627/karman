@@ -3,9 +3,9 @@ const path = require("path");
 const fs = require("fs");
 const chokidar = require("chokidar");
 const socket = require("socket.io");
-const rollupBuild = require("./rollup/rollupBundle.js");
+const rollupBuild = require("./rollup/rollup-bundle.js");
 const ansi = require("./utils/ansi.js");
-const timeLog = require("./utils/timeLog.js");
+const timeLog = require("./utils/time-log.js");
 
 const PORT = process.argv[2] || 5678;
 const URL = `http://localhost:${PORT}/`;
