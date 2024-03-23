@@ -103,6 +103,10 @@ export default class ApiFactory {
       const { onBeforeValidate, onBeforeRequest, onError, onFinally, onSuccess } = hooks ?? {};
       const { onRequest, onResponse } = interceptors ?? {};
 
+      /**
+       * @todo redesign interceptors/hooks invoked timeming
+       */
+
       // 1. validation
       if (validation) {
         if (_af.typeCheck.isFunction(onBeforeValidate)) onBeforeValidate.call(this, payloadDef, payload);
@@ -110,21 +114,15 @@ export default class ApiFactory {
         validator();
       }
 
-      let _payload: HttpBody = payload as HttpBody;
-
-      if (_af.typeCheck.isFunction(onBeforeRequest)) {
-        _payload = (onBeforeRequest.call(this, endpoint, _payload) as HttpBody) ?? (payload as HttpBody);
-      }
-
       // 2. parameter builder
       const [requestURL, requestBody] = _af.preqBuilder.call(_af, {
         baseURL,
         endpoint,
-        payload: _payload as Record<string, any>,
+        payload,
         payloadDef,
       });
 
-      const _requestBody =
+      let _requestBody: string | Record<string, any> | HttpBody =
         headers?.["Content-Type"]?.includes("json") && _af.typeCheck.isObjectLiteral(requestBody)
           ? JSON.stringify(requestBody)
           : requestBody;
@@ -136,6 +134,10 @@ export default class ApiFactory {
       };
 
       onRequest?.call(this, httpConfig);
+
+      if (_af.typeCheck.isFunction(onBeforeRequest)) {
+        _requestBody = (onBeforeRequest.call(this, requestURL, _requestBody) as HttpBody) ?? (_requestBody as HttpBody);
+      }
 
       // 3. request sending
       const reqStrategy = _af.requestStrategySelector(requestStrategy);

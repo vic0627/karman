@@ -219,7 +219,6 @@ type GetPayloadType<P> = {
 
 interface ValidationHooks<P> {
   onBeforeValidate?(this: Karman, payloadDef: P, payload: GetPayloadType<P>): void;
-  onValidateError?(this: Karman, error: Error): void;
 }
 
 interface SyncHooks<P> extends ValidationHooks<P> {
