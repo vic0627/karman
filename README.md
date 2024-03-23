@@ -552,8 +552,56 @@ karman.ruleSetTest({ param03: false })  // Valid
 
 攔截器與 hooks，都是在 final API 執行時的某個生命週期中執行，兩者的差異主要是：
 
-- Interceptors：於 karman node 上配置，主要攔截該節點以下的所有 final API 的請求（req）與響應（res）物件，可以實現存取物件屬性並有條件地執行副作用等功能，但攔截器不具備返回值，無法透過返回值來改變請求或響應物件，且只能以同步任務定義。
-- Hooks：於定義 API 時配置，只適用於該 final API，某些 hooks 可以以非同步任務定義，或具備返回值，可透過返回值來改變特定參數。
+- **Interceptors**
+    
+    於 karman node 上配置，主要攔截該節點以下的所有 final API 的請求（req）與響應（res）物件，可以實現存取物件屬性並有條件地執行副作用等功能，但攔截器不具備返回值，無法透過返回值來改變請求或響應物件，且只能以同步任務定義。
+
+    - onRequest：攔截請求物件，包括請求的 url、method、headers 等。
+    - onResponse：攔截響應物件，依照每個 final API 選用的請求策略不同，可能會有不同規格，在物件屬性的存取上需稍加注意。
+
+- **Hooks**
+    
+    於定義 API 時配置，只適用於該 final API，某些 hooks 可以以非同步任務定義，或具備返回值，可透過返回值來改變某些行為或參數。
+
+    - onBeforeValidate：於驗證前調用，但若 `validation === false` 則會被忽略，會接收 `payloadDef` 與 `payload` 作為參數，通常可以用來動態改變驗證規則、給予參數預設值、手動對較複雜的參數類型進行驗證等。
+    - onBeforeRequest：於請求
+
+```js
+import { defineKarman, defineAPI } from "karman"
+
+export default defineKarman({
+    // ...
+    // Interceptors
+    onRequest(req) {
+        console.log("onRequest")
+    },
+    onResponse(res) {
+        console.log("onResponse")
+    },
+    api: {
+        hookTest: defineAPI({
+            // ...
+            // Hooks
+            onBeforeValidate(payloadDef, payload) {
+                console.log("onBeforeValidate")
+            },
+            onBeforeRequest(endpoint, payload) {
+                console.log("onBeforeRequest")
+            },
+            // 以下 hooks 可以用異步任務配置
+            async onSuccess(res) {
+                console.log("onSuccess")
+            },
+            async onError(err) {
+                console.log("onError")
+            },
+            async onFinally() {
+                console.log("onFinally")
+            }
+        })
+    }
+})
+```
 
 ### Response Caching
 
