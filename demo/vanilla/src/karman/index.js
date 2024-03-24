@@ -3562,13 +3562,15 @@ let ApiFactory = class ApiFactory {
   xhr;
   fetch;
   cachePipe;
-  constructor(typeCheck, pathResolver, validationEngine, xhr, fetch, cachePipe) {
+  template;
+  constructor(typeCheck, pathResolver, validationEngine, xhr, fetch, cachePipe, template) {
     this.typeCheck = typeCheck;
     this.pathResolver = pathResolver;
     this.validationEngine = validationEngine;
     this.xhr = xhr;
     this.fetch = fetch;
     this.cachePipe = cachePipe;
+    this.template = template;
   }
   createAPI(apiConfig) {
     const {
@@ -3619,6 +3621,7 @@ let ApiFactory = class ApiFactory {
       } = utilConfig ?? {};
       const {
         onBeforeValidate,
+        onRebuildPayload,
         onBeforeRequest,
         onError,
         onFinally,
@@ -3629,38 +3632,32 @@ let ApiFactory = class ApiFactory {
         onResponse
       } = interceptors ?? {};
       if (validation) {
-        if (_af.typeCheck.isFunction(onBeforeValidate)) onBeforeValidate.call(this, payloadDef, payload);
+        _af.hooksInvocator(this, onBeforeValidate, payloadDef, payload);
         const validator = _af.validationEngine.getMainValidator(payload, payloadDef);
         validator();
       }
-      let _payload = payload;
-      if (_af.typeCheck.isFunction(onBeforeRequest)) {
-        _payload = onBeforeRequest.call(this, endpoint, _payload) ?? payload;
-      }
+      const _payload = _af.hooksInvocator(this, onRebuildPayload, payload);
       const [requestURL, requestBody] = _af.preqBuilder.call(_af, {
         baseURL,
         endpoint,
         payload: _payload,
         payloadDef
       });
-      const _requestBody = headers?.["Content-Type"]?.includes("json") && _af.typeCheck.isObjectLiteral(requestBody) ? JSON.stringify(requestBody) : requestBody;
+      let _requestBody = _af.hooksInvocator(this, onBeforeRequest, requestURL, requestBody);
+      _requestBody ??= headers?.["Content-Type"]?.includes("json") && _af.typeCheck.isObjectLiteral(requestBody) ? JSON.stringify(requestBody) : requestBody;
       const httpConfig = {
         url: requestURL,
         method,
         ...requestConfig
       };
-      onRequest?.call(this, httpConfig);
+      _af.hooksInvocator(this, onRequest, httpConfig);
       const reqStrategy = _af.requestStrategySelector(requestStrategy);
       const {
         requestKey,
         requestExecutor,
         promiseExecutor,
         config
-      } = reqStrategy.request(_requestBody, {
-        url: requestURL,
-        method,
-        ...requestConfig
-      });
+      } = reqStrategy.request(_requestBody, httpConfig);
       if (cacheConfig?.cache) {
         const {
           cacheExpireTime,
@@ -3695,6 +3692,9 @@ let ApiFactory = class ApiFactory {
       return [_requestPromise, abortController];
     }
     return finalAPI;
+  }
+  hooksInvocator(k, hooks, ...args) {
+    if (this.typeCheck.isFunction(hooks)) return hooks.call(k, ...args);
   }
   configInheritance(options) {
     const {
@@ -3746,6 +3746,7 @@ let ApiFactory = class ApiFactory {
       payloadDef,
       payload
     } = preqBuilderOptions;
+    if (!this.typeCheck.isObjectLiteral(payload)) this.template.throw("payload must be an normal object");
     const urlSources = [baseURL, endpoint];
     const pathParams = [];
     const queryParams = {};
@@ -3783,7 +3784,7 @@ let ApiFactory = class ApiFactory {
     })).catch(err => new Promise((resolve, reject) => {
       if (this.typeCheck.isFunction(onError)) resolve(onError.call(k, err));else reject(err);
     })).finally(() => new Promise(resolve => {
-      if (this.typeCheck.isFunction(onFinally)) resolve(onFinally.call(this));else resolve(void 0);
+      if (this.typeCheck.isFunction(onFinally)) resolve(onFinally.call(k));else resolve(void 0);
     }));
   }
   requestStrategySelector(requestStrategy) {
@@ -3813,6 +3814,7 @@ let ApiFactory = class ApiFactory {
       cacheStrategy,
       validation,
       onBeforeValidate,
+      onRebuildPayload,
       onBeforeRequest,
       onSuccess,
       onError,
@@ -3847,6 +3849,7 @@ let ApiFactory = class ApiFactory {
     };
     const $$$hooks = {
       onBeforeValidate,
+      onRebuildPayload,
       onBeforeRequest,
       onSuccess,
       onError,
@@ -3887,6 +3890,7 @@ let ApiFactory = class ApiFactory {
       validation,
       scheduleInterval,
       onBeforeValidate,
+      onRebuildPayload,
       onBeforeRequest,
       onSuccess,
       onError,
@@ -3927,6 +3931,7 @@ let ApiFactory = class ApiFactory {
     };
     const $$hooks = {
       onBeforeValidate,
+      onRebuildPayload,
       onBeforeRequest,
       onSuccess,
       onError,
@@ -3941,7 +3946,7 @@ let ApiFactory = class ApiFactory {
     });
   }
 };
-ApiFactory = __decorate([Injectable(), __metadata("design:paramtypes", [TypeCheck, PathResolver, ValidationEngine$1, Xhr$1, Fetch$1, CachePipe$1])], ApiFactory);
+ApiFactory = __decorate([Injectable(), __metadata("design:paramtypes", [TypeCheck, PathResolver, ValidationEngine$1, Xhr$1, Fetch$1, CachePipe$1, Template])], ApiFactory);
 var ApiFactory$1 = ApiFactory;
 
 var numberTag = '[object Number]';

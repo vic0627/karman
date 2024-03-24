@@ -14,6 +14,7 @@ import Injectable from "@/decorator/Injectable.decorator";
 import { PayloadDef } from "@/types/payload-def.type";
 import { isEqual, cloneDeep } from "lodash-es";
 import Fetch from "../request-strategy/fetch.injectable";
+import Template from "@/utils/template.provider";
 
 export type ApiReturns<D> = [resPromise: Promise<D>, abortControler: () => void];
 
@@ -43,7 +44,7 @@ export interface AllConfigCache<D, T extends ReqStrategyTypes>
 
 export interface PreqBuilderOptions<D, T extends ReqStrategyTypes>
   extends Required<Pick<AllConfigCache<D, T>, "baseURL" | "endpoint" | "payloadDef">> {
-  payload: Record<string, any>;
+  payload?: Record<string, any>;
 }
 
 @Injectable()
@@ -55,6 +56,7 @@ export default class ApiFactory {
     private readonly xhr: Xhr,
     private readonly fetch: Fetch,
     private readonly cachePipe: CachePipe,
+    private readonly template: Template,
   ) {}
 
   // 調用時還不會接收到完整的配置
@@ -100,54 +102,50 @@ export default class ApiFactory {
       } = allConfigCache;
       const { requestStrategy = "xhr", headers } = requestConfig;
       const { validation } = utilConfig ?? {};
-      const { onBeforeValidate, onBeforeRequest, onError, onFinally, onSuccess } = hooks ?? {};
+      const { onBeforeValidate, onRebuildPayload, onBeforeRequest, onError, onFinally, onSuccess } = hooks ?? {};
       const { onRequest, onResponse } = interceptors ?? {};
-
-      /**
-       * @todo redesign interceptors/hooks invoked timeming
-       */
 
       // 1. validation
       if (validation) {
-        if (_af.typeCheck.isFunction(onBeforeValidate)) onBeforeValidate.call(this, payloadDef, payload);
+        _af.hooksInvocator(this, onBeforeValidate, payloadDef, payload);
         const validator = _af.validationEngine.getMainValidator(payload, payloadDef);
         validator();
       }
+
+      const _payload = _af.hooksInvocator(this, onRebuildPayload, payload);
 
       // 2. parameter builder
       const [requestURL, requestBody] = _af.preqBuilder.call(_af, {
         baseURL,
         endpoint,
-        payload,
+        payload: (_payload as Record<string, any> | undefined) ?? payload,
         payloadDef,
       });
 
-      let _requestBody: string | Record<string, any> | HttpBody =
+      // 3. automatic transformation of payload
+      let _requestBody: Record<string, any> | HttpBody | void = _af.hooksInvocator(
+        this,
+        onBeforeRequest as any,
+        requestURL,
+        requestBody as any,
+      );
+
+      _requestBody ??=
         headers?.["Content-Type"]?.includes("json") && _af.typeCheck.isObjectLiteral(requestBody)
           ? JSON.stringify(requestBody)
           : requestBody;
 
+      // 4. request execution
       const httpConfig = {
         url: requestURL,
         method,
         ...requestConfig,
       };
-
-      onRequest?.call(this, httpConfig);
-
-      if (_af.typeCheck.isFunction(onBeforeRequest)) {
-        _requestBody = (onBeforeRequest.call(this, requestURL, _requestBody) as HttpBody) ?? (_requestBody as HttpBody);
-      }
-
-      // 3. request sending
+      _af.hooksInvocator(this, onRequest, httpConfig);
       const reqStrategy = _af.requestStrategySelector(requestStrategy);
       const { requestKey, requestExecutor, promiseExecutor, config } = reqStrategy.request<D, T>(
         _requestBody as HttpBody,
-        {
-          url: requestURL,
-          method,
-          ...requestConfig,
-        },
+        httpConfig,
       );
 
       // 5. cache pipe
@@ -170,6 +168,10 @@ export default class ApiFactory {
     }
 
     return finalAPI;
+  }
+
+  private hooksInvocator<F extends (...args: T[]) => R, T, R>(k: Karman, hooks?: F, ...args: T[]): R | void {
+    if (this.typeCheck.isFunction(hooks)) return hooks.call(k, ...args);
   }
 
   private configInheritance<D>(
@@ -208,6 +210,9 @@ export default class ApiFactory {
     preqBuilderOptions: PreqBuilderOptions<D, T>,
   ): [requestURL: string, requestBody: Record<string, any>] {
     const { baseURL, endpoint, payloadDef, payload } = preqBuilderOptions;
+
+    if (!this.typeCheck.isObjectLiteral(payload)) this.template.throw("payload must be an normal object");
+
     const urlSources: string[] = [baseURL, endpoint];
     const pathParams: string[] = [];
     const queryParams: Record<string, string> = {};
@@ -215,7 +220,7 @@ export default class ApiFactory {
 
     Object.entries(payloadDef).forEach(([param, def]) => {
       const { path, query, body } = def;
-      const value = payload[param as keyof typeof payload];
+      const value = (payload as Record<string, any>)[param as keyof typeof payload];
 
       if (this.typeCheck.isUndefinedOrNull(value)) return;
 
@@ -225,7 +230,6 @@ export default class ApiFactory {
     });
 
     urlSources.push(...pathParams.filter((p) => p));
-    // console.warn(urlSources, queryParams);
     const requestURL = this.pathResolver.resolveURL({ paths: urlSources, query: queryParams });
 
     return [requestURL, requestBody];
@@ -238,16 +242,17 @@ export default class ApiFactory {
   ) {
     return reqPromise
       .then((res) => {
-        if (this.typeCheck.isFunction(onResponse)) onResponse.call(k, res as any);
+        this.hooksInvocator(k, onResponse, res);
+
         return res;
       })
-      .then(
-        (res) =>
-          new Promise((resolve) => {
-            if (this.typeCheck.isFunction(onSuccess)) resolve(onSuccess.call(k, res as Response));
-            else resolve(res);
-          }),
-      )
+      .then((res) => {
+        return new Promise((resolve) => {
+          resolve(this.hooksInvocator(k, onSuccess, res));
+          if (this.typeCheck.isFunction(onSuccess)) resolve(onSuccess.call(k, res as Response));
+          else resolve(res);
+        }).then((res) => {});
+      })
       .catch(
         (err) =>
           new Promise((resolve, reject) => {
@@ -258,7 +263,7 @@ export default class ApiFactory {
       .finally(
         () =>
           new Promise((resolve) => {
-            if (this.typeCheck.isFunction(onFinally)) resolve(onFinally.call(this));
+            if (this.typeCheck.isFunction(onFinally)) resolve(onFinally.call(k));
             else resolve(void 0);
           }),
       ) as Promise<SelectRequestStrategy<T, D>>;
@@ -299,6 +304,7 @@ export default class ApiFactory {
       validation,
       // hooks
       onBeforeValidate,
+      onRebuildPayload,
       onBeforeRequest,
       onSuccess,
       onError,
@@ -335,6 +341,7 @@ export default class ApiFactory {
 
     const $$$hooks = {
       onBeforeValidate,
+      onRebuildPayload,
       onBeforeRequest,
       onSuccess,
       onError,
@@ -383,6 +390,7 @@ export default class ApiFactory {
       scheduleInterval,
       // hooks
       onBeforeValidate,
+      onRebuildPayload,
       onBeforeRequest,
       onSuccess,
       onError,
@@ -428,6 +436,7 @@ export default class ApiFactory {
 
     const $$hooks = {
       onBeforeValidate,
+      onRebuildPayload,
       onBeforeRequest,
       onSuccess,
       onError,

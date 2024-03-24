@@ -300,13 +300,6 @@ karman.someAPI() // console output: true "foo/bar" 5
 
 「final API」是透過 `defineAPI()` 設置於 karman node 的 `api` 內的方法，且與 karman tree 同樣會有繼承與複寫的行為，final API 會在初始化時先記錄由 `defineAPI()` 給予的配置，並在運行時引用所屬 karman node 的配置後再以初始化時紀錄的配置進行複寫。
 
-final API 的配置繼承與複寫分為幾個階段：
-
-- defineAPI 配置：此階段會先暫存接收到的配置，提供後續的繼承與複寫。
-- runtime 配置：final API 被呼叫時會提供最後複寫配置的機會，若有接收到配置，會先進行暫存動作。
-- 第一階段繼承：此階段會先比較 runtime 配置與暫存的 runtime 配置，若前後兩次的配置相同，會略過此階段的繼承行為，否則以 runtime 配置複寫 defineAPI 的配置。
-- 第二階段繼承：此階段會引用 final API 所屬 karman node 的配置，並以第一階段繼承後的配置進行複寫，進而獲得 final API 的最終配置。
-
 final API 同樣可以選擇配置 url 或 url 的片段，當今天某路由上可能只有零星幾個 API 時，可以考慮將他們配置到父節點上，而不用另外在建立新的節點，讓路由的配置可以更彈性。
 
 ```js
@@ -324,6 +317,29 @@ export default defineKarmna({
     }
 })
 ```
+
+#### Syntax
+
+在調用 final API 時，與一般 HTTP Client 不同，final API 本身是同步任務，會先進行如：參數驗證、參數構建、初始化請求所需資料與配置等任務，並返回用戶端一個等待響應結果的 Promise 與一個取消請求方法，用戶端需要另外等待該 Promise fullfilled 之後，才會拿到該次響應結果。
+
+```js
+const [resPromise, abort] = karman.finalAPI(payload[, config])
+```
+
+- `resPromise`：響應結果，本身為一個 Promise 物件，可用 async/await 或 Promise chain 來獲取資料。
+- `abort`：取消請求方法，是同步任務。
+- `payload`：final API 主要接收的參數物件，為定義 final API 時透過 payloadDef 來決定此物件須具備甚麼屬性參數，倘若 payloadDef 並未定義所需參數，調用 final API 時又有設定 config 的需求時，payload 可傳入空物件、undefined、null 等值。
+- `config`：最後複寫 API 配置的參數，但無法複寫如：url、HTTP Method、payloadDef 等初始配置。
+
+#### Inheritance
+
+final API 的配置繼承與複寫分為幾個階段：
+
+- defineAPI 配置：此階段會先暫存接收到的配置，提供後續的繼承與複寫。
+- runtime 配置：final API 被呼叫時會提供最後複寫配置的機會，若有接收到配置，會先進行暫存動作。
+- 第一階段繼承：此階段會先比較 runtime 配置與暫存的 runtime 配置，若前後兩次的配置相同，會略過此階段的繼承行為，否則以 runtime 配置複寫 defineAPI 的配置。
+- 第二階段繼承：此階段會引用 final API 所屬 karman node 的配置，並以第一階段繼承後的配置進行複寫，進而獲得 final API 的最終配置。
+
 
 #### Request Strategy
 
@@ -564,7 +580,11 @@ karman.ruleSetTest({ param03: false })  // Valid
     於定義 API 時配置，只適用於該 final API，某些 hooks 可以以非同步任務定義，或具備返回值，可透過返回值來改變某些行為或參數。
 
     - onBeforeValidate：於驗證前調用，但若 `validation === false` 則會被忽略，會接收 `payloadDef` 與 `payload` 作為參數，通常可以用來動態改變驗證規則、給予參數預設值、手動對較複雜的參數類型進行驗證等。
-    - onBeforeRequest：於請求
+    - onRebuildPayload：會在建構最終的請求 url 及請求體前執行，可以用來給予參數預設值或對 payload 物件進行其他資料處理的動作，可以擁有返回值，但必須是一個物件。
+    - onBeforeRequest：於建立請求前呼叫，可以用來建立請求體，像是建立 FormData 等動作。
+    - onSuccess：請求成功時呼叫，可配置非同步任務，通常用於接收到響應結果後初步的資料處理。
+    - onError：
+    - onFinally：
 
 ```js
 import { defineKarman, defineAPI } from "karman"
@@ -584,6 +604,9 @@ export default defineKarman({
             // Hooks
             onBeforeValidate(payloadDef, payload) {
                 console.log("onBeforeValidate")
+            },
+            onRebuildPayload(payload) {
+                console.log("onRebuildPayload")
             },
             onBeforeRequest(endpoint, payload) {
                 console.log("onBeforeRequest")

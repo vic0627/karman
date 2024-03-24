@@ -1,21 +1,21 @@
 import Karman from "@/core/karman/karman";
-import { HttpBody, HttpConfig, ReqStrategyTypes, XhrResponse } from "./http.type";
+import { HttpBody, HttpConfig, ReqStrategyTypes } from "./http.type";
 import { PayloadDef } from "./payload-def.type";
-import { FetchResponse } from "declrations";
 import { SelectRequestStrategy } from "@/abstract/request-strategy.abstract";
 
 export interface ValidationHooks {
-  onBeforeValidate?(payloadDef: PayloadDef, payload: Record<string, any>): void;
+  onBeforeValidate?(this: Karman, payloadDef: PayloadDef, payload: Record<string, any>): void;
 }
 
 export interface SyncHooks extends ValidationHooks {
-  onBeforeRequest?<T = Record<string, any>>(requestURL: string, payload: T): HttpBody | T;
+  onRebuildPayload?<T extends Record<string, any>>(this: Karman, payload: T): T | void;
+  onBeforeRequest?(this: Karman, requestURL: string, payload: Record<string, any>): HttpBody | void;
 }
 
 export interface AsyncHooks {
-  onSuccess?(res: SelectRequestStrategy<ReqStrategyTypes, any>): any;
-  onError?(err: Error): void;
-  onFinally?(): void;
+  onSuccess?(this: Karman, res: SelectRequestStrategy<ReqStrategyTypes, any>): any;
+  onError?(this: Karman, err: Error): void;
+  onFinally?(this: Karman): void;
 }
 
 export interface KarmanInterceptors {
