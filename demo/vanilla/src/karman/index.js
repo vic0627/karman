@@ -2540,7 +2540,8 @@ let Xhr = class Xhr {
     reject(new Error(`Network Error ${url} ${status}`));
   }
   handleLoadend(_, config, xhr, {
-    resolve
+    resolve,
+    reject
   }) {
     if (!xhr) return;
     const {
@@ -2562,7 +2563,7 @@ let Xhr = class Xhr {
       config,
       request: xhr
     };
-    resolve(res);
+    if (status === 200) resolve(res);else reject(res);
   }
   getHeaderMap(headers) {
     if (!headers) return {};
@@ -3640,7 +3641,7 @@ let ApiFactory = class ApiFactory {
       const [requestURL, requestBody] = _af.preqBuilder.call(_af, {
         baseURL,
         endpoint,
-        payload: _payload,
+        payload: _payload ?? payload,
         payloadDef
       });
       let _requestBody = _af.hooksInvocator(this, onBeforeRequest, requestURL, requestBody);
@@ -3776,16 +3777,20 @@ let ApiFactory = class ApiFactory {
     onFinally,
     onResponse
   }) {
-    return reqPromise.then(res => {
-      if (this.typeCheck.isFunction(onResponse)) onResponse.call(k, res);
-      return res;
-    }).then(res => new Promise(resolve => {
-      if (this.typeCheck.isFunction(onSuccess)) resolve(onSuccess.call(k, res));else resolve(res);
-    })).catch(err => new Promise((resolve, reject) => {
-      if (this.typeCheck.isFunction(onError)) resolve(onError.call(k, err));else reject(err);
-    })).finally(() => new Promise(resolve => {
-      if (this.typeCheck.isFunction(onFinally)) resolve(onFinally.call(k));else resolve(void 0);
-    }));
+    return (async () => {
+      try {
+        const res = await reqPromise;
+        this.hooksInvocator(k, onResponse, res);
+        const _res = await this.hooksInvocator(k, onSuccess, res);
+        return _res ?? res;
+      } catch (error) {
+        const err = await this.hooksInvocator(k, onError, error);
+        const hasReturn = !this.typeCheck.isUndefined(err) && !(err instanceof Error);
+        if (hasReturn) return err;else throw err;
+      } finally {
+        await this.hooksInvocator(k, onFinally);
+      }
+    })();
   }
   requestStrategySelector(requestStrategy) {
     if (requestStrategy === "xhr" && !this.typeCheck.isUndefinedOrNull(XMLHttpRequest)) return this.xhr;else if (requestStrategy === "fetch" && !this.typeCheck.isUndefinedOrNull(fetch)) return this.fetch;else throw new Error("strategy not found.");

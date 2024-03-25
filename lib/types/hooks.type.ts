@@ -14,7 +14,7 @@ export interface SyncHooks extends ValidationHooks {
 
 export interface AsyncHooks {
   onSuccess?(this: Karman, res: SelectRequestStrategy<ReqStrategyTypes, any>): any;
-  onError?(this: Karman, err: Error): void;
+  onError?(this: Karman, err: Error): unknown;
   onFinally?(this: Karman): void;
 }
 

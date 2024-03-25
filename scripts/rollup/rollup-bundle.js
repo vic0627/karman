@@ -44,7 +44,9 @@ const build = async (callback) => {
   }
 
   if (bundle) {
-    copyFile(getPath("./declrations/index.d.ts"), getPath("./dist/karman.d.ts"));
+    const declrationPath = getPath("./declrations/index.d.ts");
+    copyFile(declrationPath, getPath("./dist/karman.d.ts"));
+    copyFile(declrationPath, getPath("./demo/vanilla/src/karman/index.d.ts"));
     await bundle.close();
   }
 

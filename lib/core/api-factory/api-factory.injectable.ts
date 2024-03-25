@@ -143,6 +143,9 @@ export default class ApiFactory {
       };
       _af.hooksInvocator(this, onRequest, httpConfig);
       const reqStrategy = _af.requestStrategySelector(requestStrategy);
+      /**
+       * @todo error handling of request strategies...
+       */
       const { requestKey, requestExecutor, promiseExecutor, config } = reqStrategy.request<D, T>(
         _requestBody as HttpBody,
         httpConfig,
@@ -170,7 +173,11 @@ export default class ApiFactory {
     return finalAPI;
   }
 
-  private hooksInvocator<F extends (...args: T[]) => R, T, R>(k: Karman, hooks?: F, ...args: T[]): R | void {
+  private hooksInvocator<F extends (this: Karman, ...args: T[]) => R, T, R>(
+    k: Karman,
+    hooks?: F,
+    ...args: T[]
+  ): R | void {
     if (this.typeCheck.isFunction(hooks)) return hooks.call(k, ...args);
   }
 
@@ -240,33 +247,23 @@ export default class ApiFactory {
     reqPromise: Promise<SelectRequestStrategy<T, D>>,
     { onSuccess, onError, onFinally, onResponse }: AsyncHooks & Pick<KarmanInterceptors, "onResponse">,
   ) {
-    return reqPromise
-      .then((res) => {
+    return (async () => {
+      try {
+        const res = await reqPromise;
         this.hooksInvocator(k, onResponse, res);
+        const _res = (await this.hooksInvocator(k, onSuccess, res)) as SelectRequestStrategy<T, D> | undefined;
 
-        return res;
-      })
-      .then((res) => {
-        return new Promise((resolve) => {
-          resolve(this.hooksInvocator(k, onSuccess, res));
-          if (this.typeCheck.isFunction(onSuccess)) resolve(onSuccess.call(k, res as Response));
-          else resolve(res);
-        }).then((res) => {});
-      })
-      .catch(
-        (err) =>
-          new Promise((resolve, reject) => {
-            if (this.typeCheck.isFunction(onError)) resolve(onError.call(k, err));
-            else reject(err);
-          }),
-      )
-      .finally(
-        () =>
-          new Promise((resolve) => {
-            if (this.typeCheck.isFunction(onFinally)) resolve(onFinally.call(k));
-            else resolve(void 0);
-          }),
-      ) as Promise<SelectRequestStrategy<T, D>>;
+        return _res ?? res;
+      } catch (error) {
+        const err = await this.hooksInvocator(k, onError, error as Error);
+        const hasReturn = !this.typeCheck.isUndefined(err) && !(err instanceof Error);
+
+        if (hasReturn) return err;
+        else throw err;
+      } finally {
+        await this.hooksInvocator(k, onFinally);
+      }
+    })() as Promise<SelectRequestStrategy<T, D>>;
   }
 
   private requestStrategySelector(requestStrategy?: ReqStrategyTypes): RequestStrategy {

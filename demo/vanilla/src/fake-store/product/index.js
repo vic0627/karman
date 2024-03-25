@@ -12,11 +12,17 @@ async function convertImage(_, payload) {
 }
 
 export default defineKarman({
-  url: "products",
+  url: "product",
   cache: true,
   cacheExpireTime: 5000,
   // timeout: 200,
   // timeoutErrorMessage: "error~~~",
+  onRequest(req) {
+    console.log("onRequest", req);
+  },
+  onResponse(res) {
+    console.log("onResponse", res);
+  },
   api: {
     /**
      * ### get all products
@@ -27,7 +33,7 @@ export default defineKarman({
       onBeforeRequest(_, payload) {
         if (!payload.limit) payload.limit = 10;
       },
-      requestStrategy: "xhr",
+      requestStrategy: "fetch",
     }),
     /**
      * ### get single product by id

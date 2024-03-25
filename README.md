@@ -577,19 +577,19 @@ karman.ruleSetTest({ param03: false })  // Valid
 
 - **Hooks**
     
-    於定義 API 時配置，只適用於該 final API，某些 hooks 可以以非同步任務定義，或具備返回值，可透過返回值來改變某些行為或參數。
+    於定義 API 或調用 final API 時配置，被定義的 hooks 只適用於該 final API，某些 hooks 可以以非同步任務定義，或具備返回值，可透過返回值來改變某些行為或參數。
 
     - onBeforeValidate：於驗證前調用，但若 `validation === false` 則會被忽略，會接收 `payloadDef` 與 `payload` 作為參數，通常可以用來動態改變驗證規則、給予參數預設值、手動對較複雜的參數類型進行驗證等。
     - onRebuildPayload：會在建構最終的請求 url 及請求體前執行，可以用來給予參數預設值或對 payload 物件進行其他資料處理的動作，可以擁有返回值，但必須是一個物件。
     - onBeforeRequest：於建立請求前呼叫，可以用來建立請求體，像是建立 FormData 等動作。
-    - onSuccess：請求成功時呼叫，可配置非同步任務，通常用於接收到響應結果後初步的資料處理。
-    - onError：
-    - onFinally：
+    - onSuccess：請求成功時呼叫，可配置非同步任務，通常用於接收到響應結果後初步的資料處理，若有返回值，則返回值將作為 final API 的返回值使用。
+    - onError：請求失敗時呼叫，可配置非同步任務，通常用於錯誤處理，*若有返回值，則返回值將作為 final API 的返回值使用*。
+    - onFinally：final API 最後一定會執行的 hooks，可配置非同步任務，通常用於呼叫副作用。
 
 ```js
 import { defineKarman, defineAPI } from "karman"
 
-export default defineKarman({
+const hooksKarman = defineKarman({
     // ...
     // Interceptors
     onRequest(req) {
@@ -624,6 +624,10 @@ export default defineKarman({
         })
     }
 })
+
+hooksKarman.hookTest()
+
+// 假設執行成功
 ```
 
 ### Response Caching

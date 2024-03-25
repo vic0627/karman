@@ -222,7 +222,8 @@ interface ValidationHooks<P> {
 }
 
 interface SyncHooks<P> extends ValidationHooks<P> {
-  onBeforeRequest?(this: Karman, endpoint: string, payload: GetPayloadType<P>): HttpBody;
+  onRebuildPayload?(payload: GetPayloadType<P>): Record<string, any> | void;
+  onBeforeRequest?(this: Karman, url: string, payload: GetPayloadType<P>): HttpBody;
 }
 
 interface AsyncHooks<ST, D, S, E> {

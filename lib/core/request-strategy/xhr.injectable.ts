@@ -184,7 +184,7 @@ export default class Xhr implements RequestStrategy {
     _: ProgressEvent | Event,
     config: HttpConfig<T>,
     xhr: XMLHttpRequest,
-    { resolve }: PromiseExecutor<D>,
+    { resolve, reject }: PromiseExecutor<D>,
   ) {
     if (!xhr) return;
 
@@ -205,7 +205,8 @@ export default class Xhr implements RequestStrategy {
       request: xhr,
     };
 
-    resolve(res as D);
+    if (status === 200) resolve(res as D);
+    else reject(res);
   }
 
   private getHeaderMap(headers: string) {
