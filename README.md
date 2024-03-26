@@ -14,7 +14,7 @@ HTTP 客戶端 / API 中心化管理 / API 抽象層
   - [Validation Enigine](#validation-enigine)
   - [Middleware](#middleware)
   - [Response Caching](#response-caching)
-  - [DTO of I/O](#dto-of-io)
+  - [Dynamic Type Annotation](#dynamic-type-annotation)
 - [API 文件](#api-文件)
   - [defineKarman(option)](#definekarmanoption)
   - [Karman](#karman-1)
@@ -34,7 +34,7 @@ HTTP 客戶端 / API 中心化管理 / API 抽象層
 - 響應的快取機制
 - 取消請求方法
 - XMLHttpRequest、fetch 於 I/O 的 JSON 自動轉換
-- 統一的請求方法 I/O 介面
+- 動態型別註解
 - 請求方法的生命週期
 - 依值型別實現請求方法的 I/O 介面的 [DTO](https://en.wikipedia.org/wiki/Data_transfer_object)
 - 參數驗證引擎
@@ -379,6 +379,8 @@ export default defineKarmna({
 以上屬性可重複設置，代表同一參數可以用在請求中的不同地方。
 
 接下來決定參數是否必須，可以透過 `required: boolean` 來設置，但要注意的是，驗證參數是否為必須的行為，屬於驗證引擎的一環，但因設計上的考量沒有將 `required` 放在 `rules` 內，因此必須在該 final API 上的某個父節點或 API 配置本身將 `validation` 設置為 `true` 來啟動驗證機制。
+
+> ⚠️ required 驗證會以 `in` 運算子來檢驗該參數的 key 是否存在於 `payload` 當中，並不代表該參數以 `undefined` 作為容許值。
 
 最後在[參數驗證規則](#validation-enigine)的部分較為複雜，因此以獨立章節來解說。
 
@@ -734,15 +736,196 @@ Uncaught Error: ...
 
 快取功能的相關設定可以在 defineKarman、defineAPI、final API config 上配置，設置 `cache` 為 `true` 可以快取， `cacheExpireTime` 能夠決定快取資料的存在時間，而 storage 策略有 `memory`、`localStorage`、`sessionStorage`，以 `cacheStrategy` 屬性來配置。
 
+> ⚠️ 使用 WebStorage 作為快取策略時，請注意 WebStorage 僅能存儲**能轉換為字串**的值，因此若需快取無法以字串表示的響應結果時，請考慮使用 `memory` 策略。
+
 當一支 final API 的快取功能被開啟後，會在首次請求時紀錄請求參數與響應結果，第二次請求開始，若請求參數與前次相同，將直接返回快取資料，直到請求參數改變或快取到期才會再次發送請求。
 
 > ⚠️ 返回快取資料的 final API 無法使用 abort 方法來取消請求！
 
-### DTO of I/O
+```js
+import { defineKarman, defineAPI } from "karman"
+
+const min = 1000 * 60
+
+const cacheKarman = defineKarman({
+    root: true,
+    scheduleInterval: min * 30,                 // 根節點可設置排程任務執行間隔
+    // ...
+    cache: true,                                // 批次啟用快取
+    cacheExpireTime: min * 5,                   // 批次設定快取壽命
+    api: {
+        getA: defineAPI(),                      // 預設使用 memeory 策略
+        getB: defineAPI({
+            cacheStrategy: 'localStorage'       // 選用 localStorage 策略
+        }),
+    }
+})
+
+cacheKarman.getA()[0]
+    .then((res) => console.log(res))            // 首次請求，紀錄請求參數與響應結果
+cacheKarman.getA()[0]
+    .then((res) => console.log(res))            // 第二次請求，參數無變動，直接返回快取
+```
+
+### Dynamic Type Annotation
+
+> ⚠️ 建議閱讀此章節前請先瞭解 [JSDoc](https://jsdoc.app/) 與 [TypeScript](https://www.typescriptlang.org/)。
+
+karman 提供的另一個額外的強大功能，就是透過 TypeScript 泛型參數與 IDE 的 [LSP](https://microsoft.github.io/language-server-protocol/) 搭配，使 `defineKarman` 與 `defineAPI` 的配置能夠即時映射至 karman node 上，包括了 karman node 上的 final API 與子路徑、final API 的 Input 與 Output。
+
+#### JSDoc
+
+JSDoc 是一種註解方式的標準化規範，在支援自動解析 JSDoc 的 IDE 上（如 Visual Studio Code），能夠使被註解的變數、屬性、或方法等提供相應的註解訊息，
+
+```js
+import { defineKarman, defineAPI } from "karman"
+
+/**
+ * # API 管理中心
+ */
+const rootKarman = defineKarman({
+    // ...
+    api: {
+        /**
+         * ## 連線測試
+         */
+        connect: defineAPI(),
+    },
+    route: {
+        /**
+         * ## 用戶管理
+         */
+        user: defineKarman({
+            // ...
+            api: {
+                /**
+                 * ### 取得所有用戶
+                 */
+                getAll: defineAPI({
+                    // ...
+                }),
+                /**
+                 * ### 創建新用戶
+                 */
+                create: defineAPI({
+                    // ...
+                })
+            }
+        })
+    }
+})
+
+// 於 js 中嘗試 hover 以下變數、屬性、或方法會於懸停提示顯示右邊的註解內容
+rootKarman                  // API 管理中心
+rootKarman.connect()        // 連線測試
+rootKarman.user             // 用戶管理
+rootKarman.user.getAll()    // 取得所有用戶
+rootKarman.user.create()    // 創建新用戶
+```
+
+### DTO of Input/Payload
+
+根據[參數定義](#parameter-definition)章節，可以知道 final API 的 `payload` 主要是透過 `defineAPI` 的 `payloadDef` 屬性去定義，並映射到 final API 的 `payload` 上，然而語言機制上的先天限制，要使參數的規則能夠直接轉換為對應型別顯示到懸停提示中顯然不太可能，因此 karman 選用了與 JSDoc 搭配，利用 `@type` 標籤強制註解參數型別，讓 final API 能夠在懸停提示顯示 `payload` 屬性所需型別，而不是一個完整的參數定義物件。
+
+> ⚠️ 透過 `@type` 標籤強制註解型別，是為了調用 final API 時能夠獲得更完整的參數提示訊息，並不會影響到 karman 本身運行。
+
+```js
+import { defineKarman, defineAPI } from "karman"
+
+const rootKarman = defineKarman({
+    // ...
+    api: {
+        /**
+         * ### 取得所有結果
+         */
+        getAll: defineAPI({
+            // ...
+            payloadDef: {
+                /**
+                 * 回傳筆數限制
+                 * @type {number | void}
+                 */
+                limit: {
+                    query: true,
+                    rules: "int"
+                },
+                /**
+                 * 排序策略
+                 * @type {"asc" | "desc" | void}
+                 */
+                sort: {
+                    query: true,
+                    rules: "string"
+                }
+            }
+        })
+    }
+})
+
+// hover 在 limit 與 sort 上會顯示對應型別與註解
+rootKarman.getAll({
+    limit: 10,
+    sort: "asc"
+})
+```
+
+在上面的例子當中，因為兩個參數都不是必要參數，因此需要再映射時能夠表示該參數為非必要參數，但在 TypeScript 的型別映射中，無法做到過於複雜的 Optional 參數（`{ param?: any; }`）轉換，因此要以其他方式表示該參數非必要，而這裡推薦使用 `void`，而不是 `undefined`，原因是 `undefined` 為所有型別的子型別，因此像 `@type {string | number | undefined}` 這種註記，會在最終顯示型別時簡化成 `string | number`，進而失去了表示參數非必須的意義，而 `void` 本來是用於描述函數沒有返回值的情況，也不為其他型別的子型別，在此情境下可用來替代表示參數為非必須。
+
+#### DTO of Output/Response
 
 ## API 文件
 
 ### defineKarman(option)
+
+```ts
+interface KarmanOption<A, R> {
+    // 👇 結構相關配置
+    root?: boolean;
+    url?: string;
+    api?: {
+      [ApiName in keyof A]: A[ApiName];
+    };
+    route?: {
+      [RouteName in keyof R]: R[RouteName]
+    };
+
+    // 👇 Middleware 配置
+    nRequest?(this: Karman, req: object): void;
+    onResponse?(this: Karman, res: object): boolean | void;
+
+    // 👇 功能相關配置
+    scheduleInterval?: number;
+    cache?: boolean;
+    cacheExpireTime?: number;
+    cacheStrategy?: "sessionStorage" | "localStorage" | "memory";
+    validation?: boolean;
+
+    // 👇 請求相關配置
+    headers?: {
+      ["Content-Type"]?: string;
+      ["Authorization"]?: `Basic ${string}:${string}`;
+    };
+    auth?: {
+      username: string;
+      password: string;
+    };
+    timeout?: number;
+    timeoutErrorMessage?: string;
+    responseType?: string;
+    headerMap?: boolean;
+    withCredentials?: boolean;
+    // 以下配置僅適用於 fetch 請求策略
+    requestCache?: "default" | "force-cache" | "no-cache" | "no-store" | "only-if-cached" | "reload";
+    credentials?: "include" | "omit" | "same-origin";
+    integrity?: string;
+    keepalive?: boolean;
+    mode?: "cors" | "navigate" | "no-cors" | "same-origin";
+    redirect?: "error" | "follow" | "manual";
+    referrer?: string;
+    referrerPolicy?: "" | "no-referrer" | "no-referrer-when-downgrade" | "origin" | "origin-when-cross-origin" | "same-origin" | "strict-origin" | "strict-origin-when-cross-origin" | "unsafe-url";
+    window?: null;
+}
+```
 
 ### Karman
 
