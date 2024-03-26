@@ -1,3 +1,4 @@
+import { Primitive } from "./common.type";
 import { SyncHooks, AsyncHooks } from "./hooks.type";
 import { CacheConfig, UtilConfig } from "./karman.type";
 import { PayloadDef } from "./payload-def.type";
@@ -107,6 +108,24 @@ export interface XhrResponse<D, T extends ReqStrategyTypes> {
   config: HttpConfig<T> | undefined;
   request: XMLHttpRequest;
   [x: string]: any;
+}
+
+export interface FetchResponse<D> {
+  readonly headers: Headers;
+  readonly ok: boolean;
+  readonly redirected: boolean;
+  readonly status: number;
+  readonly statusText: string;
+  readonly type: ResponseType;
+  readonly url: string;
+  readonly body: D extends Primitive ? D : ReadableStream<Uint8Array> | ArrayBuffer | Blob | null;
+  readonly bodyUsed: boolean;
+  clone?(): FetchResponse<D>;
+  arrayBuffer?(): Promise<ArrayBuffer>;
+  blob?(): Promise<Blob>;
+  formData?(): Promise<FormData>;
+  text?(): Promise<string>;
+  json?(): Promise<D>;
 }
 
 export default interface RequestDetail<D, T extends ReqStrategyTypes> {

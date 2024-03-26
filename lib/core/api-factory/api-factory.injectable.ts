@@ -250,7 +250,12 @@ export default class ApiFactory {
     return (async () => {
       try {
         const res = await reqPromise;
-        this.hooksInvocator(k, onResponse, res);
+        const succeed = res.status >= 200 && res.status < 300;
+        let fulfilled = this.hooksInvocator(k, onResponse, res);
+        fulfilled ??= succeed;
+
+        if (!fulfilled) throw new Error(`Request failed with status code ${res.status}`);
+
         const _res = (await this.hooksInvocator(k, onSuccess, res)) as SelectRequestStrategy<T, D> | undefined;
 
         return _res ?? res;
@@ -259,7 +264,7 @@ export default class ApiFactory {
         const hasReturn = !this.typeCheck.isUndefined(err) && !(err instanceof Error);
 
         if (hasReturn) return err;
-        else throw err;
+        else throw error;
       } finally {
         await this.hooksInvocator(k, onFinally);
       }

@@ -8,10 +8,11 @@ HTTP 客戶端 / API 中心化管理 / API 抽象層
 - [開始](#開始)
   - [什麼是 karman？](#什麼是-karman)
   - [簡易示範](#簡易示範)
-- [核心]()
+- [核心](#核心)
   - [Karman Tree](#karman-tree)
   - [Final API](#final-api)
   - [Validation Enigine](#validation-enigine)
+  - [Middleware](#middleware)
   - [Response Caching](#response-caching)
   - [DTO of I/O](#dto-of-io)
 - [API 文件](#api-文件)
@@ -30,11 +31,11 @@ HTTP 客戶端 / API 中心化管理 / API 抽象層
 - 樹狀結構路由管理
 - 配置的繼承與複寫
 - 請求與響應的攔截
-- 請求方法的生命週期
 - 響應的快取機制
 - 取消請求方法
 - XMLHttpRequest、fetch 於 I/O 的 JSON 自動轉換
-- 統一請求方法的 I/O 介面
+- 統一的請求方法 I/O 介面
+- 請求方法的生命週期
 - 依值型別實現請求方法的 I/O 介面的 [DTO](https://en.wikipedia.org/wiki/Data_transfer_object)
 - 參數驗證引擎
 
@@ -256,7 +257,7 @@ karman tree 若是沒有配置根節點，會有以下的注意事項：
 
 #### Dependency
 
-在 [Interceptors/Hooks](#interceptorshooks) 中會介紹到攔截器與 hooks 的配置（以下皆用 hooks 簡稱），這類型的配置都可以在函式內透過 `this` 來獲取 karman node 上的屬性或方法，假設有在 hooks 中常用的常數、方法等，可以考慮將其安裝到 karman node 上。
+在 [Middleware](#middleware) 中會介紹到 Interceptors 與 Hooks 的配置，這類型的配置都可以在函式內透過 `this` 來獲取 karman node 上的屬性或方法，假設有在 Middleware 中常用的常數、方法等，可以考慮將其安裝到 karman node 上。
 
 依賴的安裝需要透過 root karman node 來執行，使用 `Karman.$use()` 的方法進行安裝，安裝後會再觸發一次類似的繼承事件，使整個 karman tree 都會引用到該依賴，而依賴本身必須為物件，並且物件上需有 `install()` 方法。
 
@@ -564,73 +565,178 @@ karman.ruleSetTest({ param02: "foo" })  // Valid
 karman.ruleSetTest({ param03: false })  // Valid
 ```
 
-### Interceptors/Hooks
+### Middleware
 
-攔截器與 hooks，都是在 final API 執行時的某個生命週期中執行，兩者的差異主要是：
+Middleware 是指在 final API 執行時的某個生命週期中執行的函式，主要分為兩類：
 
-- **Interceptors**
-    
-    於 karman node 上配置，主要攔截該節點以下的所有 final API 的請求（req）與響應（res）物件，可以實現存取物件屬性並有條件地執行副作用等功能，但攔截器不具備返回值，無法透過返回值來改變請求或響應物件，且只能以同步任務定義。
-
-    - onRequest：攔截請求物件，包括請求的 url、method、headers 等。
-    - onResponse：攔截響應物件，依照每個 final API 選用的請求策略不同，可能會有不同規格，在物件屬性的存取上需稍加注意。
-
-- **Hooks**
-    
-    於定義 API 或調用 final API 時配置，被定義的 hooks 只適用於該 final API，某些 hooks 可以以非同步任務定義，或具備返回值，可透過返回值來改變某些行為或參數。
-
-    - onBeforeValidate：於驗證前調用，但若 `validation === false` 則會被忽略，會接收 `payloadDef` 與 `payload` 作為參數，通常可以用來動態改變驗證規則、給予參數預設值、手動對較複雜的參數類型進行驗證等。
-    - onRebuildPayload：會在建構最終的請求 url 及請求體前執行，可以用來給予參數預設值或對 payload 物件進行其他資料處理的動作，可以擁有返回值，但必須是一個物件。
-    - onBeforeRequest：於建立請求前呼叫，可以用來建立請求體，像是建立 FormData 等動作。
-    - onSuccess：請求成功時呼叫，可配置非同步任務，通常用於接收到響應結果後初步的資料處理，若有返回值，則返回值將作為 final API 的返回值使用。
-    - onError：請求失敗時呼叫，可配置非同步任務，通常用於錯誤處理，*若有返回值，則返回值將作為 final API 的返回值使用*。
-    - onFinally：final API 最後一定會執行的 hooks，可配置非同步任務，通常用於呼叫副作用。
+- **Interceptors**：於 karman node 上配置，主要攔截該節點以下的所有 final API 的請求（req）與響應（res）物件，可以實現存取物件屬性並有條件地執行副作用等功能，只能以同步任務定義。
+- **Hooks**：於定義 API 或調用 final API 時配置，被定義的 hooks 只適用於該 final API，某些 hooks 可以以非同步任務定義，或具備返回值，可透過返回值來改變某些行為或參數。
 
 ```js
 import { defineKarman, defineAPI } from "karman"
 
 const hooksKarman = defineKarman({
     // ...
+    validation: true,
     // Interceptors
+    /**
+     * 攔截請求物件，包括請求的 url、method、headers 等其他請求配置
+     * @param req - 請求物件
+     */
     onRequest(req) {
         console.log("onRequest")
     },
+    /**
+     * 攔截響應物件，依照每個 final API 選用的請求策略不同，可能會有不同規格，在物件屬性的存取上需稍加注意
+     * @param res - 響應物件
+     * @returns {boolean | undefined} 可自行判斷合法狀態碼，並返回布林值，預設是大於等於 200、小於 300 的區間
+     */
     onResponse(res) {
         console.log("onResponse")
+        const { status } = res
+
+        return status >= 200 && status < 300
     },
     api: {
         hookTest: defineAPI({
             // ...
             // Hooks
+            /**
+             * 於驗證前調用，但若 `validation === false` 則會被忽略
+             * 通常可以用來動態改變驗證規則、給予參數預設值、手動對較複雜的參數類型進行驗證等
+             * @param payloadDef - 參數定義物件
+             * @param payload - final API 實際接收參數
+             */
             onBeforeValidate(payloadDef, payload) {
                 console.log("onBeforeValidate")
             },
+            /**
+             * 會在建構最終的請求 url 及請求體前執行，可以用來給予參數預設值或對 payload 物件進行其他資料處理的動作
+             * @param payload - final API 實際接收參數
+             * @returns {Record<string, any> | undefined} 若返回值為物件，將做為新的 payload 來建構 url 與請求體
+             */
             onRebuildPayload(payload) {
                 console.log("onRebuildPayload")
             },
-            onBeforeRequest(endpoint, payload) {
+            /**
+             * 於建立請求前呼叫，可以用來建立請求體，像是建立 FormData 等動作
+             * @param url - 請求 url
+             * @param payload - final API 實際接收參數
+             * @returns {Document | BodyInit | null | undefined} 若有返回值，將作為最後送出請求時的 request body
+             */
+            onBeforeRequest(url, payload) {
                 console.log("onBeforeRequest")
             },
-            // 以下 hooks 可以用異步任務配置
+            /**
+             * 請求成功時呼叫，可配置非同步任務，通常用於接收到響應結果後初步的資料處理
+             * @param res - 響應物件
+             * @returns {Promise<any> | undefined} 若有返回值，將作為 final API 的返回值
+             */
             async onSuccess(res) {
                 console.log("onSuccess")
+
+                return "get response"
             },
+            /**
+             * 請求失敗時呼叫，可配置非同步任務，通常用於錯誤處理
+             * @param err - 錯誤物件
+             * @returns {Promise<any> | undefined} 若有返回值，final API 就不會拋出錯誤，並將 onError 的返回值作為 final API 發生錯誤時的返回值
+             */
             async onError(err) {
                 console.log("onError")
+
+                return "response from error"
             },
+            /**
+             * final API 最後一定會執行的 hooks，可配置非同步任務，通常用於呼叫副作用
+             */
             async onFinally() {
                 console.log("onFinally")
             }
         })
     }
 })
-
-hooksKarman.hookTest()
-
-// 假設執行成功
 ```
 
+> ⚠️ Middleware 在配置時盡量以一般函式宣告，避免使用箭頭函式，這是因為如果在 Middleware 內透過 `this` 存取 karman node，使用箭頭函式將會使該函式失去 `this` 的指向。
+
+嘗試執行：
+
+```js
+hooksKarman.hookTest()[0].then((res) => console.log(res))
+```
+
+請求成功時主控台輸出：
+
+```txt
+onBeforeValidate
+onRebuildPayload
+onBeforeRequest
+onRequest
+onResponse
+onSuccess
+onFinally
+get response
+```
+
+請求失敗時主控台輸出：
+
+```txt
+onBeforeValidate
+onRebuildPayload
+onBeforeRequest
+onRequest
+onResponse
+onError
+onFinally
+response from error
+```
+
+在 final API 複寫部分 hooks 後嘗試執行：
+
+```js
+hooksKarman.hookTest(null, {
+    onSuccess() {
+        return "overwrite onSuccess"
+    },
+    onError() {}
+})[0].then((res) => console.log(res))
+```
+
+請求成功時主控台輸出：
+
+```txt
+onBeforeValidate
+onRebuildPayload
+onBeforeRequest
+onRequest
+onResponse
+onFinally
+overwrite onSuccess
+```
+
+請求失敗時主控台輸出：
+
+```txt
+onBeforeValidate
+onRebuildPayload
+onBeforeRequest
+onRequest
+onResponse
+onError
+onFinally
+Uncaught Error: ...
+```
+
+> ⚠️ 若是觸發主動設置的 timeout 或調用 abort 方法，onResponse 將不被執行。
+
 ### Response Caching
+
+快取功能的相關設定可以在 defineKarman、defineAPI、final API config 上配置，設置 `cache` 為 `true` 可以快取， `cacheExpireTime` 能夠決定快取資料的存在時間，而 storage 策略有 `memory`、`localStorage`、`sessionStorage`，以 `cacheStrategy` 屬性來配置。
+
+當一支 final API 的快取功能被開啟後，會在首次請求時紀錄請求參數與響應結果，第二次請求開始，若請求參數與前次相同，將直接返回快取資料，直到請求參數改變或快取到期才會再次發送請求。
+
+> ⚠️ 返回快取資料的 final API 無法使用 abort 方法來取消請求！
 
 ### DTO of I/O
 

@@ -1,6 +1,8 @@
-import RequestDetail, { HttpBody, HttpConfig, ReqStrategyTypes, XhrResponse } from "@/types/http.type";
+import RequestDetail, { HttpBody, HttpConfig, ReqStrategyTypes, XhrResponse, FetchResponse } from "@/types/http.type";
 
-export type SelectRequestStrategy<T extends ReqStrategyTypes, D> = T extends "xhr" ? XhrResponse<D, T> : D;
+export type SelectRequestStrategy<T extends ReqStrategyTypes, D> = T extends "xhr"
+  ? XhrResponse<D, T>
+  : FetchResponse<D>;
 
 export default abstract class RequestStrategy {
   abstract request<D, T extends ReqStrategyTypes>(

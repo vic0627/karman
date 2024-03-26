@@ -13,16 +13,6 @@ async function convertImage(_, payload) {
 
 export default defineKarman({
   url: "product",
-  cache: true,
-  cacheExpireTime: 5000,
-  // timeout: 200,
-  // timeoutErrorMessage: "error~~~",
-  onRequest(req) {
-    console.log("onRequest", req);
-  },
-  onResponse(res) {
-    console.log("onResponse", res);
-  },
   api: {
     /**
      * ### get all products

@@ -402,7 +402,7 @@ interface ApiOptions<ST, P, D, S, E> extends Hooks<ST, P, D, S, E>, UtilConfig, 
 
 interface KarmanInterceptors {
   onRequest?(this: Karman, req: HttpConfig<ReqStrategyTypes>): void;
-  onResponse?(this: Karman, res: XhrResponse<any, ReqStrategyTypes> | FetchResponse<any>): void;
+  onResponse?(this: Karman, res: XhrResponse<any, ReqStrategyTypes> | FetchResponse<any>): boolean | void;
 }
 
 interface KarmanOptions<A, R>

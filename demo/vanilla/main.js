@@ -5,32 +5,33 @@ const btnAbort = document.getElementById("btn-abort");
 
 let abortfn = () => void 0;
 
+const hooks = {
+  onBeforeValidate(payloadDef, payload) {
+    console.log("onBeforeValidate", { payloadDef, payload });
+  },
+  onRebuildPayload(payload) {
+    console.log("onRebuildPayload", { payload });
+  },
+  onBeforeRequest(url, payload) {
+    console.log("onBeforeRequest", { url, payload });
+  },
+  onSuccess(res) {
+    console.log("onSuccess", { res });
+  },
+  onError(err) {
+    console.log("onError", { err });
+    // return "foobar";
+    // return err;
+  },
+  onFinally() {
+    console.log("onFinally");
+  },
+};
+
 const request = async () => {
   try {
-    const [resPromise, abort] = rootKarman.tpProject.getScheduleExtend(
-      { limit: 10 },
-      {
-        onBeforeValidate(payloadDef, payload) {
-          console.log("onBeforeValidate", { payloadDef, payload });
-        },
-        onRebuildPayload(payload) {
-          console.log("onRebuildPayload", { payload });
-        },
-        onBeforeRequest(url, payload) {
-          console.log("onBeforeRequest", { url, payload });
-        },
-        onSuccess(res) {
-          console.log("onSuccess", { res });
-        },
-        onError(err) {
-          console.log("onError", { err });
-        },
-        onFinally() {
-          console.log("onFinally");
-        },
-      },
-    );
-    // const [resPromise, abort] = rootKarman.fakeStore.product.getById({ id: 1 });
+    const [resPromise, abort] = rootKarman.tpProject.getScheduleExtend({ limit: 10 }, { ...hooks });
+    // const [resPromise, abort] = rootKarman.fakeStore.product.getById({ id: 1 }, { ...hooks });
     // const [resPromise, abort] = rootKarman.fakeStore.user.modify({
     //   id: 3,
     //   // email: "foo@gmail.com",

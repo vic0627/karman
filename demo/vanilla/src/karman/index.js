@@ -2540,8 +2540,7 @@ let Xhr = class Xhr {
     reject(new Error(`Network Error ${url} ${status}`));
   }
   handleLoadend(_, config, xhr, {
-    resolve,
-    reject
+    resolve
   }) {
     if (!xhr) return;
     const {
@@ -2563,7 +2562,7 @@ let Xhr = class Xhr {
       config,
       request: xhr
     };
-    if (status === 200) resolve(res);else reject(res);
+    resolve(res);
   }
   getHeaderMap(headers) {
     if (!headers) return {};
@@ -3780,13 +3779,16 @@ let ApiFactory = class ApiFactory {
     return (async () => {
       try {
         const res = await reqPromise;
-        this.hooksInvocator(k, onResponse, res);
+        const succeed = res.status >= 200 && res.status < 300;
+        let fulfilled = this.hooksInvocator(k, onResponse, res);
+        fulfilled ??= succeed;
+        if (!fulfilled) throw new Error(`Request failed with status code ${res.status}`);
         const _res = await this.hooksInvocator(k, onSuccess, res);
         return _res ?? res;
       } catch (error) {
         const err = await this.hooksInvocator(k, onError, error);
         const hasReturn = !this.typeCheck.isUndefined(err) && !(err instanceof Error);
-        if (hasReturn) return err;else throw err;
+        if (hasReturn) return err;else throw error;
       } finally {
         await this.hooksInvocator(k, onFinally);
       }

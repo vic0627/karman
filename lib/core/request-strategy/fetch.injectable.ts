@@ -8,6 +8,7 @@ import RequestDetail, {
   PromiseExecutor,
   RequestConfig,
   RequestExecutor,
+  FetchResponse,
 } from "@/types/http.type";
 import Template from "@/utils/template.provider";
 import TypeCheck from "@/utils/type-check.provider";
@@ -111,7 +112,7 @@ export default class Fetch implements RequestStrategy {
       const signal = abortController.signal;
       abortObject.abort = abortController.abort.bind(abortController);
 
-      return fetch(url, { ...config, signal }) as Promise<SelectRequestStrategy<T, D>>;
+      return fetch(url, { ...config, signal }) as unknown as Promise<SelectRequestStrategy<T, D>>;
     };
 
     // promise initialized
@@ -120,9 +121,9 @@ export default class Fetch implements RequestStrategy {
       reject: promiseUninitWarn,
     };
     let response: any = null;
-    const requestPromise = new Promise<Response>((_resolve, _reject) => {
+    const requestPromise = new Promise<SelectRequestStrategy<T, D>>((_resolve, _reject) => {
       promiseExecutor.resolve = (value: SelectRequestStrategy<T, D>) => {
-        _resolve(value as Response);
+        _resolve(value as SelectRequestStrategy<T, D>);
         clearTimer?.();
       };
 

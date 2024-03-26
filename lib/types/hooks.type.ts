@@ -20,5 +20,5 @@ export interface AsyncHooks {
 
 export interface KarmanInterceptors {
   onRequest?(this: Karman, req: HttpConfig<ReqStrategyTypes>): void;
-  onResponse?(this: Karman, res: SelectRequestStrategy<ReqStrategyTypes, any>): void;
+  onResponse?(this: Karman, res: SelectRequestStrategy<ReqStrategyTypes, any>): boolean | void;
 }

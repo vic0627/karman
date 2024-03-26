@@ -7,6 +7,16 @@ export default defineKarman({
   headerMap: true,
   validation: true,
   scheduleInterval: 1000 * 10,
+  // cache: true,
+  cacheExpireTime: 5000,
+  // timeout: 100,
+  // timeoutErrorMessage: "error~~~",
+  onRequest(req) {
+    console.log("onRequest", req);
+  },
+  onResponse(res) {
+    console.log("onResponse", res);
+  },
   route: {
     fakeStore,
     tpProject,
