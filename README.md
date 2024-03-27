@@ -106,7 +106,7 @@ export default defineKarman({               // 創建 Karman 實例/節點
 })
 ```
 
-配置完成後，`defineKarman()` 會返回包含 `api` 屬性內所有方法的 `Karman` 實例，可以透過該實例去調用所需方法，而方法本身是同步的，被調用時會初始化請求並返回一個響應 Promise 與一個取消請求的同步方法，建議可以透過[解構賦值](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment)的方式將它們取出：
+配置完成後，`defineKarman()` 會返回包含 `api` 屬性內所有方法的 `Karman` 實例（karman node），可以透過該實例去調用封裝好的方法（final API），而 final API 本身是同步的，調用時會初始化請求並返回一個響應 Promise 與一個取消請求的同步方法，建議可以透過[解構賦值](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment)的方式將它們取出：
 
 ```js
 // /path/to/your-file.js
@@ -164,11 +164,11 @@ const deleteProduct = async ({ id }) => {
 
 ### Karman Tree
 
-在[簡易示範](#簡易示範)中有提到，可以透過 `defineKarman()` 來建立一個抽象層、一個 Karman 實例、或稱「karman node」，事實上你還可以透過巢狀的方式去組織更複雜的「karman tree」，這使得我們可以根據 API 的路徑、所需配置不同，去做不同層次的管理。
+在[簡易示範](#簡易示範)中有提到，可以透過 `defineKarman()` 來建立一個抽象層節點、一個 Karman 實例、或稱「karman node」，事實上你還可以透過巢狀的方式去組織更複雜的「karman tree」，這使得我們可以根據 API 的路徑、所需配置不同，去做不同層次的管理。
 
 #### Route Management
 
-每個 `defineKarman()` 內都可以配置屬於該層的 url 路徑，路徑可以配置或不配置，可以是完整的 url 也可以是 url 的片段，但要注意的是，你為該層 karman node 所配置的 url 會[繼承](#inheritance)父節點的 url 配置，假設父節點的 url 是 `localhost:8000` 而子節點的 url 是 `users`，那麼子節點最後得到的基本 url 會是 `localhost:8000/users`。
+每個 `defineKarman()` 內都可以配置屬於該層的 url 路徑，路徑可以配置或不配置，可以是完整的 url 也可以是 url 的片段，但要注意，你為 karman node 所配置的 url 會參考父節點的 url 組合成一組該節點的基本 url。
 
 ```js
 import { defineKarman } from "karman"
@@ -190,7 +190,7 @@ const rootKarman = defineKarman({
 })
 ```
 
-若是要配置子節點，可以透過 `route` 屬性進行配置，`route` 會是一個物件，key 是該節點的名稱，value 是 karman node，而 karman node 會在初始化後被掛載至父節點上，可以通過你為該子節點所配置的路徑名稱存取該 karman node 上的方法或子節點。
+若是要配置子節點，可以透過 `route` 屬性進行配置，`route` 會是一個物件，key 是該節點的名稱，value 是 karman node，而 karman node 會在初始化後被掛載至父節點上，可以通過你為該子節點所配置的路徑名稱存取該 karman node 上的 final API 或孫節點。
 
 ```js
 rootKarman.product.someAPI()
@@ -220,7 +220,7 @@ export default defineKarman({
 
 #### Inheritance
 
-「繼承事件」會發生在當該層 karman node 的 `root` 被設置為 `true` 時觸發，事件被觸發時，會將根節點的配置繼承至子節點甚至孫節點上，直到該配置被子孫節點複寫，而複寫後的配置也會有同樣的繼承行為。
+「繼承事件」會發生在當該層 karman node 的 `root` 被設置為 `true` 時觸發，事件被觸發時，會將根節點的配置繼承至子節點甚至孫節點上，直到該配置被子孫節點複寫，而複寫後的配置也會有相同的繼承行為。
 
 ```js
 import { defineKarman } from "karman"
@@ -248,12 +248,12 @@ export default defineKarman({
 
 karman tree 若是沒有配置根節點，會有以下的注意事項：
 
-- 雖然 API 同樣可以發送，但該 API 所獲取的配置只會以該層 karman node 為參考，若是該節點的 `url` 與 API 配置的 `endpoint` 無法組成合法的 url，這可能會導致使用該 API 發送請求時出現錯誤。
+- 雖然 API 同樣可以發送，但該 API 所獲取的配置只會以該層 karman node 為參考，若是該節點的 `url` 與 API 配置的 `endpoint` 無法組成有效的 url，這可能會導致發送請求時出現錯誤。
 - 無法使用根節點的專屬功能，如：設置排程任務執行間隔、為 karman tree 安裝依賴等。
 
 > 排程管理器主要任務負責響應資料快取的檢查與清除，任務執行間隔可以透過 `scheduleInterval` 屬性進行設置，且只能透過根節點設置。
 
-每個 karman node 的繼承事件只會被觸發一次，意味著某節點若被設置為根節點了，在初始化至該 karman node 時就會產生一次的繼承事件，當這個 karman node 後續再接收到祖父節點傳遞下來的繼承訊號時，因為該節點已經發生過繼承事件，該節點以下將中斷繼承。
+每個 karman node 的繼承事件只會被觸發一次，意味著若某子孫節點被設置為根節點，該 karman node 就會先產生一次的繼承事件，當這個 karman node 後續再接收到祖父節點傳遞下來的繼承訊號時，會因為該節點已經發生過繼承事件，使該節點以下（含）的所有節點中斷繼承。
 
 #### Dependency
 
@@ -771,11 +771,11 @@ cacheKarman.getA()[0]
 
 > ⚠️ 建議閱讀此章節前請先瞭解 [JSDoc](https://jsdoc.app/) 與 [TypeScript](https://www.typescriptlang.org/)。
 
-karman 提供的另一個額外的強大功能，就是透過 TypeScript 泛型參數與 IDE 的 [LSP](https://microsoft.github.io/language-server-protocol/) 搭配，使 `defineKarman` 與 `defineAPI` 的配置能夠即時映射至 karman node 上，包括了 karman node 上的 final API 與子路徑、final API 的 Input 與 Output。
+karman 提供的另一種額外的強大功能，就是透過 TypeScript 泛型參數與 IDE 的 [LSP](https://microsoft.github.io/language-server-protocol/) 搭配，使 `defineKarman` 與 `defineAPI` 的配置能夠即時映射至 karman node 上，包括 final API 、子路徑、與 final API 的 Input 與 Output。
 
 #### JSDoc
 
-JSDoc 是一種註解方式的標準化規範，在支援自動解析 JSDoc 的 IDE 上（如 Visual Studio Code），能夠使被註解的變數、屬性、或方法等提供相應的註解訊息，
+JSDoc 是一種註解方式的標準化規範，在支援自動解析 JSDoc 的 IDE 上（如 Visual Studio Code），能夠使被註解的變數、屬性、或方法等提供相應的註解訊息。
 
 ```js
 import { defineKarman, defineAPI } from "karman"
@@ -825,9 +825,11 @@ rootKarman.user.create()    // 創建新用戶
 
 ### DTO of Input/Payload
 
-根據[參數定義](#parameter-definition)章節，可以知道 final API 的 `payload` 主要是透過 `defineAPI` 的 `payloadDef` 屬性去定義，並映射到 final API 的 `payload` 上，然而語言機制上的先天限制，要使參數的規則能夠直接轉換為對應型別顯示到懸停提示中顯然不太可能，因此 karman 選用了與 JSDoc 搭配，利用 `@type` 標籤強制註解參數型別，讓 final API 能夠在懸停提示顯示 `payload` 屬性所需型別，而不是一個完整的參數定義物件。
+根據[參數定義](#parameter-definition)章節，可以知道 final API 的 `payload` 主要是透過 `defineAPI` 的 `payloadDef` 屬性去定義，並映射到 final API 的 `payload` 上，而 `payloadDef` 的屬性值為物件，通常情況下，映射出來的 `payload` 不會符合定義的規則。
 
-> ⚠️ 透過 `@type` 標籤強制註解型別，是為了調用 final API 時能夠獲得更完整的參數提示訊息，並不會影響到 karman 本身運行。
+然而語言機制上的先天限制，要使參數的規則能夠直接轉換為對應型別顯示到懸停提示中顯然不太可能，因此 karman 選用了與 JSDoc 搭配，利用 `@type` 標籤強制註解參數的型別，讓 final API 能夠在懸停提示顯示 `payload` 屬性正確的所需型別，而不是一個完整的參數定義物件。
+
+> ⚠️ 透過 `@type` 標籤強制註記型別，是為了調用 final API 時能夠獲得更完整的參數提示訊息，並不會影響到 karman 本身運行。
 
 ```js
 import { defineKarman, defineAPI } from "karman"
@@ -869,7 +871,9 @@ rootKarman.getAll({
 })
 ```
 
-在上面的例子當中，因為兩個參數都不是必要參數，因此需要再映射時能夠表示該參數為非必要參數，但在 TypeScript 的型別映射中，無法做到過於複雜的 Optional 參數（`{ param?: any; }`）轉換，因此要以其他方式表示該參數非必要，而這裡推薦使用 `void`，而不是 `undefined`，原因是 `undefined` 為所有型別的子型別，因此像 `@type {string | number | undefined}` 這種註記，會在最終顯示型別時簡化成 `string | number`，進而失去了表示參數非必須的意義，而 `void` 本來是用於描述函數沒有返回值的情況，也不為其他型別的子型別，在此情境下可用來替代表示參數為非必須。
+在上面的例子當中，因為兩個參數都不是必要屬性，所以需要在映射時能夠表示該參數為可選屬性，但在 TypeScript 的型別映射中，無法做到過於複雜的操作，讓屬性有條件地可選（`{ [x: string]?: any; }`）或不可選，因此要以其他方式表示該參數是可選屬性。
+
+`undefined` 為所有型別的子型別，因此像 `@type {string | number | undefined}` 這種註記，會在最終顯示型別時被簡化成 `string | number`，進而失去了表示參數非必須的意義，而 `void` 本來是用於描述函數沒有返回值的情況，也不為其他型別的子型別，在此情境下可用來替代表示參數為非必須。
 
 #### DTO of Output/Response
 

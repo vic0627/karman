@@ -1,8 +1,9 @@
 import { defineKarman } from "@karman";
 import fakeStore from "./src/fake-store";
 import tpProject from "./src/tp-project";
+import constant from "./src/utils/constant";
 
-export default defineKarman({
+const rootKarman = defineKarman({
   root: true,
   headerMap: true,
   validation: true,
@@ -12,13 +13,18 @@ export default defineKarman({
   // timeout: 100,
   // timeoutErrorMessage: "error~~~",
   onRequest(req) {
-    console.log("onRequest", req);
+    // console.log("onRequest", req);
+    console.log(this._constant.min);
   },
   onResponse(res) {
-    console.log("onResponse", res);
+    // console.log("onResponse", res);
   },
   route: {
     fakeStore,
     tpProject,
   },
 });
+
+rootKarman.$use(constant);
+
+export default rootKarman;
