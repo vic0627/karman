@@ -30,8 +30,16 @@ const hooks = {
 
 const request = async () => {
   try {
-    const [resPromise, abort] = rootKarman.tpProject.getScheduleExtend({ limit: 10 }, { ...hooks });
-    // const [resPromise, abort] = rootKarman.fakeStore.product.getById({ id: 1 }, { ...hooks });
+    // const [resPromise, abort] = rootKarman.tpProject.getScheduleExtend({ limit: 10 }, { ...hooks });
+    const [resPromise, abort] = rootKarman.fakeStore.product.getById(
+      { id: 1 },
+      {
+        onSuccess(res) {
+          return res.body;
+        },
+        cache: true
+      },
+    );
     // const [resPromise, abort] = rootKarman.fakeStore.user.modify({
     //   id: 3,
     //   // email: "foo@gmail.com",

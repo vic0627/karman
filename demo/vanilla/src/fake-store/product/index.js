@@ -1,4 +1,4 @@
-import { defineKarman, defineAPI } from "@karman";
+import { defineKarman, defineAPI } from "@vic0627/karman";
 import limitAndSort from "../payload-def/limit-and-sort";
 import dtoProductInfo from "./dto/dto-product-info";
 import dtoCategory from "./dto/dto-category";
@@ -12,7 +12,7 @@ async function convertImage(_, payload) {
 }
 
 export default defineKarman({
-  url: "product",
+  url: "products",
   api: {
     /**
      * ### get all products

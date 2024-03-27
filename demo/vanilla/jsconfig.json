@@ -1,10 +1,6 @@
 {
-    "compilerOptions": {
-        "baseUrl": "./",
-        "paths": {
-            "@karman": [
-                "./src/karman"
-            ]
-        }
-    }
+  "compilerOptions": {
+    "baseUrl": "./",
+    "paths": {}
+  }
 }

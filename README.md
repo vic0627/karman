@@ -7,6 +7,7 @@ HTTP 客戶端 / API 中心化管理 / API 抽象層
 - [特色](#特色)
 - [開始](#開始)
   - [什麼是 karman？](#什麼是-karman)
+  - [安裝](#安裝)
   - [簡易示範](#簡易示範)
 - [核心](#核心)
   - [Karman Tree](#karman-tree)
@@ -46,6 +47,31 @@ HTTP 客戶端 / API 中心化管理 / API 抽象層
 
 karman 是一款用於建構 API [抽象層](https://en.wikipedia.org/wiki/Abstraction_layer)的 JavaScript 套件，以樹狀結構管理 API 的路由、路由上的方法、配置等，並提供封裝後的 API 統一的 I/O 介面，且支援配置 API I/O 介面的 DTO，透過依值型別，封裝後的 API 在被調用時能夠於懸停提示顯示 I/O 介面型別與區域註解，後續透過 karman 調用 API 的開發人員，能夠關注在該 API 所實現的「功能」，而不是建立請求時所需的複雜配置，使抽象層成為「能夠發送請求的 API 文件」。
 
+### 安裝
+
+npm：
+
+```bash
+$ npm install @vic0627/karman
+```
+
+安裝後，使用 `import` 導入套件：
+
+```js
+import { defineKarman, Karman } from "@vic0627/karman"
+```
+
+如果你是使用 `vite` 作為建構工具，嘗試將此套件排除在最佳化之外：
+
+```js
+// vite.config.js
+export default {
+    optimizeDeps: {
+        exclude: ['@vic0627/karman'],
+    }
+}
+```
+
 ### 簡易示範
 
 假設某專案有串接的 API 如下：
@@ -61,7 +87,7 @@ DELETE https://karman.com/products/:id # 刪除單一商品
 
 ```js
 // /karman/index.js
-import { defineKarman, defineAPI } from "karman"
+import { defineKarman, defineAPI } from "@vic0627/karman"
 
 export default defineKarman({               // 創建 Karman 實例/節點
     root: true,                             // 指定此層為根節點
@@ -170,7 +196,7 @@ const deleteProduct = async ({ id }) => {
 每個 `defineKarman()` 內都可以配置屬於該層的 url 路徑，路徑可以配置或不配置，可以是完整的 url 也可以是 url 的片段，但要注意，你為 karman node 所配置的 url 會參考父節點的 url 組合成一組該節點的基本 url。
 
 ```js
-import { defineKarman } from "karman"
+import { defineKarman } from "@vic0627/karman"
 
 const rootKarman = defineKarman({
     root: true,
@@ -199,7 +225,7 @@ rootKarman.user.someNode.someAPI()
 另外，在不多見的情況下，前端可能會使用到不同網域下的 API，也可以透過 `defineKarman()` 進行整合，讓整份專案都通過單一窗口去和不同伺服器進行溝通。
 
 ```js
-import { defineKarman } from "karman"
+import { defineKarman } from "@vic0627/karman"
 
 export default defineKarman({
     // 這層 url 為空
@@ -222,7 +248,7 @@ export default defineKarman({
 「繼承事件」會發生在當該層 karman node 的 `root` 被設置為 `true` 時觸發，事件被觸發時，會將根節點的配置繼承至子節點甚至孫節點上，直到該配置被子孫節點複寫，而複寫後的配置也會有相同的繼承行為。
 
 ```js
-import { defineKarman } from "karman"
+import { defineKarman } from "@vic0627/karman"
 
 export default defineKarman({
     // ...
@@ -266,7 +292,7 @@ karman tree 若是沒有配置根節點，會有以下的注意事項：
 - `Karman._pathResolver`：karman 在進行 url 組成時所使用的模組，類似於 node.js 的 `path` 模組。
 
 ```js
-import { defineKarman } from "karman"
+import { defineKarman } from "@vic0627/karman"
 
 // hooks 中的常用方法
 const add = (a, b) => a + b
@@ -326,7 +352,7 @@ declare const _constant: Constant
 export default _constant
 
 // ⚠️ 模組擴展的聲明一定要記得撰寫，將依賴聲明在 KarmanDependencies 之中
-declare module "karman" {
+declare module "@vic0627/karman" {
     interface KarmanDependencies {
         /**
          * 也可以用 block comment 為依賴撰寫註解文件
@@ -340,7 +366,7 @@ declare module "karman" {
 
 ```js
 // /src/karman/index.js
-import { defineKarman } from "karman"
+import { defineKarman } from "@vic0627/karman"
 import constant from "./constant"
 
 const rootKarman = defineKarman({
@@ -360,7 +386,7 @@ rootKarman.$use(constant)
 final API 同樣可以選擇配置 url 或 url 的片段，當今天某路由上可能只有零星幾個 API 時，可以考慮將他們配置到父節點上，而不用另外在建立新的節點，讓路由的配置可以更彈性。
 
 ```js
-import { defineKarman, defineAPI } from "karman"
+import { defineKarman, defineAPI } from "@vic0627/karman"
 
 export default defineKarmna({
     root: true,
@@ -403,7 +429,7 @@ final API 的配置繼承與複寫分為幾個階段：
 `requestStrategy` 屬性可以決定該 final API 所選用的 HTTP Client，目前支援 `"xhr"` 與 `"fetch"` 作為參數，並以 `"xhr"` 作為預設選項。
 
 ```js
-import { defineKarman, defineAPI } from "karman"
+import { defineKarman, defineAPI } from "@vic0627/karman"
 
 export default defineKarmna({
     root: true,
@@ -441,7 +467,7 @@ export default defineKarmna({
 最後在[參數驗證規則](#validation-enigine)的部分較為複雜，因此以獨立章節來解說。
 
 ```js
-import { defineKarman, defineAPI } from "karman"
+import { defineKarman, defineAPI } from "@vic0627/karman"
 
 const karmanProduct = defineKarmna({
     root: true,
@@ -519,10 +545,10 @@ karmanProduct.getById({                 // url: https://karman.com/products/10/c
     參數描述符，以物件形式構成，可以定義參數的最大、最小、相等值、以及測量屬性，使用上最好與 String Rule 搭配，形成一個 [Rule Set](#rule-set)，先進行型別的驗證後再進行單位的測量，確保驗證機制的完整性。
 
 ```js
-import { defineKarman, defineAPI, defineCustomValidator, ValidationError } from "karman"
+import { defineKarman, defineAPI, defineCustomValidator, ValidationError } from "@vic0627/karman"
 
 const customValidator = defineCustomValidator((prop, value) => {
-    if (value !== "karman")
+    if (value !== "@vic0627/karman")
         throw new ValidationError(`參數 '${prop}' 必為 'karman' 但卻接收到 '${value}'`)
 })
 
@@ -558,11 +584,11 @@ karman.ruleTest({ param01: "A" })                   // Valid
 karman.ruleTest({ param01: "foo" })                 // ValidationError
 karman.ruleTest({ param02: new Date() })            // Valid
 karman.ruleTest({ param02: "2024-01-01" })          // ValidationError
-karman.ruleTest({ param03: "karman" })              // Valid
+karman.ruleTest({ param03: "@vic0627/karman" })              // Valid
 karman.ruleTest({ param03: "bar" })                 // ValidationError: 參數 'param03' 必為 'karman' 但卻接收到 'bar'
 karman.ruleTest({ param04: "karman@gmail.com" })    // Valid
 karman.ruleTest({ param04: "karman is the best" })  // ValidationError: 錯誤的 email 格式
-karman.ruleTest({ param05: "karman" })              // Valid
+karman.ruleTest({ param05: "@vic0627/karman" })              // Valid
 karman.ruleTest({ param05: "karman is the best" })  // ValidationError
 karman.ruleTest({ param05: 1 })                     // 會以警告提示找不到可測量的屬性
 ```
@@ -580,7 +606,7 @@ karman.ruleTest({ param05: 1 })                     // 會以警告提示找不�
     透過 `defineUnionRules()` 定義，使用此集合作為驗證規則時，參數只須符合集合中的其中一項規則即代表通過驗證。
 
 ```js
-import { defineKarman, defineAPI, defineIntersectionRules, defineUnionRules } from "karman"
+import { defineKarman, defineAPI, defineIntersectionRules, defineUnionRules } from "@vic0627/karman"
 
 const karman = defineKarman({
     // ...
@@ -631,7 +657,7 @@ Middleware 是指在 final API 執行時的某個生命週期中執行的函式�
 - **Hooks**：於定義 API 或調用 final API 時配置，被定義的 hooks 只適用於該 final API，某些 hooks 可以以非同步任務定義，或具備返回值，可透過返回值來改變某些行為或參數。
 
 ```js
-import { defineKarman, defineAPI } from "karman"
+import { defineKarman, defineAPI } from "@vic0627/karman"
 
 const hooksKarman = defineKarman({
     // ...
@@ -799,7 +825,7 @@ Uncaught Error: ...
 > ⚠️ 返回快取資料的 final API 無法使用 abort 方法來取消請求！
 
 ```js
-import { defineKarman, defineAPI } from "karman"
+import { defineKarman, defineAPI } from "@vic0627/karman"
 
 const min = 1000 * 60
 
@@ -834,7 +860,7 @@ karman 提供的另一種額外的強大功能，就是透過 TypeScript 泛型�
 JSDoc 是一種註解方式的標準化規範，在支援自動解析 JSDoc 的 IDE 上（如 Visual Studio Code），能夠使被註解的變數、屬性、或方法等提供相應的註解訊息。
 
 ```js
-import { defineKarman, defineAPI } from "karman"
+import { defineKarman, defineAPI } from "@vic0627/karman"
 
 /**
  * # API 管理中心
@@ -888,7 +914,7 @@ rootKarman.user.create()    // 創建新用戶
 > ⚠️ 透過 `@type` 標籤強制註記型別，是為了調用 final API 時能夠獲得更完整的參數提示訊息，並不會影響到 karman 本身運行。
 
 ```js
-import { defineKarman, defineAPI } from "karman"
+import { defineKarman, defineAPI } from "@vic0627/karman"
 
 const rootKarman = defineKarman({
     // ...

@@ -1,4 +1,4 @@
-import { defineAPI, defineKarman, defineUnionRules } from "@karman";
+import { defineAPI, defineKarman } from "@vic0627/karman";
 
 const api = {
   getScheduleExtend: defineAPI({

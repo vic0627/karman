@@ -1,4 +1,4 @@
-import { defineAPI, defineIntersectionRules, defineKarman, defineUnionRules } from "@karman";
+import { defineAPI, defineIntersectionRules, defineKarman, defineUnionRules } from "@vic0627/karman";
 import product from "./product";
 import cart from "./cart";
 import user from "./user";

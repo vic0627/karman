@@ -11,6 +11,9 @@ const customResolver = resolve({
 /** @type {import('vite').UserConfig} */
 export default {
   // root: "./",
+  optimizeDeps: {
+    exclude: ["@vic0627/karman"]
+  },
   plugins: [
     alias({
       entries: [

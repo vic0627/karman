@@ -1,4 +1,4 @@
-import { defineAPI, defineKarman } from "@karman";
+import { defineAPI, defineKarman } from "@vic0627/karman";
 import limitAndSort from "../payload-def/limit-and-sort";
 import dtoUser from "./dto/dto-user";
 import id from "../payload-def/id";

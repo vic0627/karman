@@ -1,4 +1,4 @@
-import { defineCustomValidator, ValidationError } from "@karman";
+import { defineCustomValidator, ValidationError } from "@vic0627/karman";
 import category from "../dto/dto-category";
 
 export default (required, { path, query, body } = {}) => {

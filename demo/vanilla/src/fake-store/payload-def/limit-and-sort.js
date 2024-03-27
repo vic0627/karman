@@ -1,4 +1,4 @@
-import { defineCustomValidator } from "@karman";
+import { defineCustomValidator } from "@vic0627/karman";
 /**
  * @param {R} required
  * @template {boolean} R

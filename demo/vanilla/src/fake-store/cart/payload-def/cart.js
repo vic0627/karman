@@ -1,4 +1,4 @@
-import { defineCustomValidator, ValidationError } from "@karman";
+import { defineCustomValidator, ValidationError } from "@vic0627/karman";
 import { dateRule } from "../../payload-def/date-range";
 import dtoCartProduct from "../dto/dto-cart-product";
 

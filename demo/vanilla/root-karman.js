@@ -1,4 +1,4 @@
-import { defineKarman } from "@karman";
+import { defineKarman } from "@vic0627/karman";
 import fakeStore from "./src/fake-store";
 import tpProject from "./src/tp-project";
 import constant from "./src/utils/constant";
@@ -10,11 +10,11 @@ const rootKarman = defineKarman({
   scheduleInterval: 1000 * 10,
   // cache: true,
   cacheExpireTime: 5000,
-  // timeout: 100,
+  timeout: 100,
   // timeoutErrorMessage: "error~~~",
   onRequest(req) {
-    // console.log("onRequest", req);
-    console.log(this._constant.min);
+    console.log("onRequest", req);
+    // console.log(this._constant.min);
   },
   onResponse(res) {
     // console.log("onResponse", res);

@@ -1,4 +1,4 @@
-import { defineCustomValidator, ValidationError } from "@karman";
+import { defineCustomValidator, ValidationError } from "@vic0627/karman";
 import dtoUser from "../dto/dto-user";
 
 const body = true;
