@@ -7,7 +7,7 @@ declare const _constant: Constant;
 export default _constant;
 
 declare module "@karman" {
-  interface IKarman {
+  interface KarmanDependencies {
     _constant: Constant;
   }
 }

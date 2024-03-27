@@ -275,7 +275,7 @@ const add = (a, b) => a + b
 Object.defineProperty(add, "install", {
     value: (karman) => {
         // 接著定義 install 方法的實現
-        Object.defineProperty(karman, "add", {
+        Object.defineProperty(karman, "_add", {
             { value: add }
         })
     }
@@ -292,9 +292,66 @@ const karman = defineKarman({
     // ...
 })
 
-karman.$use(add) // 使用 root karman node 安裝依賴
+karman.$use(_add) // 使用 root karman node 安裝依賴
 
 karman.someAPI() // console output: true "foo/bar" 5
+```
+
+**補充：讓依賴支援語法提示**
+
+若想要讓安裝的依賴也能夠支援語法提示功能，可以使用 `.d.ts` 聲明文件，首先將依賴寫在另一份 `.js` 中：
+
+```js
+// /src/karman/constant.js
+const _constant = {
+    second: 1000,
+    minute: 1000 * 60,
+    hour: 1000 * 60 * 60,
+    install(karman) {
+        Object.defineProperty(karman, '_constant', { value: this })
+    }
+}
+export default _constant
+```
+
+在同一個目錄下，新增一份名稱相同的 `.d.ts` 聲明文件：
+
+```ts
+// /src/karman/constant.d.ts
+interface Constant {
+    second: number;
+    minute: number;
+    hour: number;
+}
+declare const _constant: Constant
+export default _constant
+
+// ⚠️ 模組擴展的聲明一定要記得撰寫，將依賴聲明在 KarmanDependencies 之中
+declare module "karman" {
+    interface KarmanDependencies {
+        /**
+         * 也可以用 block comment 為依賴撰寫註解文件
+         */
+        _constant: Constant;
+    }
+}
+```
+
+最後，在 root karman 的文件中引入依賴，後續在 Middleware 中使用依賴時，就能支援完整的語法提示：
+
+```js
+// /src/karman/index.js
+import { defineKarman } from "karman"
+import constant from "./constant"
+
+const rootKarman = defineKarman({
+    // ...
+    onRequest() {
+        this._constant // <= hover 顯示型別、註解
+    }
+})
+
+rootKarman.$use(constant)
 ```
 
 ### Final API
@@ -330,7 +387,7 @@ const [resPromise, abort] = karman.finalAPI(payload[, config])
 - `resPromise`：響應結果，本身為一個 Promise 物件，可用 async/await 或 Promise chain 來獲取資料。
 - `abort`：取消請求方法，是同步任務。
 - `payload`：final API 主要接收的參數物件，為定義 final API 時透過 payloadDef 來決定此物件須具備甚麼屬性參數，倘若 payloadDef 並未定義所需參數，調用 final API 時又有設定 config 的需求時，payload 可傳入空物件、undefined、null 等值。
-- `config`：最後複寫 API 配置的參數，但無法複寫如：url、HTTP Method、payloadDef 等初始配置。
+- `config`：最後複寫 API 配置的參數，但無法複寫如：url、method、payloadDef 等初始配置。
 
 #### Inheritance
 
@@ -660,7 +717,7 @@ const hooksKarman = defineKarman({
 })
 ```
 
-> ⚠️ Middleware 在配置時盡量以一般函式宣告，避免使用箭頭函式，這是因為如果在 Middleware 內透過 `this` 存取 karman node，使用箭頭函式將會使該函式失去 `this` 的指向。
+> ⚠️ Middleware 在配置時盡量以一般函式宣告，避免使用箭頭函式，這是因為如果在 Middleware 內透過 `this` 存取 karman node，箭頭函式將會使該函式失去 `this` 的指向。
 
 嘗試執行：
 
@@ -876,6 +933,88 @@ rootKarman.getAll({
 `undefined` 為所有型別的子型別，因此像 `@type {string | number | undefined}` 這種註記，會在最終顯示型別時被簡化成 `string | number`，進而失去了表示參數非必須的意義，而 `void` 本來是用於描述函數沒有返回值的情況，也不為其他型別的子型別，在此情境下可用來替代表示參數為非必須。
 
 #### DTO of Output/Response
+
+Output 需要透過 `defineAPI()` 中的 `dto` 屬性來配置，`dto` 不會影響程式運行，只會影響 final API 回傳結果的型別，因此可以給予任何值，而 `dto` 的配置方式有很多種，但為了節省記憶體空間，推薦使用型別文件及 JSDoc。
+
+> ⚠️ 會影響回傳結果型別的因素非常多，包括 `dto`、`onSuccess`、`onError` 等，因此編譯器在解析時，可能會因環境或上下文而導致回傳結果的型別有誤差。
+
+- **直接賦值**
+
+    ```js
+    // ...
+    export default defineKarman({
+        // ...
+        api: {
+            getProducts: defineAPI({
+                dto: [{
+                    /** 編號 */
+                    id: 0,
+                    /** 名稱 */
+                    title: '',
+                    /** 價格 */
+                    price: 0,
+                    /** 說明 */
+                    description: ''
+                }]
+            })
+        }
+    })
+    ```
+
+- **JSDoc**
+
+    ```js
+    /**
+     * @typedef {object} Product
+     * @prop {number} Product.id - 編號
+     * @prop {string} Product.title - 名稱
+     * @prop {number} Product.price - 價格
+     * @prop {string} Product.description - 說明
+     */
+    // ...
+    export default defineKarman({
+        // ...
+        api: {
+            getProducts: defineAPI({
+                /**
+                 * @type {Product[]}
+                 */
+                dto: null
+            })
+        }
+    })
+    ```
+
+- **TypeScript + JSDoc**
+
+    ```ts
+    // /product.type.ts
+    export interface Product {
+        /** 編號 */
+        id: number;
+        /** 名稱 */
+        title: string;
+        /** 價格 */
+        price: number;
+        /** 說明 */
+        description: string;
+    }
+    ```
+
+    ```js
+    // ...
+    export default defineKarman({
+        // ...
+        api: {
+            getProducts: defineAPI({
+                /**
+                 * @type {import("product.type").Product[]}
+                 */
+                dto: null
+            })
+        }
+    })
+    ```
 
 ## API 文件
 

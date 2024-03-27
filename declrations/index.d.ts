@@ -368,15 +368,17 @@ type FinalAPI<ST, P, D, S, E> = <ST2 extends unknown, S2 extends unknown, E2 ext
 
 type FinalAPIRes<D, S, S2, E, E2> = SelectPrimitive2<E, E2, undefined> | SelectPrimitive3<D, S, S2, undefined>;
 
-interface IKarman {
+interface KarmanDependencies {
   _typeCheck: TypeCheck;
   _pathResolver: PathResolver;
 }
 
-export declare class Karman implements IKarman {
+export declare class CKarman {
   public $mount<O extends object>(o: O, name?: string): void;
   public $use<T extends { install(k: Karman): void }>(dependency: T): void;
 }
+
+export type Karman = CKarman & KarmanDependencies;
 
 interface ApiOptions<ST, P, D, S, E> extends Hooks<ST, P, D, S, E>, UtilConfig, CacheConfig, RequestConfig<ST> {
   /**
