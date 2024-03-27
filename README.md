@@ -36,7 +36,6 @@ HTTP 客戶端 / API 中心化管理 / API 抽象層
 - XMLHttpRequest、fetch 於 I/O 的 JSON 自動轉換
 - 動態型別註解
 - 請求方法的生命週期
-- 依值型別實現請求方法的 I/O 介面的 [DTO](https://en.wikipedia.org/wiki/Data_transfer_object)
 - 參數驗證引擎
 
 ## 開始
