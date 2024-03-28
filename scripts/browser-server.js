@@ -20,7 +20,7 @@ const init = async () => {
 
     const server = http.createServer((req, res) => {
       const filePath = req.url === "/" ? "./index.html" : req.url.includes("/dist") ? "../.." + req.url : "." + req.url;
-      const fullPath = getPath("../demo/browser", filePath);
+      const fullPath = getPath("../demo/iife", filePath);
 
       const contentType = { "Content-Type": "text/plain" };
       const fileType = fullPath.split(".").at(-1);
@@ -57,7 +57,7 @@ const init = async () => {
 
     const io = socket(server);
 
-    const watcher = chokidar.watch([getPath("../example/browser"), getPath("../src")]);
+    const watcher = chokidar.watch([getPath("../demo/iife"), getPath("../lib")]);
 
     let connect, socketEvent;
 
@@ -76,7 +76,7 @@ const init = async () => {
       timeLog(`file ${ansi.color("cyanBlue", path)} has changed. reloading...`);
 
       try {
-        if (path.includes('src')) await rollupBuild();
+        if (path.includes('lib')) await rollupBuild();
 
         await socketEvent.emit("reload");
 

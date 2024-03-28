@@ -1,12 +1,13 @@
 const fs = require("fs");
+const timeLog = require("./time-log.js")
 // const path = require("path");
 
 module.exports = (sourcePath, destinationPath) => {
   fs.copyFile(sourcePath, destinationPath, (err) => {
     if (err) {
-      console.error("複製檔案時發生錯誤:", err);
+      console.error(`copy ${sourcePath} failed`, err);
     } else {
-      console.log("檔案已成功複製");
+      timeLog(`${sourcePath} has copied`);
     }
   });
 };
