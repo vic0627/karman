@@ -10,3 +10,9 @@ export default function convertToBase64(file) {
     reader.onerror = (error) => reject(error);
   });
 }
+
+Object.defineProperties(convertToBase64, "install", {
+  value: (karman) => {
+    Object.defineProperty(karman, "_convertToBase64", { value: convertToBase64 });
+  },
+});

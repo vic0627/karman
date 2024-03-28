@@ -1,56 +1,24 @@
-import { defineAPI, defineIntersectionRules, defineKarman, defineUnionRules } from "@vic0627/karman";
+import { defineAPI, defineKarman } from "@vic0627/karman";
 import product from "./product";
 import cart from "./cart";
 import user from "./user";
+import _constant from "src/utils/constant";
+import convertToBase64 from "src/utils/imageBase64";
 
-export default defineKarman({
+const fakeStore = defineKarman({
+  root: true,
+  headerMap: true,
+  validation: true,
+  scheduleInterval: 1000 * 10,
+  // cache: true,
+  cacheExpireTime: 5000,
+  timeout: 100,
+  // timeoutErrorMessage: "error~~~",
   url: "https://fakestoreapi.com",
   headers: {
     "Content-Type": "application/json; charset=utf-8",
   },
   api: {
-    ruleSetTest: defineAPI({
-      payloadDef: {
-        /** @type {string | number} */
-        param01: {
-          rules: defineUnionRules("char", "string", "number"),
-        },
-        /** @type {number} */
-        param02: {
-          rules: defineIntersectionRules("int", "number"),
-        },
-      },
-    }),
-    stringTest: defineAPI({
-      payloadDef: {
-        /** @type {string} */
-        param01: { rules: "char" },
-        /** @type {string} */
-        param02: { rules: "string" },
-      },
-    }),
-    numberTest: defineAPI({
-      payloadDef: {
-        /** @type {number} */
-        param01: { rules: "int" },
-        /** @type {number} */
-        param02: { rules: "number" },
-      },
-    }),
-    objectTest: defineAPI({
-      payloadDef: {
-        /** @type {object} */
-        param01: { rules: "object" },
-        /** @type {object} */
-        param02: { rules: "object-literal" },
-        /** @type {any[]} */
-        param03: { rules: "array" },
-        /** @type {Funciton} */
-        param04: { rules: "funciton" },
-        /** @type {null} */
-        param05: { rules: "null" },
-      },
-    }),
     /**
      * ### user login
      */
@@ -107,3 +75,8 @@ export default defineKarman({
     user,
   },
 });
+
+fakeStore.$use(_constant);
+fakeStore.$use(convertToBase64);
+
+export default fakeStore;

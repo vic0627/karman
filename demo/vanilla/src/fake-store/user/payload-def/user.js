@@ -4,10 +4,14 @@ import dtoUser from "../dto/dto-user";
 const body = true;
 export const emailRegexp = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/**
+ * @param {R} required
+ * @template {boolean} R
+ */
 export default (required) => ({
   /**
    * user id
-   * @type {number}
+   * @type {R extends true ? number : (number | void)}
    */
   id: {
     required,
@@ -16,7 +20,7 @@ export default (required) => ({
   },
   /**
    * email
-   * @type {string}
+   * @type {R extends true ? string : (string | void)}
    */
   email: {
     required,
@@ -25,7 +29,7 @@ export default (required) => ({
   },
   /**
    * user nick name
-   * @type {string}
+   * @type {R extends true ? string : (string | void)}
    */
   username: {
     required,
@@ -34,7 +38,7 @@ export default (required) => ({
   },
   /**
    * password
-   * @type {string}
+   * @type {R extends true ? string : (string | void)}
    */
   password: {
     required,
@@ -43,7 +47,7 @@ export default (required) => ({
   },
   /**
    * user full name
-   * @type {typeof dtoUser.name}
+   * @type {R extends true ? typeof dtoUser.name : (typeof dtoUser.name | void)}
    */
   name: {
     required,
@@ -72,7 +76,7 @@ export default (required) => ({
   },
   /**
    * user address
-   * @type {typeof dtoUser.address}
+   * @type {R extends true ? typeof dtoUser.address : (typeof dtoUser.address | void)}
    */
   address: {
     required,
@@ -108,7 +112,7 @@ export default (required) => ({
   },
   /**
    * phone number
-   * @type {string}
+   * @type {R extends true ? string : (string | void)}
    */
   phone: {
     body,

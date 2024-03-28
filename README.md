@@ -109,24 +109,33 @@ export default defineKarman({               // 創建 Karman 實例/節點
     root: true,                             // 指定此層為根節點
     url: "https://karman.com/products",     // 此節點的基本 url
     api: {                                  // 基於上面 url 上的 API
+        /**
+         * 取得所有商品                      // 撰寫 JSDoc 註解
+         */
         getAll: defineAPI(),                // 定義取得所有商品的方法
+        /**
+         * 新增商品
+         */
         add: defineAPI({                    // 定義新增商品的方法
-            method: "POST"                  // HTTP 方法選用 POST
-            payloadDef: {                   // 定義此方法 Input/Payload 介面
-                title: {                    // 方法需求參數 title
+            method: "POST",                 // HTTP 方法選用 POST
+            payloadDef: {                   // 定義此方法的輸入（payload）介面
+                title: {                    // 輸入需求參數 title
                     required: true,         // 指定為必要參數
                     body: true              // 指定為請求體參數
                 },
-                price: {                    // 方法參數需求 price
+                price: {                    // 輸入參數需求 price
                     required: true,
                     body: true
                 }
             }
         }),
+        /**
+         * 更新商品資訊
+         */
         update: defineAPI({                 // 定義更新商品資訊的方法
-            method: "PUT"                   // HTTP 方法選用 PUT
+            method: "PUT",                  // HTTP 方法選用 PUT
             payloadDef: {
-                id: {                       // 方法需求參數 id
+                id: {                       // 輸入需求參數 id
                     required: true,
                     path: 0                 // 指定 id 為路徑參數第一位
                 },
@@ -134,6 +143,9 @@ export default defineKarman({               // 創建 Karman 實例/節點
                 price: { body: true }
             }
         })
+        /**
+         * 刪除商品
+         */
         delete: defineAPI({                 // 定義刪除商品的方法
             method: "DELETE",               // HTTP 方法選用 DELETE
             payloadDef: {
@@ -191,7 +203,7 @@ const deleteProduct = async ({ id }) => {
         // 除了響應 Promise 外，這邊取出了許消請求的方法
         const [delPromise, abortDelete] = karman.delete({ id })
         // 滿足條件時，取消刪除商品請求
-        if (await someReason()) abortDelete()
+        if (someReason()) abortDelete()
         const res = await delPromise
         console.log(res)
     } catch (error) {
@@ -199,6 +211,15 @@ const deleteProduct = async ({ id }) => {
         console.error(error)
     }
 };
+```
+
+若專案是使用框架，可以考慮將其註冊在框架的全域變數或狀態之中：
+
+```js
+// main.js
+import karman from "@/karman"
+
+karman.$mount(globalObject, "$karman")
 ```
 
 ## 核心

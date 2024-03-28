@@ -48,6 +48,9 @@ export default defineKarman({
       onSuccess(res) {
         return res.body;
       },
+      onError() {
+        return {};
+      },
     }),
     /**
      * ### delete a user

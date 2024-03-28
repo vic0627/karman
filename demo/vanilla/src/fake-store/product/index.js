@@ -23,7 +23,7 @@ export default defineKarman({
       onBeforeRequest(_, payload) {
         if (!payload.limit) payload.limit = 10;
       },
-      requestStrategy: "fetch",
+      requestStrategy: "fetch"
     }),
     /**
      * ### get single product by id
@@ -34,6 +34,9 @@ export default defineKarman({
       },
       dto: dtoProductInfo,
       requestStrategy: "fetch",
+      onSuccess(res) {
+        return res.body
+      }
     }),
     /**
      * ### create a new product
@@ -44,7 +47,6 @@ export default defineKarman({
         ...productInfo(true),
       },
       dto: dtoProductInfo,
-      onBeforeRequest: convertImage,
     }),
     /**
      * ### update single product
