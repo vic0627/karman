@@ -1,5 +1,8 @@
 import category from "./category";
-
+/**
+ * @param {R} required
+ * @template {boolean} R
+ */
 export default (required) => {
   const body = true;
   const rule = {
@@ -8,7 +11,7 @@ export default (required) => {
      * 標題
      * @min 1
      * @max 20
-     * @type {string}
+     * @type {R extends true ? string : (string | void)}
      */
     title: {
       required,
@@ -18,7 +21,7 @@ export default (required) => {
     /**
      * 價格
      * @min 1
-     * @type {number}
+     * @type {R extends true ? number : (number | void)}
      */
     price: {
       required,
@@ -29,7 +32,7 @@ export default (required) => {
      * 說明
      * @min 1
      * @max 100
-     * @type {string}
+     * @type {R extends true ? string : (string | void)}
      */
     description: {
       required,
@@ -39,7 +42,7 @@ export default (required) => {
     /**
      * 圖片
      * @max 5mb
-     * @type {File}
+     * @type {R extends true ? File : (File | void)}
      */
     image: {
       required,

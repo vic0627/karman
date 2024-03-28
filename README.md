@@ -1,4 +1,4 @@
-# karman
+# Karman
 
 HTTP 客戶端 / API 中心化管理 / API 抽象層
 
@@ -6,7 +6,7 @@ HTTP 客戶端 / API 中心化管理 / API 抽象層
 
 - [特色](#特色)
 - [開始](#開始)
-  - [什麼是 karman？](#什麼是-karman)
+  - [什麼是 Karman？](#什麼是-karman)
   - [安裝](#安裝)
   - [簡易示範](#簡易示範)
 - [核心](#核心)
@@ -17,14 +17,12 @@ HTTP 客戶端 / API 中心化管理 / API 抽象層
   - [Response Caching](#response-caching)
   - [Dynamic Type Annotation](#dynamic-type-annotation)
 - [API 文件](#api-文件)
-  - [defineKarman(option)](#definekarmanoption)
-  - [Karman](#karman-1)
-  - [defineAPI(option)](#defineapioption)
-  - [defineCustomValidator(validator)](#definecustomvalidatorvalidator)
-  - [defineUnionRules(...rules)](#defineunionrulesrules)
-  - [defineIntersectionRules(...rules)](#defineintersectionrulesrules)
+  - [defineKarman](#definekarman)
+  - [defineAPI](#defineapi)
+  - [defineCustomValidator](#definecustomvalidator)
+  - [RuleSet](#ruleset)
   - [ValidationError](#validationerror)
-  - [isValidationError(error)](#isvalidationerrorerror)
+  - [isValidationError](#isvalidationerror)
 
 ## 特色
 
@@ -41,11 +39,29 @@ HTTP 客戶端 / API 中心化管理 / API 抽象層
 
 ## 開始
 
-### 什麼是 karman？
+### 什麼是 Karman？
 
-> karman 取自於地球與外太空的交界處「卡門線 Kármán line」，用來比喻前後端交界處的抽象概念。
+> Karman 一詞源自於地球與外太空的分界線「卡門線 Kármán line」，用以比喻前後端交界處的抽象概念。
 
-karman 是一款用於建構 API [抽象層](https://en.wikipedia.org/wiki/Abstraction_layer)的 JavaScript 套件，以樹狀結構管理 API 的路由、路由上的方法、配置等，並提供封裝後的 API 統一的 I/O 介面，且支援配置 API I/O 介面的 DTO，透過依值型別，封裝後的 API 在被調用時能夠於懸停提示顯示 I/O 介面型別與區域註解，後續透過 karman 調用 API 的開發人員，能夠關注在該 API 所實現的「功能」，而不是建立請求時所需的複雜配置，使抽象層成為「能夠發送請求的 API 文件」。
+Karman 是一個 JavaScript 套件，專為建構 API [抽象層](https://en.wikipedia.org/wiki/Abstraction_layer)而設計。它採用樹狀結構來管理 API 的路由、路由上的方法以及配置等內容。同時，Karman 提供了封裝後的 API，使得所有 API 都具有統一的輸入/輸出介面。此外，Karman 支援配置 API 輸入/輸出介面的 DTO（Data Transfer Object）。透過對數據類型的依賴，封裝後的 API 在被調用時能夠在懸停提示中顯示出輸入/輸出介面的類型以及區域註解。這使得使用 Karman 調用 API 的開發人員可以專注於 API 所提供的功能，而無需煩惱複雜的請求配置。簡而言之，Karman 讓 API 抽象層變得更像是「可發送請求的 API 文件」。
+
+在以往的情況下，建立請求時可能會發生以下問題：
+
+1. 複雜的配置：以往的方法可能需要開發人員手動處理各種細節，包括路由、方法和配置等。這樣的操作可能會導致配置過程繁瑣且容易出錯，並且使得代碼難以維護。
+
+2. 資料型別的不一致性：在處理輸入/輸出數據時，開發人員可能會面臨資料型別不一致的問題。這可能需要額外的代碼來處理型別轉換或驗證，增加了代碼的複雜性，同時也增加了錯誤發生的風險。
+
+3. 缺乏統一的輸入/輸出介面：每個 API 可能有自己獨特的輸入/輸出格式，這使得開發人員需要花費額外的時間來熟悉每個 API 的使用方式。這不僅增加了學習成本，也限制了代碼的復用性。
+
+4. API 復用性：在以往的方法中，由於缺乏統一的輸入/輸出介面和良好的抽象層，往往難以實現 API 的復用。每次開發新功能或服務時，都需要重新編寫相關的請求配置，這降低了代碼的復用性，增加了開發工作量。
+
+在傳統的請求建立方式中，請求的配置通常是分散在不同的組件中。這些配置根據 API 的規格或需求的不同，可能還需要額外的操作，例如 URL 的組成或參數的驗證等。當一個 API 的規格非常複雜或者被廣泛復用時，就會導致專案中出現大量重複的程式碼。此外，就像在圖中展示的 `Add Product` 一樣，可能在不同的組件中存在著不同的程式流程。
+
+![http](./public/imgs/http.jpg)
+
+另一方面，Karman 強調了「先封裝、再使用」的理念。透過抽象層，Karman 可以隱藏 API 的繁複工作內容，包括基本配置、參數驗證、URL 組成和請求體建立等。這使得調用 API 的開發人員僅需專注於 API 所實現的功能，以及輸入/輸出的資料傳輸物件。Karman的這種設計方式有助於簡化開發流程，提高代碼的可讀性和可維護性，同時增強了 API 的復用性。
+
+![karman](./public/imgs/karman.jpg)
 
 ### 安裝
 
@@ -58,10 +74,10 @@ $ npm install @vic0627/karman
 安裝後，使用 `import` 導入套件：
 
 ```js
-import { defineKarman, Karman } from "@vic0627/karman"
+import { defineKarman, defineAPI } from "@vic0627/karman"
 ```
 
-如果你是使用 `vite` 作為建構工具，嘗試將此套件排除在最佳化之外：
+如果你是使用 `vite` 作為建構工具，請將此套件排除在最佳化之外：
 
 ```js
 // vite.config.js
@@ -311,7 +327,7 @@ const karman = defineKarman({
     onRequest() {
         const isString = this._typeCheck.isString("")           // 內建依賴
         const paths = this._pathResolver.trim("//foo/bar///")   // 內建依賴
-        const sum = this.add(2, 3)                              // 自行安裝的依賴
+        const sum = this._add(2, 3)                             // 自行安裝的依賴
         console.log(isString, paths, sum)
     }
     // ...
@@ -423,10 +439,9 @@ final API 的配置繼承與複寫分為幾個階段：
 - 第一階段繼承：此階段會先比較 runtime 配置與暫存的 runtime 配置，若前後兩次的配置相同，會略過此階段的繼承行為，否則以 runtime 配置複寫 defineAPI 的配置。
 - 第二階段繼承：此階段會引用 final API 所屬 karman node 的配置，並以第一階段繼承後的配置進行複寫，進而獲得 final API 的最終配置。
 
-
 #### Request Strategy
 
-`requestStrategy` 屬性可以決定該 final API 所選用的 HTTP Client，目前支援 `"xhr"` 與 `"fetch"` 作為參數，並以 `"xhr"` 作為預設選項。
+`requestStrategy` 屬性可以決定該 final API 所選用的 HTTP Client，目前支援 `"xhr"` 與 `"fetch"` 作為參數，並以 `"xhr"` 為預設選項。
 
 ```js
 import { defineKarman, defineAPI } from "@vic0627/karman"
@@ -499,6 +514,36 @@ karmanProduct.getById({                 // url: https://karman.com/products/10/c
     id: 10,
     category: "clothes"
 })
+```
+
+**補充：復用參數定義**
+
+通常情況下，多組 API 可能會使用到重複的參數，這時可以考慮將參數的定義抽離出來，以工廠的方式將其封裝，提供可選及參數位置的傳入，使參數可以在相同驗證規則的情況下，做到更大彈性的配置。
+
+此外，利用 JSDoc 完善型別註記與註解，可使工廠產出的定義物件更型別友善。
+
+```js
+// /payload-def/id.js
+/**
+ * 編號定義工廠
+ * @param {R} required - 是否必要
+ * @param {import('@vic0627/karman').ParamPosition} [param02={}] - 參數位置
+ * @template {boolean} R
+ */
+export default (required, { path = -1, query = false, body = false } = {}) => ({
+  /**
+   * 編號
+   * @min 1
+   * @type {R extends true ? number : (number | void)}
+   */
+  id: {
+    required,
+    path,
+    query,
+    body,
+    rules: ["int", { min: 1 }],
+  },
+});
 ```
 
 ### Validation Enigine
@@ -905,7 +950,7 @@ rootKarman.user.getAll()    // 取得所有用戶
 rootKarman.user.create()    // 創建新用戶
 ```
 
-### DTO of Input/Payload
+#### DTO of Input/Payload
 
 根據[參數定義](#parameter-definition)章節，可以知道 final API 的 `payload` 主要是透過 `defineAPI` 的 `payloadDef` 屬性去定義，並映射到 final API 的 `payload` 上，而 `payloadDef` 的屬性值為物件，通常情況下，映射出來的 `payload` 不會符合定義的規則。
 
@@ -1043,68 +1088,248 @@ Output 需要透過 `defineAPI()` 中的 `dto` 屬性來配置，`dto` 不會影
 
 ## API 文件
 
-### defineKarman(option)
+### defineKarman
 
-```ts
-interface KarmanOption<A, R> {
-    // 👇 結構相關配置
-    root?: boolean;
-    url?: string;
-    api?: {
-      [ApiName in keyof A]: A[ApiName];
-    };
-    route?: {
-      [RouteName in keyof R]: R[RouteName]
-    };
+建構 Karman 節點。
 
-    // 👇 Middleware 配置
-    nRequest?(this: Karman, req: object): void;
-    onResponse?(this: Karman, res: object): boolean | void;
+#### 語法
 
-    // 👇 功能相關配置
-    scheduleInterval?: number;
-    cache?: boolean;
-    cacheExpireTime?: number;
-    cacheStrategy?: "sessionStorage" | "localStorage" | "memory";
-    validation?: boolean;
+```js
+defineKarman(option)
+```
+#### 參數
 
-    // 👇 請求相關配置
-    headers?: {
-      ["Content-Type"]?: string;
-      ["Authorization"]?: `Basic ${string}:${string}`;
-    };
-    auth?: {
-      username: string;
-      password: string;
-    };
-    timeout?: number;
-    timeoutErrorMessage?: string;
-    responseType?: string;
-    headerMap?: boolean;
-    withCredentials?: boolean;
-    // 以下配置僅適用於 fetch 請求策略
-    requestCache?: "default" | "force-cache" | "no-cache" | "no-store" | "only-if-cached" | "reload";
-    credentials?: "include" | "omit" | "same-origin";
-    integrity?: string;
-    keepalive?: boolean;
-    mode?: "cors" | "navigate" | "no-cors" | "same-origin";
-    redirect?: "error" | "follow" | "manual";
-    referrer?: string;
-    referrerPolicy?: "" | "no-referrer" | "no-referrer-when-downgrade" | "origin" | "origin-when-cross-origin" | "same-origin" | "strict-origin" | "strict-origin-when-cross-origin" | "unsafe-url";
-    window?: null;
-}
+- `option: KarmanOption<A, R>`：
+
+    ```ts
+    interface KarmanOption<A, R> {
+        // 👇 結構相關配置
+        root?: boolean;
+        url?: string;
+        api?: {
+            [ApiName in keyof A]: A[ApiName];
+        };
+        route?: {
+            [RouteName in keyof R]: R[RouteName];
+        };
+
+        // 👇 Middleware 配置
+        nRequest?(this: Karman, req: object): void;
+        onResponse?(this: Karman, res: object): boolean | void;
+
+        // 👇 功能相關配置
+        scheduleInterval?: number;
+        cache?: boolean;
+        cacheExpireTime?: number;
+        cacheStrategy?: "sessionStorage" | "localStorage" | "memory";
+        validation?: boolean;
+
+        // 👇 請求相關配置
+        headers?: {
+            ["Content-Type"]?: string;
+            ["Authorization"]?: `Basic ${string}:${string}`;
+        };
+        auth?: {
+            username: string;
+            password: string;
+        };
+        timeout?: number;
+        timeoutErrorMessage?: string;
+        responseType?: string;
+        headerMap?: boolean;
+        withCredentials?: boolean;
+        // 以下配置僅適用於 fetch 請求策略
+        requestCache?: "default" | "force-cache" | "no-cache" | "no-store" | "only-if-cached" | "reload";
+        credentials?: "include" | "omit" | "same-origin";
+        integrity?: string;
+        keepalive?: boolean;
+        mode?: "cors" | "navigate" | "no-cors" | "same-origin";
+        redirect?: "error" | "follow" | "manual";
+        referrer?: string;
+        referrerPolicy?: "" | "no-referrer" | "no-referrer-when-downgrade" | "origin" | "origin-when-cross-origin" | "same-origin" | "strict-origin" | "strict-origin-when-cross-origin" | "unsafe-url";
+        window?: null;
+    }
+    ```
+
+#### 返回值
+
+一個包含 `api` 與 `route` 配置的 Karman 實例。
+
+### defineAPI
+
+API 封裝方法
+
+#### 語法
+
+```js
+defineAPI(option)
 ```
 
-### Karman
+#### 參數
 
-### defineAPI(option)
+- `option: ApiOption<ST, P, D, S, E>`：
 
-### defineCustomValidator(validator)
+    ```ts
+    interface ApiOption<ST, P, D, S, E> {
+        // 👇 API 基本配置
+        endpoint?: string;
+        method?: "get" | "GET" | "delete" | "DELETE" | "head" | "HEAD" | "options" | "OPTIONS" | "post" | "POST" | "put" | "PUT" | "patch" | "PATCH";
+        payloadDef?: {
+            [ParamName in keyof P]: P[ParamName];
+        };
+        dto?: D;
+        
+        // 👇 Hooks
+        onBeforeValidate?(this: KarmanInstance, payloadDef: P, payload: { [K in kayof P]: unknown; }): void;
+        onRebuildPayload?(payload: { [K in kayof P]: unknown; }): Record<string, any> | void;
+        onBeforeRequest?(this: KarmanInstance, url: string, payload: { [K in kayof P]: unknown; }): Document | BodyInit | null | void;
+        onSuccess?(this: KarmanInstance, res: ST extends "xhr" ? XhrResponse<D, ST> : ST extends "fetch" ? FetchResponse<D> : never): S;
+        onError?(this: KarmanInstance, err: Error): E;
+        onFinally?(this: KarmanInstance): void;
 
-### defineUnionRules(...rules)
+        // 👇 功能相關配置
+        scheduleInterval?: number;
+        cache?: boolean;
+        cacheExpireTime?: number;
+        cacheStrategy?: "sessionStorage" | "localStorage" | "memory";
+        validation?: boolean;
+        
+        // 👇 請求相關配置
+        headers?: {
+            ["Content-Type"]?: string;
+            ["Authorization"]?: `Basic ${string}:${string}`;
+        };
+        auth?: {
+            username: string;
+            password: string;
+        };
+        timeout?: number;
+        timeoutErrorMessage?: string;
+        responseType?: string;
+        headerMap?: boolean;
+        withCredentials?: boolean;
+        // 以下配置僅適用於 fetch 請求策略
+        requestCache?: "default" | "force-cache" | "no-cache" | "no-store" | "only-if-cached" | "reload";
+        credentials?: "include" | "omit" | "same-origin";
+        integrity?: string;
+        keepalive?: boolean;
+        mode?: "cors" | "navigate" | "no-cors" | "same-origin";
+        redirect?: "error" | "follow" | "manual";
+        referrer?: string;
+        referrerPolicy?: "" | "no-referrer" | "no-referrer-when-downgrade" | "origin" | "origin-when-cross-origin" | "same-origin" | "strict-origin" | "strict-origin-when-cross-origin" | "unsafe-url";
+        window?: null;
+    }
+    ```
 
-### defineIntersectionRules(...rules)
+#### 返回值
+
+一個建立請求的方法（final API）。
+
+### defineCustomValidator
+
+定義客製化驗證函式。
+
+#### 語法
+
+```js
+defineCustomValidator(validator)
+```
+
+#### 參數
+
+- `validator: Validator`：
+
+    ```ts
+    type Validator = (prop: string, value: unknown) => void
+    ```
+
+#### 返回值
+
+裝飾過的驗證函式。
+
+### RuleSet
+
+定義驗證規則的集合。
+
+#### 語法
+
+```js
+defineUnionRules(...rules)
+defineIntersectionRules(...rules)
+```
+
+#### 參數
+
+- `rules: ParamRules[]`：
+
+    ```ts
+    type ParamRules = Type | ConstructorFn | RegularExpression | CustomValidator | ParameterDescriptor;
+
+    type Type = "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function" | "char" | "int" | "nan" | "null" | "array" | "object-literal";
+
+    type ConstructorFn = new (...args: any[]) => any;
+
+    type RegularExpression = RegExp | { regexp: RegExp; errorMessage?: string };
+
+    interface ParameterDescriptor {
+        min?: number;
+        max?: number;
+        equality?: number;
+        measurement?: "self" | "length" | "size" | string;
+    }
+    ```
+
+#### 返回值
+
+聯集規則或交集規則。
 
 ### ValidationError
 
-### isValidationError(error)
+驗證錯誤
+
+#### 語法
+
+```js
+new ValidationError(opiton)
+```
+
+#### 參數
+
+- `option: string | ValidationErrorOption`：
+
+    ```ts
+    interface ValidationErrorOptions {
+        prop: string;
+        value: any;
+        message?: string;
+        type?: string;
+        instance?: ConstructorFn;
+        required?: boolean;
+        min?: number;
+        max?: number;
+        equality?: number;
+        measurement?: "self" | "length" | "size" | string;
+    }
+    ```
+
+#### 返回值
+
+驗證錯誤的實例。
+
+### isValidationError
+
+是否為驗證錯誤。
+
+#### 語法
+
+```js
+isValidationError(error)
+```
+
+#### 參數
+
+- `error: any`
+
+#### 返回值
+
+布林值，表示傳入值是否為驗證錯誤。

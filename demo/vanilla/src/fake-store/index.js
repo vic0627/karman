@@ -8,7 +8,6 @@ export default defineKarman({
   headers: {
     "Content-Type": "application/json; charset=utf-8",
   },
-  timeout: 0,
   api: {
     ruleSetTest: defineAPI({
       payloadDef: {

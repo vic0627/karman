@@ -1,4 +1,4 @@
-import { defineCustomValidator } from "@vic0627/karman";
+import { defineCustomValidator, ValidationError } from "@vic0627/karman";
 /**
  * @param {R} required
  * @template {boolean} R
@@ -6,12 +6,12 @@ import { defineCustomValidator } from "@vic0627/karman";
 export default (required) => ({
   /**
    * 回傳筆數
-   * @type {R extends true ? number : import("@karman").Optional<number>}
+   * @type {R extends true ? number : (number | void)}
    */
   limit: { required, query: true, rules: ["int", { min: 1, measurement: "self" }] },
   /**
    * 排序策略
-   * @type {R extends true ? "asc" | "desc" | undefined : import("@karman").Optional<"asc" | "desc" | undefined>}
+   * @type {R extends true ? ("asc" | "desc") : ("asc" | "desc" | void)}
    */
   sort: {
     required,
@@ -19,7 +19,7 @@ export default (required) => ({
     rules: [
       "string",
       defineCustomValidator((prop, value) => {
-        if (!["asc", "desc"].includes(value)) throw new TypeError(`parameter "${prop}" must be "asc" or "desc"`);
+        if (!["asc", "desc"].includes(value)) throw new ValidationError(`parameter "${prop}" must be "asc" or "desc"`);
       }),
     ],
   },

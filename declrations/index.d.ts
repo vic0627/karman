@@ -218,18 +218,18 @@ type GetPayloadType<P> = {
 };
 
 interface ValidationHooks<P> {
-  onBeforeValidate?(this: Karman, payloadDef: P, payload: GetPayloadType<P>): void;
+  onBeforeValidate?(this: KarmanInstance, payloadDef: P, payload: GetPayloadType<P>): void;
 }
 
 interface SyncHooks<P> extends ValidationHooks<P> {
   onRebuildPayload?(payload: GetPayloadType<P>): Record<string, any> | void;
-  onBeforeRequest?(this: Karman, url: string, payload: GetPayloadType<P>): HttpBody;
+  onBeforeRequest?(this: KarmanInstance, url: string, payload: GetPayloadType<P>): HttpBody;
 }
 
 interface AsyncHooks<ST, D, S, E> {
-  onSuccess?(this: Karman, res: SelectResponseForm<ST, D>): S;
-  onError?(this: Karman, err: Error): E;
-  onFinally?(this: Karman): void;
+  onSuccess?(this: KarmanInstance, res: SelectResponseForm<ST, D>): S;
+  onError?(this: KarmanInstance, err: Error): E;
+  onFinally?(this: KarmanInstance): void;
 }
 
 interface Hooks<ST, P, D, S, E> extends AsyncHooks<ST, D, S, E>, SyncHooks<P> {}
@@ -361,7 +361,7 @@ interface RuntimeOptions<ST, ST2, P, D, S, E>
     Omit<UtilConfig, "scheduleInterval"> {}
 
 type FinalAPI<ST, P, D, S, E> = <ST2 extends unknown, S2 extends unknown, E2 extends unknown>(
-  this: Karman,
+  this: KarmanInstance,
   payload: { [K in keyof P]: P[K] },
   runtimeOptions?: RuntimeOptions<ST, ST2, P, D, S2, E2>,
 ) => ReturnType<RequestExecutor<FinalAPIRes<SelectResponseForm<SelectPrimitive2<ST, ST2>, D>, S, S2, E, E2>>>;
@@ -373,12 +373,12 @@ interface KarmanDependencies {
   _pathResolver: PathResolver;
 }
 
-export declare class CKarman {
+export declare class Karman {
   public $mount<O extends object>(o: O, name?: string): void;
-  public $use<T extends { install(k: Karman): void }>(dependency: T): void;
+  public $use<T extends { install(k: KarmanInstance): void }>(dependency: T): void;
 }
 
-export type Karman = CKarman & KarmanDependencies;
+export type KarmanInstance = Karman & KarmanDependencies;
 
 interface ApiOptions<ST, P, D, S, E> extends Hooks<ST, P, D, S, E>, UtilConfig, CacheConfig, RequestConfig<ST> {
   /**
@@ -403,8 +403,8 @@ interface ApiOptions<ST, P, D, S, E> extends Hooks<ST, P, D, S, E>, UtilConfig, 
 }
 
 interface KarmanInterceptors {
-  onRequest?(this: Karman, req: HttpConfig<ReqStrategyTypes>): void;
-  onResponse?(this: Karman, res: XhrResponse<any, ReqStrategyTypes> | FetchResponse<any>): boolean | void;
+  onRequest?(this: KarmanInstance, req: HttpConfig<ReqStrategyTypes>): void;
+  onResponse?(this: KarmanInstance, res: XhrResponse<any, ReqStrategyTypes> | FetchResponse<any>): boolean | void;
 }
 
 interface KarmanOptions<A, R>
@@ -441,7 +441,7 @@ export function defineAPI<
 
 export function defineKarman<A extends unknown, R extends unknown>(
   options: KarmanOptions<A, R>,
-): SelectPrimitive<A, void> & SelectPrimitive<R, void> & Karman;
+): SelectPrimitive<A, void> & SelectPrimitive<R, void> & KarmanInstance;
 
 export function defineCustomValidator(validatefn: (param: string, value: any) => void): CustomValidator;
 

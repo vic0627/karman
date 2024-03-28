@@ -44,12 +44,6 @@ const output = [
   },
   {
     name,
-    file: getPath("demo/vanilla/src/karman/index.js"),
-    format: "es",
-    exports: "named",
-  },
-  {
-    name,
     file: getPath(`${baseFileName}.min.js`),
     format: "iife",
     exports: "named",
