@@ -1,6 +1,6 @@
 {
   "name": "@vic0627/karman",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "API abstract layer / API centralized management builder",
   "main": "dist/karman",
   "scripts": {
@@ -12,6 +12,7 @@
     "dev": "rollup -c scripts/rollup/rollup-config.js --watch",
     "dev:browser": "node scripts/browser-server.js",
     "build": "node scripts/rollup/rollup-bundle.js --manual",
+    "emit": "node scripts/emit-declaration.js --emit",
     "prepare": "husky install"
   },
   "keywords": [

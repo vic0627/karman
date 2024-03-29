@@ -15,7 +15,6 @@ import { PayloadDef } from "@/types/payload-def.type";
 import { isEqual, cloneDeep } from "lodash-es";
 import Fetch from "../request-strategy/fetch.injectable";
 import Template from "@/utils/template.provider";
-import ValidationError from "../validation-engine/validation-error/validation-error";
 
 export type ApiReturns<D> = [resPromise: Promise<D>, abortControler: () => void];
 
@@ -34,7 +33,7 @@ export interface ParsedCreatedOptions<T extends ReqStrategyTypes> {
 }
 
 export interface AllConfigCache<D, T extends ReqStrategyTypes>
-  extends Pick<ApiConfig<D, T, PayloadDef>, "endpoint" | "method" | "payloadDef"> {
+  extends Pick<ApiConfig<D, T, PayloadDef>, "url" | "method" | "payloadDef"> {
   baseURL?: string;
   requestConfig?: RequestConfig<T>;
   cacheConfig?: CacheConfig;
@@ -44,7 +43,7 @@ export interface AllConfigCache<D, T extends ReqStrategyTypes>
 }
 
 export interface PreqBuilderOptions<D, T extends ReqStrategyTypes>
-  extends Required<Pick<AllConfigCache<D, T>, "baseURL" | "endpoint" | "payloadDef">> {
+  extends Required<Pick<AllConfigCache<D, T>, "baseURL" | "url" | "payloadDef">> {
   payload?: Record<string, any>;
 }
 
@@ -91,7 +90,7 @@ export default class ApiFactory {
       });
 
       const {
-        endpoint = "",
+        url = "",
         method = "GET",
         payloadDef = {},
         baseURL = "",
@@ -129,7 +128,7 @@ export default class ApiFactory {
       // 2. parameter builder
       const [requestURL, requestBody] = _af.preqBuilder.call(_af, {
         baseURL,
-        endpoint,
+        url,
         payload: (_payload as Record<string, any> | undefined) ?? payload,
         payloadDef,
       });
@@ -225,11 +224,11 @@ export default class ApiFactory {
   private preqBuilder<D, T extends ReqStrategyTypes>(
     preqBuilderOptions: PreqBuilderOptions<D, T>,
   ): [requestURL: string, requestBody: Record<string, any>] {
-    const { baseURL, endpoint, payloadDef, payload } = preqBuilderOptions;
+    const { baseURL, url, payloadDef, payload } = preqBuilderOptions;
 
     if (!this.typeCheck.isObjectLiteral(payload)) this.template.throw("payload must be an normal object");
 
-    const urlSources: string[] = [baseURL, endpoint];
+    const urlSources: string[] = [baseURL, url];
     const pathParams: string[] = [];
     const queryParams: Record<string, string> = {};
     const requestBody: Record<string, any> = {};
@@ -371,7 +370,7 @@ export default class ApiFactory {
     // 優先權中等
     const {
       // ApiConfig
-      endpoint,
+      url,
       method,
       payloadDef,
       // RequestConfig
@@ -409,7 +408,7 @@ export default class ApiFactory {
     } = apiConfig ?? {};
 
     const $$apiConfig = {
-      endpoint,
+      url,
       method,
       payloadDef,
     };

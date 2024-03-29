@@ -32,15 +32,15 @@ type Type =
 
 type ObjectLiteral = { [x: string | number | symbol]: any };
 
-export type ConstructorFn = { new (...args: any[]): any };
+type ConstructorFn = { new (...args: any[]): any };
 
-export type RegExpWithMessage = { regexp: RegExp; errorMessage?: string };
+type RegExpWithMessage = { regexp: RegExp; errorMessage?: string };
 
-export type RegularExpression = RegExp | RegExpWithMessage;
+type RegularExpression = RegExp | RegExpWithMessage;
 
-export type CustomValidator = ((param: string, value: any) => void) & { _karman: true };
+type CustomValidator = ((param: string, value: unknown) => void) & { _karman: true };
 
-export interface ParameterDescriptor {
+interface ParameterDescriptor {
   /**
    * min value of the measurement unit for param
    */
@@ -61,7 +61,7 @@ export interface ParameterDescriptor {
   measurement?: "self" | "length" | "size" | string;
 }
 
-export type ParamRules = Type | ConstructorFn | RegularExpression | CustomValidator | ParameterDescriptor;
+type ParamRules = Type | ConstructorFn | RegularExpression | CustomValidator | ParameterDescriptor;
 
 declare class RuleSet {
   protected readonly rules: ParamRules[];
@@ -153,22 +153,22 @@ export type PayloadDef = Record<string, ParamDef>;
 declare class TypeCheck {
   get CorrespondingMap(): Record<Type, keyof this>;
   get TypeSet(): Type[];
-  isChar(value: any): boolean;
-  isString(value: any): value is string;
-  isNumber(value: any): value is number;
-  isInteger(value: any): boolean;
-  isFloat(value: any): boolean;
-  isNaN(value: any): boolean;
-  isBoolean(value: any): value is boolean;
-  isObject(value: any): value is object;
-  isNull(value: any): value is null;
-  isFunction(value: any): value is Function;
-  isArray(value: any): value is any[];
-  isObjectLiteral(value: any): value is ObjectLiteral;
-  isUndefined(value: any): value is undefined;
-  isUndefinedOrNull(value: any): value is null | undefined;
-  isBigInt(value: any): value is bigint;
-  isSymbol(value: any): value is symbol;
+  isChar(value: unknown): boolean;
+  isString(value: unknown): value is string;
+  isNumber(value: unknown): value is number;
+  isInteger(value: unknown): boolean;
+  isFloat(value: unknown): boolean;
+  isNaN(value: unknown): boolean;
+  isBoolean(value: unknown): value is boolean;
+  isObject(value: unknown): value is object;
+  isNull(value: unknown): value is null;
+  isFunction(value: unknown): value is Function;
+  isArray(value: unknown): value is unknown[];
+  isObjectLiteral(value: unknown): value is ObjectLiteral;
+  isUndefined(value: unknown): value is undefined;
+  isUndefinedOrNull(value: unknown): value is null | undefined;
+  isBigInt(value: unknown): value is bigint;
+  isSymbol(value: unknown): value is symbol;
 }
 
 declare class PathResolver {
@@ -222,7 +222,7 @@ interface ValidationHooks<P> {
 }
 
 interface SyncHooks<P> extends ValidationHooks<P> {
-  onRebuildPayload?(payload: GetPayloadType<P>): Record<string, any> | void;
+  onRebuildPayload?(this: KarmanInstance, payload: GetPayloadType<P>): Record<string, any> | void;
   onBeforeRequest?(this: KarmanInstance, url: string, payload: GetPayloadType<P>): HttpBody;
 }
 
@@ -323,6 +323,8 @@ export declare class ValidationError {
   constructor(options: ValidationErrorOptions | string);
 }
 
+export declare function isValidationError(error: unknown): error is ValidationError;
+
 interface XhrResponse<D, ST> {
   data: D;
   status: number;
@@ -386,7 +388,7 @@ interface ApiOptions<ST, P, D, S, E> extends Hooks<ST, P, D, S, E>, UtilConfig, 
    * @description if received value, the value would be place after the
    * base url of current layer, and before all url parameters
    */
-  endpoint?: string;
+  url?: string;
   /**
    * HTTP method
    * @default "GET"
@@ -443,7 +445,7 @@ export function defineKarman<A extends unknown, R extends unknown>(
   options: KarmanOptions<A, R>,
 ): SelectPrimitive<A, void> & SelectPrimitive<R, void> & KarmanInstance;
 
-export function defineCustomValidator(validatefn: (param: string, value: any) => void): CustomValidator;
+export function defineCustomValidator(validatefn: (param: string, value: unknown) => void): CustomValidator;
 
 export function defineIntersectionRules(...rules: ParamRules[]): IntersectionRules;
 

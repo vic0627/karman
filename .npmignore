@@ -1,3 +1,17 @@
+# dir
 demo
 .vscode
 .husky
+lib
+declarations
+scripts
+node_modules
+
+# files
+.eslintrc.cjs
+.gitignore
+.prettierignore
+.prettierrc
+babel.config.js
+jest.config.js
+tsconfig.json

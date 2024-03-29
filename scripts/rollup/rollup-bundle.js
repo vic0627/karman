@@ -1,14 +1,14 @@
 const { rollup } = require("rollup");
-const { resolve } = require("path");
+// const { resolve } = require("path");
 const emptyDirectory = require("../utils/empty-directory.js");
 const timeLog = require("../utils/time-log.js");
-const copyFile = require("../utils/copy-file.js");
+const emitDeclaration = require("../emit-declaration.js");
 
 const MANUAL_BUILD = process.argv[2] === "--manual";
 
-const relativePathToRoot = "../../";
+// const relativePathToRoot = "../../";
 
-const getPath = (...paths) => resolve(__dirname, relativePathToRoot, ...paths);
+// const getPath = (...paths) => resolve(__dirname, relativePathToRoot, ...paths);
 
 const build = async (callback) => {
   /** @type {import('rollup').RollupBuild | undefined} */
@@ -44,8 +44,7 @@ const build = async (callback) => {
   }
 
   if (bundle) {
-    const declrationPath = getPath("./declrations/index.d.ts");
-    copyFile(declrationPath, getPath("./dist/karman.d.ts"));
+    emitDeclaration();
     await bundle.close();
   }
 

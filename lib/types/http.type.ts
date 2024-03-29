@@ -73,7 +73,7 @@ export interface ApiConfig<D, T extends ReqStrategyTypes, P extends PayloadDef>
     AsyncHooks,
     UtilConfig,
     CacheConfig {
-  endpoint?: string;
+  url?: string;
   method?: HttpMethod;
   payloadDef?: P;
   dto?: D;

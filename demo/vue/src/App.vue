@@ -2,19 +2,28 @@
 import { RouterLink, RouterView } from 'vue-router'
 import karman from './karman'
 import HelloWorld from './components/HelloWorld.vue'
+import { isValidationError } from '@vic0627/karman'
+
+let abort = () => {}
 
 const request = async () => {
   try {
-    const [resPromise] = karman.fakeStore.product.delete(
-      { id: 1 },
+    const [resPromise, abortDel] = karman.fakeStore.product.delete(
+      { id: 0 },
       {
-        onSuccess(res) {
-          return res.config
+        onError(err) {
+          if (isValidationError(err)) {
+            console.error(err)
+            return 'foo'
+          }
+
+          throw err
         }
       }
     )
+    abort = abortDel
     const res = await resPromise
-    console.log(res.url)
+    console.log(res)
   } catch (error) {
     console.error(error)
   }
@@ -31,7 +40,8 @@ const request = async () => {
       <nav>
         <RouterLink to="/">Home</RouterLink>
         <RouterLink to="/about">About</RouterLink>
-        <button @click="request">click</button>
+        <button @click="request">Request</button>
+        <button @click="abort">Abort</button>
       </nav>
     </div>
   </header>

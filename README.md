@@ -228,7 +228,7 @@ karman.$mount(globalObject, "$karman")
 
 在[簡易示範](#簡易示範)中有提到，可以透過 `defineKarman()` 來建立一個抽象層節點、一個 Karman 實例、或稱「karman node」，事實上你還可以透過巢狀的方式去組織更複雜的「karman tree」，這使得我們可以根據 API 的路徑、所需配置不同，去做不同層次的管理。
 
-#### Route Management
+#### URL Management
 
 每個 `defineKarman()` 內都可以配置屬於該層的 url 路徑，路徑可以配置或不配置，可以是完整的 url 也可以是 url 的片段，但要注意，你為 karman node 所配置的 url 會參考父節點的 url 組合成一組該節點的基本 url。
 
@@ -310,7 +310,7 @@ export default defineKarman({
 
 karman tree 若是沒有配置根節點，會有以下的注意事項：
 
-- 雖然 API 同樣可以發送，但該 API 所獲取的配置只會以該層 karman node 為參考，若是該節點的 `url` 與 API 配置的 `endpoint` 無法組成有效的 url，這可能會導致發送請求時出現錯誤。
+- 雖然 API 同樣可以發送，但該 API 所獲取的配置只會以該層 karman node 為參考，若是該節點的 `url` 與 API 配置的 `url` 無法組成有效的 url，這可能會導致發送請求時出現錯誤。
 - 無法使用根節點的專屬功能，如：設置排程任務執行間隔、為 karman tree 安裝依賴等。
 
 > 排程管理器主要任務負責響應資料快取的檢查與清除，任務執行間隔可以透過 `scheduleInterval` 屬性進行設置，且只能透過根節點設置。
@@ -432,7 +432,7 @@ export default defineKarmna({
         getAll: defineAPI(),
         // 此 final API 的 url 是 "https://karman.com/products/categories"
         getCategories: defineAPI({
-            endpoint: "categories"
+            url: "categories"
         })
     }
 })
@@ -475,7 +475,7 @@ export default defineKarmna({
         getAll: defineAPI(),
         // 此方使用 fetch 作為 HTTP Client
         getCategories: defineAPI({
-            endpoint: "categories",
+            url: "categories",
             requestStrategy: "fetch",
         })
     }
@@ -1193,7 +1193,7 @@ defineAPI(option)
     ```ts
     interface ApiOption<ST, P, D, S, E> {
         // 👇 API 基本配置
-        endpoint?: string;
+        url?: string;
         method?: "get" | "GET" | "delete" | "DELETE" | "head" | "HEAD" | "options" | "OPTIONS" | "post" | "POST" | "put" | "PUT" | "patch" | "PATCH";
         payloadDef?: {
             [ParamName in keyof P]: P[ParamName];
