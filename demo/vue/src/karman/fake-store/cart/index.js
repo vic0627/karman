@@ -1,12 +1,12 @@
-import { defineKarman, defineAPI } from "@vic0627/karman";
-import limitAndSort from "../payload-def/limit-and-sort";
-import id from "../payload-def/id";
-import dateRange from "../payload-def/date-range";
-import dtoCart from "./dto/dto-cart";
-import cart from "./payload-def/cart";
+import { defineKarman, defineAPI } from '@vic0627/karman'
+import limitAndSort from '../payload-def/limit-and-sort'
+import id from '../payload-def/id'
+import dateRange from '../payload-def/date-range'
+import dtoCart from './dto/dto-cart'
+import cart from './payload-def/cart'
 
 export default defineKarman({
-  url: "carts",
+  url: 'carts',
   api: {
     /**
      * ### 取得所有購物車
@@ -14,62 +14,62 @@ export default defineKarman({
     getAll: defineAPI({
       payloadDef: {
         ...limitAndSort(true),
-        ...dateRange(true),
+        ...dateRange(true)
       },
-      dto: [dtoCart],
+      dto: [dtoCart]
     }),
     /**
      * ### get single cart by id
      */
     getById: defineAPI({
       payloadDef: {
-        ...id(true, { path: 0 }),
+        ...id(true, { path: 0 })
       },
-      dto: dtoCart,
+      dto: dtoCart
     }),
     /**
      * ### get single cart by user id
      */
     getUserCarts: defineAPI({
-      endpoint: "user",
+      url: 'user',
       payloadDef: {
-        ...id(true, { path: 0 }),
+        ...id(true, { path: 0 })
       },
-      dto: [dtoCart],
+      dto: [dtoCart]
     }),
     /**
      * ### add a new cart
      */
     add: defineAPI({
-      method: "POST",
-      payloadDef: cart,
+      method: 'POST',
+      payloadDef: cart
     }),
     /**
      * ### update a cart
      */
     update: defineAPI({
-      method: "PUT",
+      method: 'PUT',
       payloadDef: {
         ...id(true, { path: 0 }),
-        ...cart,
-      },
+        ...cart
+      }
     }),
     /**
      * ### modify a cart
      */
     modify: defineAPI({
-      method: "PATCH",
+      method: 'PATCH',
       payloadDef: {
         ...id(true, { path: 0 }),
-        ...cart,
-      },
+        ...cart
+      }
     }),
     /**
      * delete a cart by id
      */
     delete: defineAPI({
-      method: "DELETE",
-      payloadDef: id(true, { path: 0 }),
-    }),
-  },
-});
+      method: 'DELETE',
+      payloadDef: id(true, { path: 0 })
+    })
+  }
+})

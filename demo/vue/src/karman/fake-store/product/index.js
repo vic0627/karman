@@ -89,7 +89,7 @@ export default defineKarman({
      * ### get all product's categories
      */
     getCategories: defineAPI({
-      endpoint: 'categories',
+      url: 'categories',
       /** @type {Array<dtoCategory>} */
       dto: []
     }),
@@ -97,7 +97,7 @@ export default defineKarman({
      * ### get products by category
      */
     getProductsByCategory: defineAPI({
-      endpoint: 'category',
+      url: 'category',
       payloadDef: {
         ...category(true, { path: 0 })
       }

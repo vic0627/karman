@@ -31,7 +31,7 @@ export default defineKarman({
      * ### get single cart by user id
      */
     getUserCarts: defineAPI({
-      endpoint: "user",
+      url: "user",
       payloadDef: {
         ...id(true, { path: 0 }),
       },

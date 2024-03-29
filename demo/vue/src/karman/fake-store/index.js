@@ -13,7 +13,7 @@ export default defineKarman({
      * ### user login
      */
     login: defineAPI({
-      endpoint: 'auth/login',
+      url: 'auth/login',
       method: 'POST',
       requestStrategy: 'fetch',
       payloadDef: {

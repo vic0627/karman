@@ -9,7 +9,7 @@ let abort = () => {}
 const request = async () => {
   try {
     const [resPromise, abortDel] = karman.fakeStore.product.delete(
-      { id: 0 },
+      { id: 1 },
       {
         onError(err) {
           if (isValidationError(err)) {
