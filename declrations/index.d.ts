@@ -313,7 +313,7 @@ interface ValidationErrorOptions extends ParameterDescriptor {
   value: any;
   message?: string;
   type?: string;
-  instance?: ClassSignature;
+  instance?: ConstructorFn;
   required?: boolean;
 }
 

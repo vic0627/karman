@@ -3,10 +3,14 @@ import Injectable from "@/decorator/Injectable.decorator";
 import { Type } from "@/types/rules.type";
 import TypeCheck from "@/utils/type-check.provider";
 import ValidationError from "../validation-error/validation-error";
+import Template from "@/utils/template.provider";
 
 @Injectable()
 export default class TypeValidator implements Validator {
-  constructor(private readonly typeCheck: TypeCheck) {}
+  constructor(
+    private readonly typeCheck: TypeCheck,
+    private readonly template: Template,
+  ) {}
 
   public validate(option: ValidateOption): void {
     const { rule, param, value } = option;
@@ -19,7 +23,7 @@ export default class TypeValidator implements Validator {
     const legal = this.legalType(type);
 
     if (!legal) {
-      console.warn(`[karman warn] invalid type "${type}" was provided in rules for parameter "${param}"`);
+      this.template.warn(`invalid type "${type}" was provided in rules for parameter "${param}"`);
 
       return;
     }

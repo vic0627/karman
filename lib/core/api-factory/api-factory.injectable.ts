@@ -15,6 +15,7 @@ import { PayloadDef } from "@/types/payload-def.type";
 import { isEqual, cloneDeep } from "lodash-es";
 import Fetch from "../request-strategy/fetch.injectable";
 import Template from "@/utils/template.provider";
+import ValidationError from "../validation-engine/validation-error/validation-error";
 
 export type ApiReturns<D> = [resPromise: Promise<D>, abortControler: () => void];
 
@@ -107,9 +108,20 @@ export default class ApiFactory {
 
       // 1. validation
       if (validation) {
-        _af.hooksInvocator(this, onBeforeValidate, payloadDef, payload);
-        const validator = _af.validationEngine.getMainValidator(payload, payloadDef);
-        validator();
+        try {
+          _af.hooksInvocator(this, onBeforeValidate, payloadDef, payload);
+          const validator = _af.validationEngine.getMainValidator(payload, payloadDef);
+          validator();
+        } catch (error) {
+          return [
+            (async () => {
+              const errorReturns = _af.hooksInvocator(this, onError, error as Error);
+              if (!_af.typeCheck.isUndefined(errorReturns)) return errorReturns as SelectRequestStrategy<T, D>;
+              else throw error;
+            })(),
+            () => {},
+          ];
+        }
       }
 
       const _payload = _af.hooksInvocator(this, onRebuildPayload, payload);
@@ -143,9 +155,6 @@ export default class ApiFactory {
       };
       _af.hooksInvocator(this, onRequest, httpConfig);
       const reqStrategy = _af.requestStrategySelector(requestStrategy);
-      /**
-       * @todo error handling of request strategies...
-       */
       const { requestKey, requestExecutor, promiseExecutor, config } = reqStrategy.request<D, T>(
         _requestBody as HttpBody,
         httpConfig,

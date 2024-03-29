@@ -45,12 +45,9 @@
                 onSuccess(res) {
                   return res.data;
                 },
-                /**
-                 * @todo not invoked
-                 */
                 onError(err) {
-                  if (isValidationError) throw err;
-                  return {};
+                  // if (isValidationError(err)) throw err;
+                  // return {};
                 },
               }),
             },
@@ -65,7 +62,7 @@
 
       const fn = async () => {
         try {
-          const [resPromise] = $karman.facts.random({ animal_type: ["cat", "dog"], amount: 2.3 });
+          const [resPromise] = $karman.facts.random({ animal_type: ["cat", "dog"], amount: 2 });
           // const [resPromise] = $karman.facts.getAll();
           console.log(await resPromise);
         } catch (error) {

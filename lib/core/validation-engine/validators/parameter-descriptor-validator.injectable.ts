@@ -3,13 +3,17 @@ import Injectable from "@/decorator/Injectable.decorator";
 import { ParamRules, ParameterDescriptor } from "@/types/rules.type";
 import TypeCheck from "@/utils/type-check.provider";
 import ValidationError from "../validation-error/validation-error";
+import Template from "@/utils/template.provider";
 
 export type RangeValidateOption = Pick<ParameterDescriptor, "min" | "max" | "equality" | "measurement"> &
   Pick<ValidateOption, "param" | "value">;
 
 @Injectable()
 export default class ParameterDescriptorValidator implements Validator {
-  constructor(private readonly typeCheck: TypeCheck) {}
+  constructor(
+    private readonly typeCheck: TypeCheck,
+    private readonly template: Template,
+  ) {}
 
   public validate(option: ValidateOption): void {
     const { rule, param, value } = option;
@@ -43,7 +47,7 @@ export default class ParameterDescriptorValidator implements Validator {
     const target = value[measurement];
 
     if (this.typeCheck.isUndefinedOrNull(target)) {
-      console.warn(`Cannot find property "${measurement}" on "${value}".`);
+      this.template.warn(`Cannot find property "${measurement}" on "${value}".`);
     }
 
     return target;
