@@ -6,6 +6,7 @@ lib
 declarations
 scripts
 node_modules
+test
 
 # files
 .eslintrc.cjs

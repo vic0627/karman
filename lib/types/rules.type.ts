@@ -12,7 +12,8 @@ export type Type =
   | "object-literal"
   | "undefined"
   | "bigint"
-  | "symbol";
+  | "symbol"
+  | string;
 
 export type ObjectLiteral = { [x: string | number | symbol]: any };
 

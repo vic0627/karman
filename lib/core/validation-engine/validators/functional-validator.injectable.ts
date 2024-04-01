@@ -23,7 +23,7 @@ export default class FunctionalValidator implements Validator {
   }
 
   private isCustomValidator(rule: ParamRules): rule is CustomValidator {
-    return this.typeCheck.isFunction(rule) && (rule as CustomValidator)?._karman;
+    return this.typeCheck.isFunction(rule) && !!(rule as CustomValidator)?._karman;
   }
 
   private instanceValidator(option: ValidateOption) {

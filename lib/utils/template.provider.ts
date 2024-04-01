@@ -15,6 +15,6 @@ export default class Template {
   }
 
   throw(...messages: (string | number)[]) {
-    throw new Error(this.withPrefix({ messages }));
+    throw new Error(this.withPrefix({ type: "error", messages }));
   }
 }

@@ -21,7 +21,7 @@ const config = {
   collectCoverage: true,
 
   // An array of glob patterns indicating a set of files for which coverage information should be collected
-  collectCoverageFrom: ["**/*.ts"],
+  collectCoverageFrom: ["**/*.provider.ts", "**/*.injectable.ts"],
 
   // The directory where Jest should output its coverage files
   coverageDirectory: "./_coverage",
@@ -75,18 +75,19 @@ const config = {
   // An array of file extensions your modules use
   moduleFileExtensions: [
     "js",
-    //   "mjs",
-    //   "cjs",
+    "mjs",
+    "cjs",
     //   "jsx",
     "ts",
     //   "tsx",
     //   "json",
-    //   "node"
+    "node",
   ],
 
   // A map from regular expressions to module names or to arrays of module names that allow to stub out resources with a single module
   moduleNameMapper: {
-    "^src/(.*)$": "<rootDir>/../src/$1",
+    "^@/(.*)$": "<rootDir>/../lib/$1",
+    "^lodash-es$": "lodash",
   },
 
   // An array of regexp pattern strings, matched against all module paths before considered 'visible' to the module loader
@@ -131,7 +132,7 @@ const config = {
   // runner: "jest-runner",
 
   // The paths to modules that run some code to configure or set up the testing environment before each test
-  // setupFiles: [],
+  setupFiles: ["./setup-file.ts"],
 
   // A list of paths to modules that run some code to configure or set up the testing framework before each test
   // setupFilesAfterEnv: [],
@@ -172,19 +173,19 @@ const config = {
   // testRunner: "jest-circus/runner",
 
   // A map from regular expressions to paths to transformers
-  // transform: undefined,
+  // transform: {
+  //   "^.+\\.ts?$": "ts-jest",
+  //   "^.+\\.(js|jsx)$": require.resolve("babel-jest"),
+  // },
 
   // An array of regexp pattern strings that are matched against all source file paths, matched files will skip transformation
-  // transformIgnorePatterns: [
-  //   "\\\\node_modules\\\\",
-  //   "\\.pnp\\.[^\\\\]+$"
-  // ],
+  // transformIgnorePatterns: ["node_modules/(?!lodash-es/)"],
 
   // An array of regexp pattern strings that are matched against all modules before the module loader will automatically return a mock for them
   // unmockedModulePathPatterns: undefined,
 
   // Indicates whether each individual test should be reported during the run
-  // verbose: undefined,
+  // verbose: true,
 
   // An array of regexp patterns that are matched against all source file paths before re-running tests in watch mode
   // watchPathIgnorePatterns: [],
