@@ -41,6 +41,7 @@ HTTP 客戶端 / API 中心化管理 / API 抽象層
 
 ### 什麼是 Karman？
 
+> [!NOTE]
 > Karman 一詞源自於地球與外太空的分界線「卡門線 Kármán line」，用以比喻前後端交界處的抽象概念。
 
 Karman 是一個 JavaScript 套件，專為建構 API [抽象層](https://en.wikipedia.org/wiki/Abstraction_layer)而設計。它採用樹狀結構來管理 API 的路由、路由上的方法以及配置等內容。同時，Karman 提供了封裝後的 API，使得所有 API 都具有統一的輸入/輸出介面。此外，Karman 支援配置 API 輸入/輸出介面的 DTO（Data Transfer Object）。透過對數據類型的依賴，封裝後的 API 在被調用時能夠在懸停提示中顯示出輸入/輸出介面的類型以及區域註解。這使得使用 Karman 調用 API 的開發人員可以專注於 API 所提供的功能，而無需煩惱複雜的請求配置。簡而言之，Karman 讓 API 抽象層變得更像是「可發送請求的 API 文件」。
@@ -57,11 +58,80 @@ Karman 是一個 JavaScript 套件，專為建構 API [抽象層](https://en.wik
 
 在傳統的請求建立方式中，請求的配置通常是分散在不同的組件中。這些配置根據 API 的規格或需求的不同，可能還需要額外的操作，例如 URL 的組成或參數的驗證等。當一個 API 的規格非常複雜或者被廣泛復用時，就會導致專案中出現大量重複的程式碼。此外，就像在圖中展示的 `Add Product` 一樣，可能在不同的組件中存在著不同的程式流程。
 
-![http](./public/imgs/http.jpg)
+```mermaid
+flowchart LR
+    subgraph bk["<br>"]
+    http["http client<br>(fetch, xhr)"] -- send --> server
+    end
+    subgraph component A
+    direction LR
+    param1["params"] --> addProduct1
+    addProduct1["add product<br>POST products<br>body: [name, price, ...]"] --> http
+    end
+    subgraph component B
+    direction LR
+    param2["params"] --> validation1["validaiton"]
+    validation1 --> addProduct2
+    addProduct2["add product<br>POST products<br>body: [name, price, ...]"] --> http
+    param3["params"] --> url1["url builder"]
+    url1 --> getAll
+    getAll["get all products<br>GET products<br>query: [sort, limit]"] --> http
+    end
+    subgraph component C
+    direction LR
+    param4["params"] -->
+    validation2["validation"] -->
+    url2["url builder"] -->
+    updateProduct2["update product<br>PATCH products<br>path: [id]<br>body: [name, price, ...]"] --> http
+    param5["params"] -->
+    url3["url builder"] -->
+    delProduct["delete product<br>DELETE products<br>path: [id]"] --> http
+    end
+    style bk fill:none,stroke:none
+```
 
 另一方面，Karman 強調了「先封裝、再使用」的理念。透過抽象層，Karman 可以隱藏 API 的繁複工作內容，包括基本配置、參數驗證、URL 組成和請求體建立等。這使得調用 API 的開發人員僅需專注於 API 所實現的功能，以及輸入/輸出的資料傳輸物件。Karman的這種設計方式有助於簡化開發流程，提高代碼的可讀性和可維護性，同時增強了 API 的復用性。
 
-![karman](./public/imgs/karman.jpg)
+```mermaid
+flowchart LR
+    http --> server
+    add --> c
+    del --> c
+    get --> c
+    patch --> c
+    addP1 --> add
+    getP --> get
+    addP2 --> add
+    patchP --> patch
+    delP --> del
+    subgraph component A
+        addP1["addProduct(name, price, ...)"]
+    end
+    subgraph component B
+        getP["getProducts(sort, limit)"]
+        addP2["addProduct(name, price, ...)"]
+    end
+    subgraph component C
+        patchP["updateProduct(id, name, price, ...)"]
+        delP["deleteProduct(id)"]
+    end
+    subgraph karman
+        subgraph api["<br>"]
+            direction TB
+            add["add product<br>POST products<br>body: [name, price, ...]"]
+            del["delete product<br>DELETE products<br>path: [id]"]
+            get["get all products<br>GET products<br>query: [sort, limit]"]
+            patch["update product<br>PATCH products<br>path: [id]<br>body: [name, price, ...]"]
+        end
+        subgraph finApi["final API"]
+            c["config inheritance"] -->
+            ve["validation engine"] -- valid -->
+            pb["payload builder"] -->
+            http["http client<br>(fetch, xhr)"]
+        end
+    end
+    style api stroke:none
+```
 
 ### 安裝
 
@@ -313,6 +383,7 @@ karman tree 若是沒有配置根節點，會有以下的注意事項：
 - 雖然 API 同樣可以發送，但該 API 所獲取的配置只會以該層 karman node 為參考，若是該節點的 `url` 與 API 配置的 `url` 無法組成有效的 url，這可能會導致發送請求時出現錯誤。
 - 無法使用根節點的專屬功能，如：設置排程任務執行間隔、為 karman tree 安裝依賴等。
 
+> [!NOTE]
 > 排程管理器主要任務負責響應資料快取的檢查與清除，任務執行間隔可以透過 `scheduleInterval` 屬性進行設置，且只能透過根節點設置。
 
 每個 karman node 的繼承事件只會被觸發一次，意味著若某子孫節點被設置為根節點，該 karman node 就會先產生一次的繼承事件，當這個 karman node 後續再接收到祖父節點傳遞下來的繼承訊號時，會因為該節點已經發生過繼承事件，使該節點以下（含）的所有節點中斷繼承。
@@ -482,6 +553,7 @@ export default defineKarmna({
 })
 ```
 
+> [!WARNING]
 > 不同的請求策略有不同的響應格式，在處理響應的資料上需要注意。
 
 #### Parameter Definition
@@ -498,7 +570,8 @@ export default defineKarmna({
 
 接下來決定參數是否必須，可以透過 `required: boolean` 來設置，但要注意的是，驗證參數是否為必須的行為，屬於驗證引擎的一環，但因設計上的考量沒有將 `required` 放在 `rules` 內，因此必須在該 final API 上的某個父節點或 API 配置本身將 `validation` 設置為 `true` 來啟動驗證機制。
 
-> ⚠️ required 驗證會以 `in` 運算子來檢驗該參數的 key 是否存在於 `payload` 當中，並不代表該參數以 `undefined` 作為容許值。
+> [!WARNING]
+> required 驗證會以 `in` 運算子來檢驗該參數的 key 是否存在於 `payload` 當中，並不代表該參數以 `undefined` 作為容許值。
 
 最後在[參數驗證規則](#validation-enigine)的部分較為複雜，因此以獨立章節來解說。
 
@@ -808,7 +881,8 @@ const hooksKarman = defineKarman({
 })
 ```
 
-> ⚠️ Middleware 在配置時盡量以一般函式宣告，避免使用箭頭函式，這是因為如果在 Middleware 內透過 `this` 存取 karman node，箭頭函式將會使該函式失去 `this` 的指向。
+> [!WARNING]
+> Middleware 在配置時盡量以一般函式宣告，避免使用箭頭函式，這是因為如果在 Middleware 內透過 `this` 存取 karman node，箭頭函式將會使該函式失去 `this` 的指向。
 
 嘗試執行：
 
@@ -878,17 +952,20 @@ onFinally
 Uncaught Error: ...
 ```
 
-> ⚠️ 若是觸發主動設置的 timeout 或調用 abort 方法，onResponse 將不被執行。
+> [!WARNING]
+> 若是觸發主動設置的 timeout 或調用 abort 方法，onResponse 將不被執行。
 
 ### Response Caching
 
 快取功能的相關設定可以在 defineKarman、defineAPI、final API config 上配置，設置 `cache` 為 `true` 可以快取， `cacheExpireTime` 能夠決定快取資料的存在時間，而 storage 策略有 `memory`、`localStorage`、`sessionStorage`，以 `cacheStrategy` 屬性來配置。
 
-> ⚠️ 使用 WebStorage 作為快取策略時，請注意 WebStorage 僅能存儲**能轉換為字串**的值，因此若需快取無法以字串表示的響應結果時，請考慮使用 `memory` 策略。
+> [!CAUTION]
+> 使用 WebStorage 作為快取策略時，請注意 WebStorage 僅能存儲**能轉換為字串**的值，因此若需快取無法以字串表示的響應結果時，請考慮使用 `memory` 策略。
 
 當一支 final API 的快取功能被開啟後，會在首次請求時紀錄請求參數與響應結果，第二次請求開始，若請求參數與前次相同，將直接返回快取資料，直到請求參數改變或快取到期才會再次發送請求。
 
-> ⚠️ 返回快取資料的 final API 無法使用 abort 方法來取消請求！
+> [!WARNING]
+> 返回快取資料的 final API 無法使用 abort 方法來取消請求！
 
 ```js
 import { defineKarman, defineAPI } from "@vic0627/karman"
@@ -917,7 +994,8 @@ cacheKarman.getA()[0]
 
 ### Dynamic Type Annotation
 
-> ⚠️ 建議閱讀此章節前請先瞭解 [JSDoc](https://jsdoc.app/) 與 [TypeScript](https://www.typescriptlang.org/)。
+> [!TIP]
+> 建議閱讀此章節前請先瞭解 [JSDoc](https://jsdoc.app/) 與 [TypeScript](https://www.typescriptlang.org/)。
 
 karman 提供的另一種額外的強大功能，就是透過 TypeScript 泛型參數與 IDE 的 [LSP](https://microsoft.github.io/language-server-protocol/) 搭配，使 `defineKarman` 與 `defineAPI` 的配置能夠即時映射至 karman node 上，包括 final API 、子路徑、與 final API 的 Input 與 Output。
 
@@ -977,7 +1055,8 @@ rootKarman.user.create()    // 創建新用戶
 
 然而語言機制上的先天限制，要使參數的規則能夠直接轉換為對應型別顯示到懸停提示中顯然不太可能，因此 karman 選用了與 JSDoc 搭配，利用 `@type` 標籤強制註解參數的型別，讓 final API 能夠在懸停提示顯示 `payload` 屬性正確的所需型別，而不是一個完整的參數定義物件。
 
-> ⚠️ 透過 `@type` 標籤強制註記型別，是為了調用 final API 時能夠獲得更完整的參數提示訊息，並不會影響到 karman 本身運行。
+> [!NOTE]
+> 透過 `@type` 標籤強制註記型別，是為了調用 final API 時能夠獲得更完整的參數提示訊息，並不會影響到 karman 本身運行。
 
 ```js
 import { defineKarman, defineAPI } from "@vic0627/karman"
@@ -1027,7 +1106,8 @@ rootKarman.getAll({
 
 Output 需要透過 `defineAPI()` 中的 `dto` 屬性來配置，`dto` 不會影響程式運行，只會影響 final API 回傳結果的型別，因此可以給予任何值，而 `dto` 的配置方式有很多種，但為了節省記憶體空間，推薦使用型別文件及 JSDoc。
 
-> ⚠️ 會影響回傳結果型別的因素非常多，包括 `dto`、`onSuccess`、`onError` 等，因此編譯器在解析時，可能會因環境或上下文而導致回傳結果的型別有誤差。
+> [!WARNING]
+> 會影響回傳結果型別的因素非常多，包括 `dto`、`onSuccess`、`onError` 等，因此編譯器在解析時，可能會因環境或上下文而導致回傳結果的型別有誤差。
 
 - **直接賦值**
 
