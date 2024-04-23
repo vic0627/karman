@@ -979,17 +979,21 @@ const cacheKarman = defineKarman({
     cache: true,                                // 批次啟用快取
     cacheExpireTime: min * 5,                   // 批次設定快取壽命
     api: {
-        getA: defineAPI(),                      // 預設使用 memeory 策略
+        getA: defineAPI(),                      // 預設使用 memory 策略
         getB: defineAPI({
             cacheStrategy: 'localStorage'       // 選用 localStorage 策略
         }),
     }
 })
 
-cacheKarman.getA()[0]
-    .then((res) => console.log(res))            // 首次請求，紀錄請求參數與響應結果
-cacheKarman.getA()[0]
-    .then((res) => console.log(res))            // 第二次請求，參數無變動，直接返回快取
+const cacheTesting = async () => {
+    const res01 = await cacheKarman.getA()[0]   // 首次請求，紀錄請求參數與響應結果
+    console.log(res01)           
+    const res02 = await cacheKarman.getA()[0]   // 第二次請求，參數無變動，直接返回快取
+    console.log(res02)
+}
+
+cacheTesting()
 ```
 
 ### Dynamic Type Annotation
