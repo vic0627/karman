@@ -2,8 +2,8 @@ import { defineAPI, defineKarman } from "@vic0627/karman";
 import product from "./product";
 import cart from "./cart";
 import user from "./user";
-import _constant from "src/utils/constant";
-import convertToBase64 from "src/utils/imageBase64";
+import _constant from "../utils/constant";
+import convertToBase64 from "../utils/imageBase64";
 
 const fakeStore = defineKarman({
   root: true,
@@ -12,7 +12,7 @@ const fakeStore = defineKarman({
   scheduleInterval: 1000 * 10,
   // cache: true,
   cacheExpireTime: 5000,
-  timeout: 100,
+  // timeout: 100,
   // timeoutErrorMessage: "error~~~",
   url: "https://fakestoreapi.com",
   headers: {
@@ -32,16 +32,18 @@ const fakeStore = defineKarman({
          * @type {string}
          */
         username: {
+          required: true,
           body: true,
-          rules: ["string", { required: true, min: 1, measurement: "length" }],
+          rules: ["string", { min: 1, measurement: "length" }],
         },
         /**
          * password
          * @type {string}
          */
         password: {
+          required: true,
           body: true,
-          rules: ["string", { required: true, min: 1, measurement: "length" }],
+          rules: ["string", { min: 1, measurement: "length" }],
         },
       },
       onBeforeRequest(_, payload) {

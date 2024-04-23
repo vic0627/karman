@@ -11,7 +11,7 @@ export default function convertToBase64(file) {
   });
 }
 
-Object.defineProperties(convertToBase64, "install", {
+Object.defineProperty(convertToBase64, "install", {
   value: (karman) => {
     Object.defineProperty(karman, "_convertToBase64", { value: convertToBase64 });
   },

@@ -8,8 +8,20 @@
   </head>
   <body>
     <div id="app">
-      <button id="btn-send">send</button>
-      <button id="btn-abort">abort</button>
+      <div class="input-group">
+        <label for="number">
+          number:
+          <input type="number" name="number" id="number" step="1" />
+        </label>
+        <label for="text">
+          text:
+          <input type="text" name="text" id="text" />
+        </label>
+      </div>
+      <div class="btn-group">
+        <button id="btn-send">send</button>
+        <button id="btn-abort">abort</button>
+      </div>
     </div>
     <script type="module" src="/main.js"></script>
   </body>

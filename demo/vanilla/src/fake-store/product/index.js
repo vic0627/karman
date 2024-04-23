@@ -20,10 +20,10 @@ export default defineKarman({
     getAll: defineAPI({
       payloadDef: limitAndSort(false),
       dto: [dtoProductInfo],
-      onBeforeRequest(_, payload) {
+      onRebuildPayload(payload) {
         if (!payload.limit) payload.limit = 10;
       },
-      requestStrategy: "fetch"
+      requestStrategy: "fetch",
     }),
     /**
      * ### get single product by id
@@ -35,8 +35,8 @@ export default defineKarman({
       dto: dtoProductInfo,
       requestStrategy: "fetch",
       onSuccess(res) {
-        return res.body
-      }
+        return res.body;
+      },
     }),
     /**
      * ### create a new product
