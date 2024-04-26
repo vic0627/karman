@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "@jest/globals";
-import PathResolver from "@/utils/path-rosolver.provider";
+import PathResolver from "@/utils/path-resolver.provider";
 
 describe("PathResolver", () => {
   let pathResolver: PathResolver;

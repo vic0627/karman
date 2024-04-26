@@ -8,11 +8,20 @@
   </head>
   <body>
     <script type="module">
-      import $karman from "./main.js";
+      import $karman, { getCommentById, addProduct } from "./main.js";
 
       const fn = async () => {
         try {
-          const [resPromise] = $karman.facts.random({ animal_type: ["cat", "dog"], amount: 2 });
+          // const [resPromise, abort] = $karman.facts.random({ animal_type: ["cat", "dog"], amount: 2, animal_id: 20 });
+          // const [resPromise] = $karman.posts.getCommentById({ postId: 2 });
+          // const [resPromise] = getCommentById({ postId: 3 });
+          const [resPromise] = addProduct({
+            title: "asd",
+            price: 123,
+            description: "asdfjg",
+            image: "asdf"
+          });
+          // abort('what???')
           // const [resPromise] = $karman.facts.getAll();
           console.log(await resPromise);
         } catch (error) {

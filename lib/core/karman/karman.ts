@@ -2,7 +2,7 @@ import { KarmanInterceptors } from "@/types/hooks.type";
 import { ReqStrategyTypes, RequestConfig } from "@/types/http.type";
 import { CacheConfig, KarmanInstanceConfig } from "@/types/karman.type";
 import { configInherit } from "@/core/out-of-paradigm/config-inherit";
-import PathResolver from "@/utils/path-rosolver.provider";
+import PathResolver from "@/utils/path-resolver.provider";
 import TypeCheck from "@/utils/type-check.provider";
 import { isString, isBoolean, isNumber, isFunction } from "lodash-es";
 

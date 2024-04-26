@@ -29,6 +29,7 @@ export default defineKarman({
      * ### get single product by id
      */
     getById: defineAPI({
+      url: ":id",
       payloadDef: {
         ...id(true, { path: 0 }),
       },

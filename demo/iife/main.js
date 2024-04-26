@@ -1,23 +1,22 @@
 import { defineKarman, defineAPI, defineUnionRules, ValidationError, isValidationError } from "../../dist/karman.js";
 
 const $karman = defineKarman({
-  url: "https://cat-fact.herokuapp.com",
   root: true,
   validation: true,
   route: {
     facts: defineKarman({
-      url: "facts",
+      url: "https://cat-fact.herokuapp.com/facts",
       api: {
         getAll: defineAPI(),
         random: defineAPI({
           url: "random",
           payloadDef: {
             animal_type: {
-              query: true,
+              position: "query",
               rules: defineUnionRules("array", "string"),
             },
             amount: {
-              query: true,
+              position: "query",
               rules: ["int", { max: 500 }],
             },
           },
@@ -41,8 +40,19 @@ const $karman = defineKarman({
         }),
       },
     }),
-    users: defineKarman({
-      url: "users",
+    posts: defineKarman({
+      url: "https://jsonplaceholder.typicode.com/posts",
+      api: {
+        getCommentById: defineAPI({
+          url: ":postId/comments",
+          payloadDef: {
+            postId: {
+              position: "path",
+              rules: "int",
+            },
+          },
+        }),
+      },
     }),
   },
 });
@@ -50,3 +60,43 @@ const $karman = defineKarman({
 $karman.$mount(window);
 
 export default $karman;
+
+export const getCommentById = defineAPI({
+  url: "https://jsonplaceholder.typicode.com/posts/:postId/comments",
+  payloadDef: {
+    /** @type {number} 哪則貼文 */
+    postId: {
+      position: "path",
+      rules: "int",
+    },
+  },
+  onSuccess(res) {
+    return res.data;
+  },
+  validation: true,
+});
+
+export const addProduct = defineAPI({
+  url: "https://fakestoreapi.com/products",
+  method: "POST",
+  payloadDef: {
+    title: {
+      required: true,
+    },
+    price: {
+      required: true,
+    },
+    description: {
+      required: true,
+    },
+    image: {
+      required: true,
+    },
+    // category: null,
+    category: {},
+  },
+  headers: {
+    "Content-Type": "application/json; charset=utf-8",
+  },
+  validation: true,
+});

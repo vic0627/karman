@@ -160,6 +160,10 @@ export default {
 
 ### 簡易示範
 
+#### 單一封裝
+
+#### 群組封裝
+
 假設某專案有串接的 API 如下：
 
 ```txt
@@ -191,11 +195,11 @@ export default defineKarman({               // 創建 Karman 實例/節點
             payloadDef: {                   // 定義此方法的輸入（payload）介面
                 title: {                    // 輸入需求參數 title
                     required: true,         // 指定為必要參數
-                    body: true              // 指定為請求體參數
+                    position: "body"        // 指定為請求體參數
                 },
                 price: {                    // 輸入參數需求 price
                     required: true,
-                    body: true
+                    position: "body"
                 }
             }
         }),
@@ -203,25 +207,27 @@ export default defineKarman({               // 創建 Karman 實例/節點
          * 更新商品資訊
          */
         update: defineAPI({                 // 定義更新商品資訊的方法
+            url: ":id",                     // 定義路徑參數
             method: "PUT",                  // HTTP 方法選用 PUT
             payloadDef: {
                 id: {                       // 輸入需求參數 id
                     required: true,
-                    path: 0                 // 指定 id 為路徑參數第一位
+                    position: "path"        // 指定 id 為路徑參數
                 },
-                title: { body: true },
-                price: { body: true }
+                title: { position: "body" },
+                price: { position: "body" }
             }
         })
         /**
          * 刪除商品
          */
         delete: defineAPI({                 // 定義刪除商品的方法
+            url: ":id",
             method: "DELETE",               // HTTP 方法選用 DELETE
             payloadDef: {
                 id: {
                     required: true,
-                    path: 0
+                    position: "path"
                 },
             }
         })

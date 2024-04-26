@@ -4,7 +4,7 @@ import TypeCheck from "@/utils/type-check.provider";
 import { RuntimeOptions } from "@/types/final-api.type";
 import Karman from "../karman/karman";
 import { ApiConfig, HttpBody, ReqStrategyTypes, RequestConfig } from "@/types/http.type";
-import PathResolver from "@/utils/path-rosolver.provider";
+import PathResolver from "@/utils/path-resolver.provider";
 import { CacheConfig, UtilConfig } from "@/types/karman.type";
 import { AsyncHooks, KarmanInterceptors, SyncHooks } from "@/types/hooks.type";
 import { configInherit } from "../out-of-paradigm/config-inherit";
@@ -16,7 +16,7 @@ import { isEqual, cloneDeep } from "lodash-es";
 import Fetch from "../request-strategy/fetch.injectable";
 import Template from "@/utils/template.provider";
 
-export type ApiReturns<D> = [resPromise: Promise<D>, abortControler: () => void];
+export type ApiReturns<D> = [resPromise: Promise<D>, abortFn: () => void];
 
 export interface ParsedRuntimeOptions<T extends ReqStrategyTypes> {
   $$$requestConfig: RequestConfig<T>;
@@ -63,7 +63,7 @@ export default class ApiFactory {
   public createAPI<D, T extends ReqStrategyTypes, P extends PayloadDef>(apiConfig: ApiConfig<D, T, P>) {
     // destructure
     const { $$apiConfig, $$requestConfig, $$cacheConfig, $$utilConfig, $$hooks } = this.apiConfigParser(apiConfig);
-    // delegate
+    // refer
     const _af = this as ApiFactory;
     // caching
     let runtimeOptionsCache: ParsedRuntimeOptions<ReqStrategyTypes> | null = null;
@@ -205,8 +205,8 @@ export default class ApiFactory {
     if (!isEqual(runtimeCache, runtimeOptions)) {
       setRuntimeCache(runtimeOptions);
       const { $$$requestConfig, $$$cacheConfig, $$$utilConfig, $$$hooks } = runtimeOptions;
-      const { $baseURL, $requestConfig, $cacheConfig, $interceptors } = this;
-      const $utilConfig = { validation: this.$validation } as UtilConfig;
+      const { $baseURL, $requestConfig, $cacheConfig, $interceptors } = this ?? {};
+      const $utilConfig = { validation: this?.$validation ?? false } as UtilConfig;
       const requestConfig = configInherit($requestConfig, $$requestConfig, $$$requestConfig);
       const cacheConfig = configInherit($cacheConfig, $$cacheConfig, $$$cacheConfig);
       const utilConfig = configInherit($utilConfig, $$utilConfig, $$$utilConfig);
@@ -224,28 +224,36 @@ export default class ApiFactory {
   private preqBuilder<D, T extends ReqStrategyTypes>(
     preqBuilderOptions: PreqBuilderOptions<D, T>,
   ): [requestURL: string, requestBody: Record<string, any>] {
-    const { baseURL, url, payloadDef, payload } = preqBuilderOptions;
+    const { baseURL, payloadDef, payload } = preqBuilderOptions;
+    let { url } = preqBuilderOptions;
 
     if (!this.typeCheck.isObjectLiteral(payload)) this.template.throw("payload must be an normal object");
 
-    const urlSources: string[] = [baseURL, url];
-    const pathParams: string[] = [];
     const queryParams: Record<string, string> = {};
     const requestBody: Record<string, any> = {};
 
     Object.entries(payloadDef).forEach(([param, def]) => {
-      const { path, query, body } = def;
+      const { position } = def;
       const value = (payload as Record<string, any>)[param as keyof typeof payload];
 
       if (this.typeCheck.isUndefinedOrNull(value)) return;
 
-      if (this.typeCheck.isNumber(path) && path >= 0) pathParams[path] = `${value}`;
-      if (query) queryParams[param] = value;
-      if (body) requestBody[param] = value;
+      const isPath = position === "path" || position?.includes("path");
+      const isQuery = position === "query" || position?.includes("query");
+      const isBody = !position || position === "body" || position?.includes("body");
+
+      if (isPath) {
+        const pathParam = `:${param}`;
+
+        if (url.includes(pathParam)) url = url.replace(pathParam, value);
+        else this.template.warn(`missing definition of path parameter '${param}'`);
+      }
+
+      if (isQuery) queryParams[param] = value;
+      if (isBody) requestBody[param] = value;
     });
 
-    urlSources.push(...pathParams.filter((p) => p));
-    const requestURL = this.pathResolver.resolveURL({ paths: urlSources, query: queryParams });
+    const requestURL = this.pathResolver.resolveURL({ paths: [baseURL, url], query: queryParams });
 
     return [requestURL, requestBody];
   }

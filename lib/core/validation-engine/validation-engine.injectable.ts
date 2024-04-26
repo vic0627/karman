@@ -51,9 +51,6 @@ export default class ValidationEngine {
     Object.entries(payloadDef).forEach(([param, paramDef]) => {
       const value = payload[param];
       const { rules, required } = this.getRules(param, paramDef);
-
-      if (!rules) return;
-
       const validator = this.getValidatorByRules(rules, required);
       validatorQueue.push(() => validator(param, value));
     });
@@ -65,7 +62,7 @@ export default class ValidationEngine {
   private getRules(param: string, paramDef: ParamDef) {
     const { rules, required } = paramDef;
 
-    if (!rules) {
+    if (!rules && this.typeCheck.isUndefined(required)) {
       this.template.warn(`Cannot find certain rules for parameter "${param}".`);
 
       return {};
@@ -84,7 +81,7 @@ export default class ValidationEngine {
     return validator.bind(this);
   }
 
-  private getValidatorByRules(rules: ParamRules | ParamRules[] | RuleSet, required: boolean = false) {
+  private getValidatorByRules(rules?: ParamRules | ParamRules[] | RuleSet, required: boolean = false) {
     if (rules instanceof RuleSet) {
       return this.ruleSetAdapter(rules, required);
     } else if (this.typeCheck.isArray(rules)) {
@@ -110,15 +107,15 @@ export default class ValidationEngine {
     return false;
   }
 
-  private validateInterface(option: ValidateOption) {
-    const { param, value, required } = option;
+  private validateInterface(option: Partial<Pick<ValidateOption, "rule">> & Omit<ValidateOption, "rule">) {
+    const { param, value, required, rule } = option;
     const requiredValidation = this.requiredValidator(param, value, required);
 
-    if (!requiredValidation) return;
+    if (!requiredValidation || !rule) return;
 
-    this.typeValidator.validate(option);
-    this.regexpValidator.validate(option);
-    this.functionalValidator.validate(option);
-    this.parameterDescriptorValidator.validate(option);
+    this.typeValidator.validate(option as ValidateOption);
+    this.regexpValidator.validate(option as ValidateOption);
+    this.functionalValidator.validate(option as ValidateOption);
+    this.parameterDescriptorValidator.validate(option as ValidateOption);
   }
 }

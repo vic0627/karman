@@ -10,7 +10,7 @@ import ParameterDescriptorValidator from "./validation-engine/validators/paramet
 import RegExpValidator from "./validation-engine/validators/regexp-validator.provider";
 import TypeValidator from "./validation-engine/validators/type-validator.injectable";
 import ValidationEngine from "./validation-engine/validation-engine.injectable";
-import PathResolver from "@/utils/path-rosolver.provider";
+import PathResolver from "@/utils/path-resolver.provider";
 import TypeCheck from "@/utils/type-check.provider";
 import Template from "@/utils/template.provider";
 import LocalStorageCache from "./api-factory/request-pipe/cache-strategy/local-storage-cache.provider";

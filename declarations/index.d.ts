@@ -77,6 +77,8 @@ declare class UnionRules extends RuleSet {}
 
 declare class IntersectionRules extends RuleSet {}
 
+type ParameterPosition = "path" | "query" | "body"
+
 type ParamPosition = {
   /**
    * describe the param should use for path parameter
@@ -146,6 +148,10 @@ interface ParamDef extends ParamPosition {
    */
   rules?: ParamRules | ParamRules[] | RuleSet;
   required?: boolean;
+  /**
+   * @default "body"
+   */
+  position?: ParameterPosition | ParameterPosition[];
 }
 
 export type PayloadDef = Record<string, ParamDef>;

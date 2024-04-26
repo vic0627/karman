@@ -1,7 +1,7 @@
 import Injectable from "@/decorator/Injectable.decorator";
 import { FinalKarman, KarmanConfig, KarmanInstanceConfig } from "@/types/karman.type";
 import TypeCheck from "@/utils/type-check.provider";
-import PathResolver from "@/utils/path-rosolver.provider";
+import PathResolver from "@/utils/path-resolver.provider";
 import ScheduledTask from "../scheduled-task/scheduled-task.injectable";
 import Karman from "../karman/karman";
 import Template from "@/utils/template.provider";
