@@ -28,14 +28,14 @@ export default class ValidationEngine {
     return error instanceof ValidationError;
   }
 
-  public defineCustomValidator(validatefn: (param: string, value: any) => void): CustomValidator {
-    if (!this.typeCheck.isFunction(validatefn)) {
+  public defineCustomValidator(validateFn: (param: string, value: any) => void): CustomValidator {
+    if (!this.typeCheck.isFunction(validateFn)) {
       throw new TypeError("Invalid validator type.");
     }
 
-    Object.defineProperty(validatefn, "_karman", { value: true });
+    Object.defineProperty(validateFn, "_karman", { value: true });
 
-    return validatefn as CustomValidator;
+    return validateFn as CustomValidator;
   }
 
   public defineUnionRules(...rules: ParamRules[]) {
@@ -47,9 +47,13 @@ export default class ValidationEngine {
   }
 
   public getMainValidator(payload: Record<string, any>, payloadDef: PayloadDef) {
+    if (this.typeCheck.isArray(payloadDef)) return () => {};
+
     const validatorQueue: (() => void)[] = [];
     Object.entries(payloadDef).forEach(([param, paramDef]) => {
-      const value = payload[param];
+      if (!paramDef) return;
+
+      const value = payload[param] ??= paramDef.defaultValue?.(); // set default value
       const { rules, required } = this.getRules(param, paramDef);
       const validator = this.getValidatorByRules(rules, required);
       validatorQueue.push(() => validator(param, value));

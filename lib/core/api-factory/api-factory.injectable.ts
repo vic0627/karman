@@ -3,7 +3,7 @@ import Xhr from "../request-strategy/xhr.injectable";
 import TypeCheck from "@/utils/type-check.provider";
 import { RuntimeOptions } from "@/types/final-api.type";
 import Karman from "../karman/karman";
-import { ApiConfig, HttpBody, ReqStrategyTypes, RequestConfig } from "@/types/http.type";
+import { ApiConfig, HttpBody, HttpConfig, ReqStrategyTypes, RequestConfig } from "@/types/http.type";
 import PathResolver from "@/utils/path-resolver.provider";
 import { CacheConfig, UtilConfig } from "@/types/karman.type";
 import { AsyncHooks, KarmanInterceptors, SyncHooks } from "@/types/hooks.type";
@@ -232,26 +232,32 @@ export default class ApiFactory {
     const queryParams: Record<string, string> = {};
     const requestBody: Record<string, any> = {};
 
-    Object.entries(payloadDef).forEach(([param, def]) => {
-      const { position } = def;
-      const value = (payload as Record<string, any>)[param as keyof typeof payload];
+    if (this.typeCheck.isArray(payloadDef)) {
+      payloadDef.forEach((param) => {
+        requestBody[param] = (payload as Record<string, any>)[param as keyof typeof payload];
+      });
+    } else {
+      Object.entries(payloadDef).forEach(([param, def]) => {
+        const { position } = def ?? {};
+        const value = (payload as Record<string, any>)[param as keyof typeof payload];
 
-      if (this.typeCheck.isUndefinedOrNull(value)) return;
+        if (this.typeCheck.isUndefinedOrNull(value)) return;
 
-      const isPath = position === "path" || position?.includes("path");
-      const isQuery = position === "query" || position?.includes("query");
-      const isBody = !position || position === "body" || position?.includes("body");
+        const isPath = position === "path" || position?.includes("path");
+        const isQuery = position === "query" || position?.includes("query");
+        const isBody = !position || position === "body" || position?.includes("body");
 
-      if (isPath) {
-        const pathParam = `:${param}`;
+        if (isPath) {
+          const pathParam = `:${param}`;
 
-        if (url.includes(pathParam)) url = url.replace(pathParam, value);
-        else this.template.warn(`missing definition of path parameter '${param}'`);
-      }
+          if (url.includes(pathParam)) url = url.replace(pathParam, value);
+          else this.template.warn(`missing definition of path parameter '${param}'`);
+        }
 
-      if (isQuery) queryParams[param] = value;
-      if (isBody) requestBody[param] = value;
-    });
+        if (isQuery) queryParams[param] = value;
+        if (isBody) requestBody[param] = value;
+      });
+    }
 
     const requestURL = this.pathResolver.resolveURL({ paths: [baseURL, url], query: queryParams });
 

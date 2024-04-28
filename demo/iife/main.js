@@ -1,4 +1,4 @@
-import { defineKarman, defineAPI, defineUnionRules, ValidationError, isValidationError } from "../../dist/karman.js";
+import { defineKarman, defineAPI, defineUnionRules, ValidationError, isValidationError, defineCustomValidator } from "../../dist/karman.js";
 
 const $karman = defineKarman({
   root: true,
@@ -93,10 +93,16 @@ export const addProduct = defineAPI({
       required: true,
     },
     // category: null,
-    category: {},
+    category: {
+      required: true,
+      defaultValue: () => new String("asd"),
+      rules: String
+    },
   },
+  // payloadDef: ["title", "price", "description", "image", "category"],
   headers: {
     "Content-Type": "application/json; charset=utf-8",
   },
   validation: true,
+  // requestStrategy: "fetch"
 });

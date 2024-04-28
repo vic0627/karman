@@ -1,3 +1,4 @@
 {
-    "markdown-preview-github-styles.colorTheme": "dark"
+    "markdown-preview-github-styles.colorTheme": "dark",
+    "liveServer.settings.port": 5501
 }

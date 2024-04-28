@@ -77,71 +77,9 @@ declare class UnionRules extends RuleSet {}
 
 declare class IntersectionRules extends RuleSet {}
 
-type ParameterPosition = "path" | "query" | "body"
+type ParamPosition = "path" | "query" | "body";
 
-type ParamPosition = {
-  /**
-   * describe the param should use for path parameter
-   * @description Accept integers that greater than or equal to 0.
-   * The url builder will consider this value as an index of all path parameters.
-   * @example
-   * // assuming the base url is 'https://karman.com/' and the instance of Karman is '$k'
-   * // ...
-   * getSomthing: defineAPI({
-   *   endpoint: "some-thing",
-   *   payloadDef: {
-   *     param01: { path: 1 },
-   *     param02: { path: 0 },
-   *   }
-   * })
-   * // ... call the final API
-   * $k.getSomething({ param01: 'hello', param02: 12 })
-   * // request url => 'https://karman.com/some-thing/12/hello'
-   */
-  path?: number;
-  /**
-   * describe the param should use for query string parameter
-   * @description if true, url builder will use the same key of payloadDef
-   * and the received value to build the request url
-   * @example
-   * // assuming the base url is 'https://karman.com/' and the instance of Karman is '$k'
-   * // ...
-   * getSomthing: defineAPI({
-   *   endpoint: "some-thing",
-   *   payloadDef: {
-   *     param01: { query: true },
-   *     param02: { query: true },
-   *   }
-   * })
-   * // ... call the final API
-   * $k.getSomething({ param01: 'hello', param02: 12 })
-   * // request url => 'https://karman.com/some-thing?param01=hello&param02=12'
-   */
-  query?: boolean;
-  /**
-   * describe the param should use for the request body
-   * @example
-   * // assuming the base url is 'https://karman.com/' and the instance of Karman is '$k'
-   * // ...
-   * getSomthing: defineAPI({
-   *   endpoint: "some-thing",
-   *   payloadDef: {
-   *     param01: { body: true },
-   *     param02: { body: false },
-   *     onBeforeRequest(url, payload) {
-   *       console.log(payload)
-   *       return JSON.stringfy(payload)
-   *     }
-   *   }
-   * })
-   * // ... call the final API
-   * $k.getSomething({ param01: 'hello', param02: 12 })
-   * // console output => { param01: 'hello' }
-   */
-  body?: boolean;
-};
-
-interface ParamDef extends ParamPosition {
+interface ParamDef {
   /**
    * validation rule of the param
    * @description if received an array, it will be implicitly converted into an `IntersectionRules`
@@ -151,10 +89,11 @@ interface ParamDef extends ParamPosition {
   /**
    * @default "body"
    */
-  position?: ParameterPosition | ParameterPosition[];
+  position?: ParamPosition | ParamPosition[];
+  defaultValue?: () => any;
 }
 
-export type PayloadDef = Record<string, ParamDef>;
+export type PayloadDef = Record<string, ParamDef | null> | string[];
 
 declare class TypeCheck {
   get CorrespondingMap(): Record<Type, keyof this>;
@@ -370,7 +309,13 @@ interface RuntimeOptions<ST, ST2, P, D, S, E>
 
 type FinalAPI<ST, P, D, S, E> = <ST2 extends unknown, S2 extends unknown, E2 extends unknown>(
   this: KarmanInstance,
-  payload: { [K in keyof P]: P[K] },
+  payload: P extends string[]
+    ? {
+        [K in P[number]]: any;
+      }
+    : P extends object
+      ? { [K in keyof P]: P[K] }
+      : never,
   runtimeOptions?: RuntimeOptions<ST, ST2, P, D, S2, E2>,
 ) => ReturnType<RequestExecutor<FinalAPIRes<SelectResponseForm<SelectPrimitive2<ST, ST2>, D>, S, S2, E, E2>>>;
 

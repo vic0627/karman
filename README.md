@@ -12,7 +12,7 @@ HTTP 客戶端 / API 中心化管理 / API 抽象層
 - [核心](#核心)
   - [Karman Tree](#karman-tree)
   - [Final API](#final-api)
-  - [Validation Enigine](#validation-enigine)
+  - [Validation Engine](#validation-engine)
   - [Middleware](#middleware)
   - [Response Caching](#response-caching)
   - [Dynamic Type Annotation](#dynamic-type-annotation)
@@ -61,31 +61,31 @@ Karman 是一個 JavaScript 套件，專為建構 API [抽象層](https://en.wik
 ```mermaid
 flowchart LR
     subgraph bk["<br>"]
-    http["http client<br>(fetch, xhr)"] -- send --> server
+        http["http client<br>(fetch, xhr)"] -- send --> server
     end
     subgraph component A
-    direction LR
-    param1["params"] --> addProduct1
-    addProduct1["add product<br>POST products<br>body: [name, price, ...]"] --> http
+        direction LR
+        param1["params"] --> addProduct1
+        addProduct1["add product<br>POST products<br>body: [name, price, ...]"] --> http
     end
     subgraph component B
-    direction LR
-    param2["params"] --> validation1["validaiton"]
-    validation1 --> addProduct2
-    addProduct2["add product<br>POST products<br>body: [name, price, ...]"] --> http
-    param3["params"] --> url1["url builder"]
-    url1 --> getAll
-    getAll["get all products<br>GET products<br>query: [sort, limit]"] --> http
+        direction LR
+        param2["params"] --> validation1["validation"]
+        validation1 --> addProduct2
+        addProduct2["add product<br>POST products<br>body: [name, price, ...]"] --> http
+        param3["params"] --> url1["url builder"]
+        url1 --> getAll
+        getAll["get all products<br>GET products<br>query: [sort, limit]"] --> http
     end
     subgraph component C
-    direction LR
-    param4["params"] -->
-    validation2["validation"] -->
-    url2["url builder"] -->
-    updateProduct2["update product<br>PATCH products<br>path: [id]<br>body: [name, price, ...]"] --> http
-    param5["params"] -->
-    url3["url builder"] -->
-    delProduct["delete product<br>DELETE products<br>path: [id]"] --> http
+        direction LR
+        param4["params"] -->
+        validation2["validation"] -->
+        url2["url builder"] -->
+        updateProduct2["update product<br>PATCH products<br>path: [id]<br>body: [name, price, ...]"] --> http
+        param5["params"] -->
+        url3["url builder"] -->
+        delProduct["delete product<br>DELETE products<br>path: [id]"] --> http
     end
     style bk fill:none,stroke:none
 ```
@@ -160,7 +160,76 @@ export default {
 
 ### 簡易示範
 
+在 Karman 中，主要由兩支函式來進行 API 的封裝，分別為 `defineAPI` 與 `defineKarman`，兩支函式各司其職：
+
+- `defineAPI` 主要對單一支 API 進行封裝，可單獨使用，會返回一支新的函式。
+- `defineKarman` 主要為管理多個路徑或共同配置下的多支 API，需搭配 `defineAPI` 使用，會返回一個樹狀結構（Karman Tree）的物件，可以通過此物件訪問所有路徑下封裝過的 API。
+
 #### 單一封裝
+
+使用 `defineAPI` 可以對單一支 API 進行封裝，並返回一個新的函式，假設要封裝以下這支取得商品資訊的 API：
+
+```txt
+GET https://karman.com/products
+```
+
+`defineAPI` 的 `method` 預設為 GET，且此 API 無須任何參數，因此可以只帶入 `url` 即可完成配置：
+
+```js
+import { defineAPI } from "@vic0627/karman"
+
+export const getProducts = defineAPI({
+    url: "https://karman.com/products"
+})
+```
+
+配置時，可以透過 `payloadDef` 的鍵值來決定 `defineAPI` 所返回的函式該接收哪些參數，而 `payloadDef[key].position` 將決定傳入的參數將用在哪裡。
+
+通常情況下，API 的參數將分為三種類型：
+
+- 路徑參數（Path Parameter）
+- 查詢參數（Query String Parameter）
+- 請求主體（Request Body）
+
+以下面這支 API 進行封裝示範：
+
+```txt
+POST https://karman.com/products
+
+Path Parameters:
+- id: number
+
+Query Parameters:
+- name: string
+
+Body:
+- price: number
+
+Headers:
+- Content-Type: application/json
+```
+
+```js
+import { defineAPI } from "@vic0627/karman"
+
+export const getProducts = defineAPI({
+    method: "POST",
+    url: "https://karman.com/products/:id",
+    payloadDef: {
+        id: {
+            position: "path"
+        },
+        name: {
+            position: "query"
+        },
+        price: {
+            // position: "body" // 參數預設會帶入請求主體，可省略
+        },
+        // or
+        price: null             // 若無其他配置（驗證規則、預設值等）可直接給 null
+    }
+})
+```
 
 #### 群組封裝
 
@@ -502,7 +571,7 @@ final API 同樣可以選擇配置 url 或 url 的片段，當今天某路由上
 ```js
 import { defineKarman, defineAPI } from "@vic0627/karman"
 
-export default defineKarmna({
+export default defineKarman({
     root: true,
     url: "https://karman.com/products",
     api: {
@@ -517,7 +586,7 @@ export default defineKarmna({
 
 #### Syntax
 
-在調用 final API 時，與一般 HTTP Client 不同，final API 本身是同步任務，會先進行如：參數驗證、參數構建、初始化請求所需資料與配置等任務，並返回用戶端一個等待響應結果的 Promise 與一個取消請求方法，用戶端需要另外等待該 Promise fullfilled 之後，才會拿到該次響應結果。
+在調用 final API 時，與一般 HTTP Client 不同，final API 本身是同步任務，會先進行如：參數驗證、參數構建、初始化請求所需資料與配置等任務，並返回用戶端一個等待響應結果的 Promise 與一個取消請求方法，用戶端需要另外等待該 Promise fulfilled 之後，才會拿到該次響應結果。
 
 ```js
 const [resPromise, abort] = karman.finalAPI(payload[, config])
@@ -544,7 +613,7 @@ final API 的配置繼承與複寫分為幾個階段：
 ```js
 import { defineKarman, defineAPI } from "@vic0627/karman"
 
-export default defineKarmna({
+export default defineKarman({
     root: true,
     url: "https://karman.com/products",
     api: {
@@ -584,7 +653,7 @@ export default defineKarmna({
 ```js
 import { defineKarman, defineAPI } from "@vic0627/karman"
 
-const karmanProduct = defineKarmna({
+const karmanProduct = defineKarman({
     root: true,
     url: "https://karman.com/products",
     validation: true,                   // 先啟動該節點的驗證引擎
@@ -646,7 +715,7 @@ export default (required, { path = -1, query = false, body = false } = {}) => ({
 });
 ```
 
-### Validation Enigine
+### Validation Engine
 
 驗證引擎包辦了 final API 的參數驗證機制，在 final API 發送請求時，會驗證接收參數是否符合參數定義的驗證規則，若是有參數未通過驗證，該次請求將不會建立，並拋出 `ValidationError`，其中錯誤訊息能由驗證引擎自動產生或由使用者自行定義。
 
@@ -673,7 +742,7 @@ export default (required, { path = -1, query = false, body = false } = {}) => ({
     - `"bigint"`：bigint
     - `"symbol"`：symbol
 
-- **Contructor**
+- **Constructor**
 
     任何建構函式（class），驗證引擎會以 `instanceof` 進行驗證。
 
@@ -702,7 +771,7 @@ const emailRule = {
     errorMessage: "錯誤的 email 格式"
 }
 
-const karman = defineKarmna({
+const karman = defineKarman({
     // ...
     validation: true,
     api: {
@@ -1401,7 +1470,7 @@ defineIntersectionRules(...rules)
 #### 語法
 
 ```js
-new ValidationError(opiton)
+new ValidationError(option)
 ```
 
 #### 參數
