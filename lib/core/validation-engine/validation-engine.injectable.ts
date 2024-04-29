@@ -53,7 +53,9 @@ export default class ValidationEngine {
     Object.entries(payloadDef).forEach(([param, paramDef]) => {
       if (!paramDef) return;
 
-      const value = payload[param] ??= paramDef.defaultValue?.(); // set default value
+      // Don't assign the default value to the payload here,
+      // but use the default value to run the validation.
+      const value = payload[param] ?? paramDef.defaultValue?.();
       const { rules, required } = this.getRules(param, paramDef);
       const validator = this.getValidatorByRules(rules, required);
       validatorQueue.push(() => validator(param, value));

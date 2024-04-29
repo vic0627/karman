@@ -224,11 +224,11 @@ export default class ApiFactory {
   private preqBuilder<D, T extends ReqStrategyTypes>(
     preqBuilderOptions: PreqBuilderOptions<D, T>,
   ): [requestURL: string, requestBody: Record<string, any>] {
-    const { baseURL, payloadDef, payload } = preqBuilderOptions;
-    let { url } = preqBuilderOptions;
+    const { baseURL, payloadDef, payload, url } = preqBuilderOptions;
 
     if (!this.typeCheck.isObjectLiteral(payload)) this.template.throw("payload must be an normal object");
 
+    const paths: string[] = url.split("/");
     const queryParams: Record<string, string> = {};
     const requestBody: Record<string, any> = {};
 
@@ -238,8 +238,9 @@ export default class ApiFactory {
       });
     } else {
       Object.entries(payloadDef).forEach(([param, def]) => {
-        const { position } = def ?? {};
-        const value = (payload as Record<string, any>)[param as keyof typeof payload];
+        const { position, defaultValue } = def ?? {};
+        // set default value
+        const value = (payload as Record<string, any>)[param as keyof typeof payload] ?? defaultValue?.();
 
         if (this.typeCheck.isUndefinedOrNull(value)) return;
 
@@ -249,8 +250,9 @@ export default class ApiFactory {
 
         if (isPath) {
           const pathParam = `:${param}`;
+          const paramIdx = paths.findIndex((value) => value === pathParam);
 
-          if (url.includes(pathParam)) url = url.replace(pathParam, value);
+          if (paramIdx !== -1) paths[paramIdx] = `${value}`;
           else this.template.warn(`missing definition of path parameter '${param}'`);
         }
 
@@ -259,7 +261,10 @@ export default class ApiFactory {
       });
     }
 
-    const requestURL = this.pathResolver.resolveURL({ paths: [baseURL, url], query: queryParams });
+    const requestURL = this.pathResolver.resolveURL({
+      paths: [baseURL, ...paths.filter((value) => !value.startsWith(":"))],
+      query: queryParams,
+    });
 
     return [requestURL, requestBody];
   }

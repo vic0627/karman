@@ -77,7 +77,7 @@ declare class UnionRules extends RuleSet {}
 
 declare class IntersectionRules extends RuleSet {}
 
-type ParamPosition = "path" | "query" | "body";
+export type ParamPosition = "path" | "query" | "body";
 
 interface ParamDef {
   /**
