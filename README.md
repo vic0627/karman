@@ -825,6 +825,20 @@ const setDefault = defineAPI({
 })
 ```
 
+最後，假設說所有的參數接會用於請求體，且無其他驗證規則與預設值，你是可以使用 `string[]` 來替代原有的 `payloadDef` 物件的，但這將會使 API 失去自動完成等等開發上的優勢：
+
+```js
+const lazyPayload = defineAPI({
+    payloadDef: ["name", "gender", "age"]
+})
+
+lazyPayload({
+    name: "Karman",
+    gender: "none",
+    age: 1,
+})
+```
+
 **補充：復用參數定義**
 
 通常情況下，多組 API 可能會使用到重複的參數，這時可以考慮將參數的定義抽離出來，以工廠的方式將其封裝，提供可選及參數位置的傳入，使參數可以在相同驗證規則的情況下，做到更大彈性的配置。
@@ -1537,7 +1551,7 @@ defineAPI(option)
         // 👇 API 基本配置
         url?: string;
         method?: "get" | "GET" | "delete" | "DELETE" | "head" | "HEAD" | "options" | "OPTIONS" | "post" | "POST" | "put" | "PUT" | "patch" | "PATCH";
-        payloadDef?: Record<string, ParamDef | null>;
+        payloadDef?: Record<string, ParamDef | null> | string[];
         dto?: any;
         
         // 👇 Hooks

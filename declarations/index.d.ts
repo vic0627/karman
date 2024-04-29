@@ -137,7 +137,7 @@ type CacheStrategyTypes = "sessionStorage" | "localStorage" | "memory";
 
 interface CacheConfig {
   /**
-   * activate the caching funcitonality
+   * activate the caching functionality
    */
   cache?: boolean;
   /**
@@ -242,7 +242,7 @@ interface HttpConfig<ST> extends RequestConfig<ST> {
 
 interface UtilConfig {
   /**
-   * activating the validation enigine
+   * activating the validation engine
    * @default true
    */
   validation?: boolean;
@@ -367,7 +367,7 @@ interface KarmanOptions<A, R>
     UtilConfig {
   /**
    * root layer of the whole Karman tree
-   * @description this will notify the instance of Karman to invoke the inheritance funciton
+   * @description this will notify the instance of Karman to invoke the inheritance function
    */
   root?: boolean;
   /**
