@@ -714,14 +714,39 @@ const [resPromise, abort] = karman.finalAPI(payload[, config])
 - `payload`：final API 主要接收的參數物件，為定義 final API 時透過 payloadDef 來決定此物件須具備甚麼屬性參數，倘若 payloadDef 並未定義所需參數，調用 final API 時又有設定 config 的需求時，payload 可傳入空物件、undefined、null 等值。
 - `config`：最後複寫 API 配置的參數，但無法複寫如：url、method、payloadDef 等初始配置。
 
-#### Inheritance
+#### Flow
 
-final API 的配置繼承與複寫分為幾個階段：
+這是 Final API 執行時的流程圖，下面會針對一些底層邏輯進行解釋，而已經以獨立章節說明的節點就不額外點出來了：
 
-- defineAPI 配置：此階段會先暫存接收到的配置，提供後續的繼承與複寫。
-- runtime 配置：final API 被呼叫時會提供最後複寫配置的機會，若有接收到配置，會先進行暫存動作。
-- 第一階段繼承：此階段會先比較 runtime 配置與暫存的 runtime 配置，若前後兩次的配置相同，會略過此階段的繼承行為，否則以 runtime 配置複寫 defineAPI 的配置。
-- 第二階段繼承：此階段會引用 final API 所屬 karman node 的配置，並以第一階段繼承後的配置進行複寫，進而獲得 final API 的最終配置。
+```mermaid
+flowchart TB
+    s((Final API Start)) -->
+    c["Config Inheritance"] -->
+    hv{has validation} -- true -->
+    ve["Validation Engine"] -->
+    v{valid} -- true -->
+    b["Parameter Builder"] -->
+    p["Transform Payload"] -->
+    ss{Select<br>Request<br>Strategy} -- xhr -->
+    e["Send Request"] -->
+    hc{has cache} -- true -->
+    cp["Cache Manager"] -->
+    ed((Final API End))
+    hv -- false --> b
+    v -- false --> ed
+    hc -- false --> ed
+    ss -- fetch --> e
+```
+
+- Config Inheritance：Final API 的配置繼承與複寫又可分為幾個階段。
+
+    1. defineAPI 配置：此階段會先暫存接收到的配置，提供後續的繼承與複寫。
+    1. runtime 配置：final API 被呼叫時會提供最後複寫配置的機會，若有接收到配置，會先進行暫存動作。
+    1. 第一階段繼承：此階段會先比較 runtime 配置與暫存的 runtime 配置，若前後兩次的配置相同，會略過此階段的繼承行為，否則以 runtime 配置複寫 defineAPI 的配置。
+    1. 第二階段繼承：此階段會引用 final API 所屬 karman node 的配置，並以第一階段繼承後的配置進行複寫，進而獲得 final API 的最終配置。
+
+- Parameter Builder：此階段將會依據 Final API 的 payload 來建構最終請求的 url 與 payload，這邊的 payload 始終會維持 `Record<string, any>` 的型別。
+- Transform Payload：此階段將會轉換 payload 至正式請求所需的型別，如 `string`、`FormData` 等等。
 
 #### Request Strategy
 
