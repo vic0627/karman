@@ -236,7 +236,7 @@ export const modifyProduct = defineAPI({
 })
 ```
 
-Next, encapsulate the validation rules and request headers according to the information in the document. Use the `required` or `rules` property to specify validation rules (for more detailed explanations, refer to the [Validation Engine](#validation-engine) section). Additionally, for some parameters, use the `defaultValue` property to assign default values:
+Next, encapsulate the validation rules and request headers according to the information in the document. Use the `required` or `rules` property to specify validation rules (for more detailed explanations, refer to the [Validation Engine](./assets/doc/en/validation-engine.md) section). Additionally, for some parameters, use the `defaultValue` property to assign default values:
 
 ```js
 import { defineAPI } from "@vic0627/karman"
@@ -311,7 +311,7 @@ export const modifyProduct = defineAPI({
 })
 ```
 
-Karman also provides the `dto` parameter for configuring the response specification, enabling the function to support a more complete return type. Here's a JSDoc example; for other type declaration examples, please refer to the [DTO of Response](#dto-of-response) section:
+Karman also provides the `dto` parameter for configuring the response specification, enabling the function to support a more complete return type. Here's a JSDoc example; for other type declaration examples, please refer to the [DTO of Response](./assets/doc/en/dynamic-type-annotation.md) section:
 
 ```js
 /**
