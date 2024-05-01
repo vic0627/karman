@@ -56,7 +56,7 @@ export default class TypeCheck {
   }
 
   isNaN(value: any): boolean {
-    return isNaN(value);
+    return isNaN(value) && value !== undefined;
   }
 
   isBoolean(value: any): value is boolean {

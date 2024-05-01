@@ -191,3 +191,15 @@ export const pathTest = defineAPI({
   },
   validation: true,
 });
+
+export const arrTest = defineAPI({
+  url: "https://fakestoreapi.com/products",
+  payloadDef: {
+    arr: {
+      position: [],
+      rules: "int[6]",
+      required: true
+    },
+  },
+  validation: true,
+});

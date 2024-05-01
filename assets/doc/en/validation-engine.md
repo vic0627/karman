@@ -5,6 +5,7 @@ The validation engine handles the parameter validation mechanism for final APIs.
 - [Validation Engine](#validation-engine)
   - [Rules](#rules)
   - [Rule Set](#rule-set)
+  - :new: [String Rule - Array Syntax](#🆕-string-rule---array-syntax)
 
 ## Rules
 
@@ -122,4 +123,41 @@ const karman = defineKarman({
 karman.ruleSetTest({ param01: "" }); // ValidationError
 karman.ruleSetTest({ param02: "foo" }); // Valid
 karman.ruleSetTest({ param03: false }); // Valid
+```
+
+## :new: String Rule - Array Syntax
+
+An extension syntax for [String Rule](#rules), primarily used to validate arrays, array lengths, and the types of elements within arrays. The basic syntax is as follows:
+
+```txt
+<type>[]
+<type>[<equal>]
+<type>[<min>:]
+<type>[:<max>]
+<type>[<min>:<max>]
+```
+
+On the left side, there must be a string representing the type, and on the right side, there is a set of square brackets. Inside the brackets, you can optionally use a colon to define minimum and maximum values. The parameters using array syntax as validation rules **must be of type array**. If no value is provided inside the brackets, it means there is no limit on the array length.
+
+```js
+const arrTest = defineAPI({
+  // ...
+  payloadDef: {
+    param01: {
+      rules: "int[]", // Must be an array of integers
+    },
+    param02: {
+      rules: "string[5]", // Must be an array of strings with length 5
+    },
+    param03: {
+      rules: "char[5:]", // Must be an array of characters with a length greater than or equal to 5
+    },
+    param04: {
+      rules: "number[:5]", // Must be an array of numbers with a length less than or equal to 5
+    },
+    param05: {
+      rules: "boolean[3:5]", // Must be an array of booleans with a length between 3 and 5 (inclusive)
+    },
+  },
+});
 ```

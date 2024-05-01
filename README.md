@@ -42,7 +42,8 @@ HTTP Client / API Centralized Management / API Abstraction Layer
 - Dynamic type annotation
 - Lifecycle of request methods
 - Parameter validation engine
-- :new: Default parameter values
+- Default parameter values
+- :new: [String Rule - Array Syntax](./assets/doc/en/validation-engine.md)
 
 ## Getting Started
 

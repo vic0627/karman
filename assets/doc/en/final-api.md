@@ -110,9 +110,6 @@ These types can be assigned as a `string[]` to the `position` attribute, indicat
 
 Next, decide if the parameter is required by using `required: boolean`. It's important to note that validating if a parameter is required is part of the validation engine. `required` is not placed inside `rules` but must be set to `true` in the `validation` attribute of a parent node or API configuration to activate the validation mechanism.
 
-> [!WARNING]
-> The `required` validation checks if the parameter key exists in the `payload` using the `in` operator and does not mean the parameter can be `undefined`.
-
 Finally, the explanation for parameter validation rules is complex and thus explained in a separate section.
 
 ```js

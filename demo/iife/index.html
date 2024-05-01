@@ -12,7 +12,7 @@
       <button id="set">set something</button>
     </div>
     <script type="module">
-      import $karman, { getCommentById, addProduct, pathTest } from "./main.js";
+      import $karman, { getCommentById, addProduct, pathTest, arrTest } from "./main.js";
 
       const fn = async () => {
         try {
@@ -25,7 +25,8 @@
           //   description: "asdfjg",
           //   image: "asdf"
           // });
-          const [resPromise] = pathTest({ id: 3, name: "hello" });
+          // const [resPromise] = pathTest({ id: 3, name: "hello" });
+          const [resPromise] = arrTest({ arr: [4, 5, 2, "sdf", 5, 2] });
           // abort('what???')
           // const [resPromise] = $karman.facts.getAll();
           console.log(await resPromise);
@@ -34,7 +35,7 @@
         }
       };
 
-      // fn();
+      fn();
       send.addEventListener("click", () => {
         fn();
       });

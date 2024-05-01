@@ -12,6 +12,7 @@ import UnionRules from "./rule-set/union-rules";
 import IntersectionRules from "./rule-set/intersection-rules";
 import Template from "@/utils/template.provider";
 import ValidationError from "./validation-error/validation-error";
+import ArrayValidator from "./validators/array-validator.injectable";
 
 @Injectable()
 export default class ValidationEngine {
@@ -20,6 +21,7 @@ export default class ValidationEngine {
     private readonly parameterDescriptorValidator: ParameterDescriptorValidator,
     private readonly regexpValidator: RegExpValidator,
     private readonly typeValidator: TypeValidator,
+    private readonly arrayValidator: ArrayValidator,
     private readonly typeCheck: TypeCheck,
     private readonly template: Template,
   ) {}
@@ -115,11 +117,13 @@ export default class ValidationEngine {
 
   private validateInterface(option: Partial<Pick<ValidateOption, "rule">> & Omit<ValidateOption, "rule">) {
     const { param, value, required, rule } = option;
+
     const requiredValidation = this.requiredValidator(param, value, required);
 
     if (!requiredValidation || !rule) return;
 
-    this.typeValidator.validate(option as ValidateOption);
+    if (this.arrayValidator.maybeArraySyntax(rule)) this.arrayValidator.validate(option as ValidateOption);
+    else this.typeValidator.validate(option as ValidateOption);
     this.regexpValidator.validate(option as ValidateOption);
     this.functionalValidator.validate(option as ValidateOption);
     this.parameterDescriptorValidator.validate(option as ValidateOption);
