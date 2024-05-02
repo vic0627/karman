@@ -4,25 +4,60 @@ HTTP 客戶端 / API 中心化管理 / API 抽象層
 
 ## 目錄
 
-- [特色](#特色)
-- [開始](#開始)
-  - [什麼是 Karman？](#什麼是-karman)
-  - [安裝](#安裝)
-  - [簡易示範](#簡易示範)
-- [核心](#核心)
-  - [Karman Tree](#karman-tree)
-  - [Final API](#final-api)
-  - [Validation Engine](#validation-engine)
-  - [Middleware](#middleware)
-  - [Response Caching](#response-caching)
-  - [Dynamic Type Annotation](#dynamic-type-annotation)
-- [API 文件](#api-文件)
-  - [defineKarman](#definekarman)
-  - [defineAPI](#defineapi)
-  - [defineCustomValidator](#definecustomvalidator)
-  - [RuleSet](#ruleset)
-  - [ValidationError](#validationerror)
-  - [isValidationError](#isvalidationerror)
+- [Karman](#karman)
+  - [目錄](#目錄)
+  - [特色](#特色)
+  - [開始](#開始)
+    - [什麼是 Karman？](#什麼是-karman)
+    - [安裝](#安裝)
+    - [簡易示範](#簡易示範)
+      - [單一封裝](#單一封裝)
+      - [群組封裝](#群組封裝)
+  - [核心](#核心)
+    - [Karman Tree](#karman-tree)
+      - [URL Management](#url-management)
+      - [Inheritance](#inheritance)
+      - [Dependency](#dependency)
+    - [Final API](#final-api)
+      - [Syntax](#syntax)
+      - [Flow](#flow)
+      - [Request Strategy](#request-strategy)
+      - [Parameter Definition](#parameter-definition)
+    - [Validation Engine](#validation-engine)
+      - [Rules](#rules)
+      - [:new: String Rlue - Array Syntax](#new-string-rlue---array-syntax)
+      - [Rule Set](#rule-set)
+    - [Middleware](#middleware)
+    - [Response Caching](#response-caching)
+    - [Dynamic Type Annotation](#dynamic-type-annotation)
+      - [JSDoc](#jsdoc)
+      - [DTO of Input/Payload](#dto-of-inputpayload)
+      - [DTO of Output/Response](#dto-of-outputresponse)
+  - [API 文件](#api-文件)
+    - [defineKarman](#definekarman)
+      - [語法](#語法)
+      - [參數](#參數)
+      - [返回值](#返回值)
+    - [defineAPI](#defineapi)
+      - [語法](#語法-1)
+      - [參數](#參數-1)
+      - [返回值](#返回值-1)
+    - [defineCustomValidator](#definecustomvalidator)
+      - [語法](#語法-2)
+      - [參數](#參數-2)
+      - [返回值](#返回值-2)
+    - [RuleSet](#ruleset)
+      - [語法](#語法-3)
+      - [參數](#參數-3)
+      - [返回值](#返回值-3)
+    - [ValidationError](#validationerror)
+      - [語法](#語法-4)
+      - [參數](#參數-4)
+      - [返回值](#返回值-4)
+    - [isValidationError](#isvalidationerror)
+      - [語法](#語法-5)
+      - [參數](#參數-5)
+      - [返回值](#返回值-5)
 
 ## 特色
 
@@ -1483,7 +1518,7 @@ Output 需要透過 `defineAPI()` 中的 `dto` 屬性來配置，`dto` 不會影
 
 ### defineKarman
 
-建構 Karman 節點。
+建構抽象層節點「Karman Node」，管理數個 FinalAPI 及子節點，使這些 FinalAPI 及子孫節點擁有共通設定。
 
 #### 語法
 
@@ -1546,11 +1581,11 @@ defineKarman(option)
 
 #### 返回值
 
-一個包含 `api` 與 `route` 配置的 Karman 實例。
+一個包含 `api` 內所有 FinalAPI 與 `route` 內所有子節點指標的 Karman 實例。
 
 ### defineAPI
 
-API 封裝方法
+封裝單一請求，與 `defineKarman` 使用時可繼承該節點的設定，單獨使用時則需單獨設定所有的配置。
 
 #### 語法
 
@@ -1658,7 +1693,7 @@ defineAPI(option)
 
 #### 返回值
 
-一個建立請求的方法（final API）。
+一個發起請求的方法，更詳細的說明請參閱 [FinalAPI](./final-api.md)。。
 
 ### defineCustomValidator
 
