@@ -1,5 +1,7 @@
 <div align="center">
-    <img src="./assets/logo.svg"/>
+    <a href="https://github.com/vic0627/karman">
+        <img src="./assets/logo.svg"/>
+    </a>
 </div>
 <div align="center">
 HTTP Client / API Centralized Management / API Abstraction Layer
@@ -13,6 +15,7 @@ HTTP Client / API Centralized Management / API Abstraction Layer
 
 - [Table of Contents](#table-of-contents)
   - [Core](#core)
+  - [API Documentation](#api-documentation)
 - [Features](#features)
 - [Getting Started](#getting-started)
   - [What is Karman?](#what-is-karman)
@@ -29,6 +32,8 @@ HTTP Client / API Centralized Management / API Abstraction Layer
 - [Middleware](./assets/doc/en/middleware.md)
 - [Response Caching](./assets/doc/en/response-caching.md)
 - [Dynamic Type Annotation](./assets/doc/en/dynamic-type-annotation.md)
+
+### [API Documentation](./assets/doc/en/api-doc.md)
 
 ## Features
 

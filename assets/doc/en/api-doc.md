@@ -1,5 +1,73 @@
 # API Documentation
 
+- [API Documentation](#api-documentation)
+  - [Additional Types](#additional-types)
+  - [defineKarman](#definekarman)
+  - [defineAPI](#defineapi)
+  - [defineCustomValidator](#definecustomvalidator)
+  - [RuleSet](#ruleset)
+  - [ValidationError](#validationerror)
+  - [isValidationError](#isvalidationerror)
+
+## Additional Types
+
+Types, which are commonly used in this documentation.
+
+```ts
+type Type =
+  | "char"
+  | "string"
+  | "int"
+  | "number"
+  | "nan"
+  | "boolean"
+  | "object"
+  | "null"
+  | "function"
+  | "array"
+  | "object-literal"
+  | "undefined"
+  | "bigint"
+  | "symbol";
+
+type ArrayType =
+  | `${Type}[]`
+  | `${Type}[${number}]`
+  | `${Type}[${number}:]`
+  | `${Type}[:${number}]`
+  | `${Type}[${number}:${number}]`;
+
+type ObjectLiteral = { [x: string | number | symbol]: any };
+
+type ConstructorFn = { new (...args: any[]): any };
+
+type RegExpWithMessage = { regexp: RegExp; errorMessage?: string };
+
+type RegularExpression = RegExp | RegExpWithMessage;
+
+type CustomValidator = ((param: string, value: unknown) => void) & { _karman: true };
+
+interface ParameterDescriptor {
+  min?: number;
+  max?: number;
+  equality?: number;
+  measurement?: "self" | "length" | "size" | string;
+}
+
+type ParamRules = Type | ArrayType | ConstructorFn | RegularExpression | CustomValidator | ParameterDescriptor;
+
+type ParamPosition = "path" | "query" | "body";
+
+interface ParamDef {
+  rules?: ParamRules | ParamRules[] | RuleSet;
+  required?: boolean;
+  position?: ParamPosition | ParamPosition[];
+  defaultValue?: () => any;
+}
+
+type PayloadDef = Record<string, ParamDef | null> | string[];
+```
+
 ## defineKarman
 
 Construct an abstract layer node called "Karman Node" to manage multiple FinalAPIs and child nodes, allowing these FinalAPIs and descendant nodes to have common configurations.
@@ -7,7 +75,7 @@ Construct an abstract layer node called "Karman Node" to manage multiple FinalAP
 - Syntax
 
   ```ts
-  defineKarman(option: KarmanOption): Karman;
+  function defineKarman(option: KarmanOption): Karman;
   ```
 
 - Parameters
@@ -86,7 +154,7 @@ Encapsulates a single request, inheriting the settings of the node when used wit
 - Syntax
 
   ```ts
-  defineAPI(option: ApiOption): FinalAPI;
+  function defineAPI(option: ApiOption): FinalAPI;
   ```
 
 - Parameters
@@ -94,59 +162,6 @@ Encapsulates a single request, inheriting the settings of the node when used wit
   - `option: ApiOption`
 
     ```ts
-    type Type =
-      | "char"
-      | "string"
-      | "int"
-      | "number"
-      | "nan"
-      | "boolean"
-      | "object"
-      | "null"
-      | "function"
-      | "array"
-      | "object-literal"
-      | "undefined"
-      | "bigint"
-      | "symbol";
-
-    type ArrayType =
-      | `${Type}[]`
-      | `${Type}[${number}]`
-      | `${Type}[${number}:]`
-      | `${Type}[:${number}]`
-      | `${Type}[${number}:${number}]`;
-
-    type ObjectLiteral = { [x: string | number | symbol]: any };
-
-    type ConstructorFn = { new (...args: any[]): any };
-
-    type RegExpWithMessage = { regexp: RegExp; errorMessage?: string };
-
-    type RegularExpression = RegExp | RegExpWithMessage;
-
-    type CustomValidator = ((param: string, value: unknown) => void) & { _karman: true };
-
-    interface ParameterDescriptor {
-      min?: number;
-      max?: number;
-      equality?: number;
-      measurement?: "self" | "length" | "size" | string;
-    }
-
-    type ParamRules = Type | ArrayType | ConstructorFn | RegularExpression | CustomValidator | ParameterDescriptor;
-
-    type ParamPosition = "path" | "query" | "body";
-
-    interface ParamDef {
-      rules?: ParamRules | ParamRules[] | RuleSet;
-      required?: boolean;
-      position?: ParamPosition | ParamPosition[];
-      defaultValue?: () => any;
-    }
-
-    type PayloadDef = Record<string, ParamDef | null> | string[];
-
     interface ApiOption {
       // 👇 Basic Config
       url?: string;
@@ -223,14 +238,13 @@ Encapsulates a single request, inheriting the settings of the node when used wit
 
   - `FinalAPI`
 
-    > [!TIP]
-    > For more detailed information, please refer to [FinalAPI](./final-api.md).
+    For more detailed information, please refer to [FinalAPI](./final-api.md).
 
     ```ts
     type FinalAPI = (
       this: Karman | undefined,
-      payload: Record<string, any>,
-      config: Omit<ApiOption, "url" | "method" | "payloadDef" | "dto">,
+      payload?: Record<string, any>,
+      config?: Omit<ApiOption, "url" | "method" | "payloadDef" | "dto">,
     ) => [resPromise: Promise<any>, abort: () => void];
     ```
 
@@ -241,7 +255,7 @@ Custom parameter validation function.
 - Syntax
 
   ```ts
-  defineCustomValidator(validator: (param: string, value: any) => void): CustomValidator;
+  function defineCustomValidator(validator: (param: string, value: any) => void): CustomValidator;
   ```
 
 - Parameters
@@ -258,9 +272,72 @@ Custom parameter validation function.
 
 ## RuleSet
 
+The collection of rules is divided into intersection and union, each triggering different validation processes.
+
 - Syntax
 
   ```ts
-  defineUnionRules(...rules: ParamRules[]): UnionRules;
-  defineIntersectionRules(...rules: ParamRules[]): IntersectionRules;
+  function defineUnionRules(...rules: ParamRules[]): UnionRules;
+  function defineIntersectionRules(...rules: ParamRules[]): IntersectionRules;
   ```
+
+- Parameters
+
+  - `rules: ParamRules[]`
+
+    All validation rules that comply with the type specifications.
+
+- Returns
+
+  - `UnionRules | IntersectionRules`
+
+    For more detailed information, please refer to [RuleSet](./validation-engine.md).
+
+## ValidationError
+
+When parameter validation fails, you can either pass in a complete error message according to your own needs, or use the built-in message template.
+
+- Syntax
+
+  ```ts
+  class ValidationError {
+    constructor(options: ValidationErrorOptions | string);
+  }
+  ```
+
+- Parameters
+
+  - `options:  ValidationErrorOptions | string`
+
+    ```ts
+    interface ValidationErrorOptions extends ParameterDescriptor {
+      prop: string;
+      value: any;
+      message?: string;
+      type?: string;
+      instance?: { new (...args: any[]): {} };
+      required?: boolean;
+    }
+    ```
+
+- Returns
+
+  - `ValidationError`
+
+## isValidationError
+
+Validate whether the passed-in parameter is a `ValidationError`.
+
+- Syntax
+
+  ```ts
+  function isValidationError(value: any): value is ValidationError;
+  ```
+
+- Parameters
+
+  - `value: any`
+
+- Returns
+
+  - `value is ValidationError`
