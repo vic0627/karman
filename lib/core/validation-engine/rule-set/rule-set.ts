@@ -1,8 +1,10 @@
 import { ParamRules } from "@/types/rules.type";
+import ValidationError from "../validation-error/validation-error";
 
 export default class RuleSet {
   protected readonly rules: ParamRules[];
-  protected errors: Error[] = [];
+  protected errors: string[] = [];
+  protected readonly errorType: string = "RuleSet";
 
   public get valid(): boolean {
     return true;
@@ -17,14 +19,10 @@ export default class RuleSet {
       try {
         callbackfn(value, index, array);
       } catch (error) {
-        if (error instanceof Error) {
-          this.errors.push(error);
-        }
+        if (error instanceof Error) this.errors.push(`[${index}] ${error.message}`);
       }
     });
 
-    if (!this.valid) {
-      throw this.errors[0];
-    }
+    if (!this.valid) throw new ValidationError(`${this.errorType}\n${this.errors.join("\n")}`);
   }
 }

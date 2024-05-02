@@ -37,7 +37,7 @@ export default class ValidationError extends Error {
         else if (existValue(min) && !existValue(max)) message += `should be greater than or equal to '${min}'`;
         else if (existValue(max) && !existValue(min)) message += `should be less than or equal to '${max}'`;
         else if (existValue(min) && existValue(max)) message += `should be within the range of '${min}' and '${max}'`;
-        else message += "validaiton failed";
+        else message += "validation failed";
 
         message += `, but received '${value}'.`;
       }

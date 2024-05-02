@@ -5,6 +5,7 @@ import {
   ValidationError,
   isValidationError,
   defineCustomValidator,
+  defineIntersectionRules,
 } from "../../dist/karman.js";
 
 const $karman = defineKarman({
@@ -192,13 +193,27 @@ export const pathTest = defineAPI({
   validation: true,
 });
 
+const unionRules = defineIntersectionRules(
+  // "int[6]",
+  // File,
+  // "char[2:]",
+  // defineCustomValidator((param, value) => {
+  //   throw new ValidationError(`custom validation failed in param '${param}'`);
+  // }),
+  "string",
+  "number",
+  "boolean",
+  "symbol",
+  "null"
+);
+
 export const arrTest = defineAPI({
   url: "https://fakestoreapi.com/products",
   payloadDef: {
     arr: {
       position: [],
-      rules: "int[6]",
-      required: true
+      rules: unionRules,
+      required: true,
     },
   },
   validation: true,
