@@ -22,12 +22,12 @@ export default class Karman {
   set $root(value: boolean | undefined) {
     if (isBoolean(value)) this.#root = value;
   }
-  #parant: null | Karman = null;
+  #parent: null | Karman = null;
   get $parent() {
-    return this.#parant;
+    return this.#parent;
   }
   set $parent(value) {
-    if (value instanceof Karman) this.#parant = value;
+    if (value instanceof Karman) this.#parent = value;
   }
   #baseURL: string = "";
   get $baseURL() {
