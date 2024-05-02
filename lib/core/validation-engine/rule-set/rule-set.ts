@@ -14,6 +14,15 @@ export default class RuleSet {
     this.rules = rules;
   }
 
+  public getStringRules() {
+    const rules: string[] = [];
+    this.rules.forEach((r) => {
+      if (typeof r === "string") rules.push(r);
+    });
+
+    return rules;
+  }
+
   public execute(callbackfn: (value: ParamRules, index: number, array: ParamRules[]) => void) {
     this.rules.forEach((value, index, array) => {
       try {

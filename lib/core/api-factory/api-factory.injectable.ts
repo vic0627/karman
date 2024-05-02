@@ -109,7 +109,7 @@ export default class ApiFactory {
       if (validation) {
         try {
           _af.hooksInvocator(this, onBeforeValidate, payloadDef, payload);
-          const validator = _af.validationEngine.getMainValidator(payload, payloadDef);
+          const validator = _af.validationEngine.getMainValidator(this, payload, payloadDef);
           validator();
         } catch (error) {
           return [

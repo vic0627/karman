@@ -12,4 +12,6 @@ export interface ParamDef {
 
 export type ParamName = string;
 
-export type PayloadDef = Record<ParamName, ParamDef | null> | string[];
+export type Schema = Record<ParamName, ParamDef | null>;
+
+export type PayloadDef = Schema | string[];

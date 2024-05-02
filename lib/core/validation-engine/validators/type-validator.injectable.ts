@@ -4,6 +4,7 @@ import { Type } from "@/types/rules.type";
 import TypeCheck from "@/utils/type-check.provider";
 import ValidationError from "../validation-error/validation-error";
 import Template from "@/utils/template.provider";
+import Karman from "@/core/karman/karman";
 
 @Injectable()
 export default class TypeValidator implements Validator {
@@ -12,14 +13,22 @@ export default class TypeValidator implements Validator {
     private readonly template: Template,
   ) {}
 
-  public validate(option: ValidateOption): void {
+  public validate(option: ValidateOption, karman?: Karman): void {
     const { rule, param, value } = option;
 
     if (!this.typeCheck.isString(rule)) {
       return;
     }
 
+    if (karman?.$schema.has(rule)) {
+      const schema = karman.$schema.get(rule);
+      schema?.validate(option);
+
+      return;
+    }
+
     const type = rule.toLowerCase();
+
     const legal = this.legalType(type);
 
     if (!legal) {

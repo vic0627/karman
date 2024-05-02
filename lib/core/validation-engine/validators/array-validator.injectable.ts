@@ -4,6 +4,8 @@ import TypeCheck from "@/utils/type-check.provider";
 import ValidationError, { ValidationErrorOptions } from "../validation-error/validation-error";
 import { ParamRules } from "@/types/rules.type";
 import Injectable from "@/decorator/Injectable.decorator";
+import Karman from "@/core/karman/karman";
+import SchemaType from "../schema-type/schema-type";
 
 interface ArrayInfo {
   min?: number;
@@ -19,7 +21,7 @@ interface TypeValidatorInArray {
 @Injectable()
 export default class ArrayValidator implements Validator {
   private readonly LEFT_BRACKET = "[";
-  private readonly RIGHTT_BRACKET = "]";
+  private readonly RIGHT_BRACKET = "]";
   private readonly COLON = ":";
 
   constructor(
@@ -30,10 +32,10 @@ export default class ArrayValidator implements Validator {
   public maybeArraySyntax(rule: ParamRules) {
     if (!this.typeCheck.isString(rule)) return false;
 
-    return rule.includes(this.LEFT_BRACKET) || rule.includes(this.RIGHTT_BRACKET) || rule.includes(this.COLON);
+    return rule.includes(this.LEFT_BRACKET) || rule.includes(this.RIGHT_BRACKET) || rule.includes(this.COLON);
   }
 
-  public validate(option: ValidateOption): void {
+  public validate(option: ValidateOption, karman?: Karman): void {
     const { rule, param, value } = option;
 
     if (!this.typeCheck.isString(rule)) return;
@@ -49,7 +51,7 @@ export default class ArrayValidator implements Validator {
 
     this.validateRange(param, value, { min, max, equal });
 
-    const typeValidator = this.getTypeValidator(type);
+    const typeValidator = this.getTypeValidator(type, karman);
 
     value.forEach((val, idx) => typeValidator(param, idx, val));
   }
@@ -58,8 +60,8 @@ export default class ArrayValidator implements Validator {
     const maxIdx = rule.length - 1;
     const leftIdx = rule.indexOf(this.LEFT_BRACKET);
     const _leftIdx = rule.lastIndexOf(this.LEFT_BRACKET);
-    const rightIdx = rule.indexOf(this.RIGHTT_BRACKET);
-    const _rightIdx = rule.lastIndexOf(this.RIGHTT_BRACKET);
+    const rightIdx = rule.indexOf(this.RIGHT_BRACKET);
+    const _rightIdx = rule.lastIndexOf(this.RIGHT_BRACKET);
     const colonIdx = rule.indexOf(this.COLON);
     const _colonIdx = rule.lastIndexOf(this.COLON);
 
@@ -144,21 +146,26 @@ export default class ArrayValidator implements Validator {
     return value;
   }
 
-  private getTypeValidator(type?: string): TypeValidatorInArray {
-    const key = this.typeCheck.CorrespondingMap[type ?? ""];
+  private getTypeValidator(type?: string, karman?: Karman): TypeValidatorInArray {
+    const key: keyof TypeCheck = this.typeCheck.CorrespondingMap[type ?? ""];
+    const schema: SchemaType | undefined = karman?.$getRoot()?.$schema.get(type ?? "");
 
-    if (!key) this.template.throw(`invalid type '${type}'`);
+    if (!key && !schema) this.template.throw(`invalid type '${type}'`);
 
-    const valid = this.typeCheck[key] as (value: any) => boolean;
-
-    const validator: TypeValidatorInArray = (param: string, index: number, value: any) => {
-      if (!valid(value))
+    let validator: TypeValidatorInArray = (param: string, index: number, value: any) => {
+      if (!(this.typeCheck[key] as (value: any) => boolean)(value))
         throw new ValidationError({
           prop: `${param}[${index}]`,
           value,
           type,
         });
     };
+
+    if (schema) {
+      validator = (param: string, index: number, value: any) => {
+        schema.validate.call(schema, { param: `${param}[${index}]`, value } as ValidateOption);
+      };
+    }
 
     return validator;
   }

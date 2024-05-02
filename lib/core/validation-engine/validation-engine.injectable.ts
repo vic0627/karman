@@ -4,7 +4,7 @@ import ParameterDescriptorValidator from "./validators/parameter-descriptor-vali
 import RegExpValidator from "./validators/regexp-validator.provider";
 import TypeValidator from "./validators/type-validator.injectable";
 import type { ValidateOption } from "@/abstract/parameter-validator.abstract";
-import { ParamDef, PayloadDef } from "@/types/payload-def.type";
+import { ParamDef, PayloadDef, Schema } from "@/types/payload-def.type";
 import { CustomValidator, ParamRules } from "@/types/rules.type";
 import RuleSet from "./rule-set/rule-set";
 import TypeCheck from "@/utils/type-check.provider";
@@ -13,6 +13,11 @@ import IntersectionRules from "./rule-set/intersection-rules";
 import Template from "@/utils/template.provider";
 import ValidationError from "./validation-error/validation-error";
 import ArrayValidator from "./validators/array-validator.injectable";
+import SchemaType from "./schema-type/schema-type";
+import Karman from "../karman/karman";
+
+type ValidateOptionInterface = Partial<Pick<ValidateOption, "rule">> &
+  Omit<ValidateOption, "rule"> & { karman: Karman | undefined };
 
 @Injectable()
 export default class ValidationEngine {
@@ -48,8 +53,27 @@ export default class ValidationEngine {
     return new IntersectionRules(...rules);
   }
 
-  public getMainValidator(payload: Record<string, any>, payloadDef: PayloadDef) {
+  public defineSchemaType(karman: Karman, name: string, def: Schema): SchemaType {
+    if (!this.typeCheck.isValidName(name)) this.template.throw(`invalid name '${name}' for schema type`);
+
+    if (!karman.$root) karman = karman.$getRoot();
+
+    const schema = new SchemaType(karman, name, def);
+    karman.$setSchema(name, schema);
+    schema.setValidFn(this.getSchemaValidator(schema));
+
+    return schema;
+  }
+
+  private getSchemaValidator(schema: SchemaType) {
+    return (value: any) => this.getMainValidator(schema.scope, value, schema.def)();
+  }
+
+  public getMainValidator(karman: Karman | undefined, payload: Record<string, any>, payloadDef: PayloadDef) {
     if (this.typeCheck.isArray(payloadDef)) return () => {};
+
+    // ensure karman to be a root node
+    if (karman instanceof Karman) karman = karman.$getRoot();
 
     const validatorQueue: (() => void)[] = [];
     Object.entries(payloadDef).forEach(([param, paramDef]) => {
@@ -59,7 +83,7 @@ export default class ValidationEngine {
       // but use the default value to run the validation.
       const value = payload[param] ?? paramDef.defaultValue?.();
       const { rules, required } = this.getRules(param, paramDef);
-      const validator = this.getValidatorByRules(rules, required);
+      const validator = this.getValidatorByRules(karman, rules, required);
       validatorQueue.push(() => validator(param, value));
     });
     const mainValidator = () => validatorQueue.forEach((validator) => validator());
@@ -79,26 +103,30 @@ export default class ValidationEngine {
     return { rules, required };
   }
 
-  private ruleSetAdapter(rules: RuleSet, required: boolean) {
+  private ruleSetAdapter(karman: Karman | undefined, rules: RuleSet, required: boolean) {
     const validator = (param: string, value: any) => {
       rules.execute((rule) => {
-        this.validateInterface({ rule, param, value, required });
+        this.validateInterface({ rule, param, value, required, karman });
       });
     };
 
-    return validator.bind(this);
+    return validator;
   }
 
-  private getValidatorByRules(rules?: ParamRules | ParamRules[] | RuleSet, required: boolean = false) {
+  private getValidatorByRules(
+    karman: Karman | undefined,
+    rules?: ParamRules | ParamRules[] | RuleSet,
+    required: boolean = false,
+  ) {
     if (rules instanceof RuleSet) {
-      return this.ruleSetAdapter(rules, required);
+      return this.ruleSetAdapter(karman, rules, required);
     } else if (this.typeCheck.isArray(rules)) {
       const ruleSet = new IntersectionRules(...rules);
 
-      return this.ruleSetAdapter(ruleSet as RuleSet, required);
+      return this.ruleSetAdapter(karman, ruleSet as RuleSet, required);
     } else {
       const validator = (param: string, value: any) => {
-        this.validateInterface({ rule: rules, param, value, required });
+        this.validateInterface({ rule: rules, param, value, required, karman });
       };
 
       return validator;
@@ -115,15 +143,15 @@ export default class ValidationEngine {
     return false;
   }
 
-  private validateInterface(option: Partial<Pick<ValidateOption, "rule">> & Omit<ValidateOption, "rule">) {
-    const { param, value, required, rule } = option;
+  private validateInterface(option: ValidateOptionInterface) {
+    const { karman, param, value, required, rule } = option;
 
     const requiredValidation = this.requiredValidator(param, value, required);
 
     if (!requiredValidation || !rule) return;
 
-    if (this.arrayValidator.maybeArraySyntax(rule)) this.arrayValidator.validate(option as ValidateOption);
-    else this.typeValidator.validate(option as ValidateOption);
+    if (this.arrayValidator.maybeArraySyntax(rule)) this.arrayValidator.validate(option as ValidateOption, karman);
+    else this.typeValidator.validate(option as ValidateOption, karman);
     this.regexpValidator.validate(option as ValidateOption);
     this.functionalValidator.validate(option as ValidateOption);
     this.parameterDescriptorValidator.validate(option as ValidateOption);

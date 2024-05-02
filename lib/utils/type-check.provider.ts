@@ -98,6 +98,10 @@ export default class TypeCheck {
   isSymbol(value: any): value is symbol {
     return typeof value === "symbol";
   }
+
+  isValidName(value: any): value is string {
+    return typeof value === "string" && /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(value);
+  }
 }
 
 export const typeCheck = new TypeCheck();

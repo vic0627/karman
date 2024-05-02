@@ -5,6 +5,7 @@ import { configInherit } from "@/core/out-of-paradigm/config-inherit";
 import PathResolver from "@/utils/path-resolver.provider";
 import TypeCheck from "@/utils/type-check.provider";
 import { isString, isBoolean, isNumber, isFunction } from "lodash-es";
+import SchemaType from "../validation-engine/schema-type/schema-type";
 
 const HOUR = 60 * 60 * 60 * 1000;
 
@@ -58,9 +59,9 @@ export default class Karman {
   set $scheduleInterval(value) {
     if (isNumber(value)) this.#scheduleInterval = value;
   }
-  // #endregion
-
   #inherited = false;
+  readonly $schema: Map<string, SchemaType> = new Map();
+  // #endregion
 
   constructor(config: KarmanInstanceConfig) {
     const {
@@ -176,6 +177,21 @@ export default class Karman {
 
       return request(...args);
     };
+  }
+
+  public $getRoot() {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    let node: Karman = this;
+
+    while (!node.$root && node.$parent) node = node.$parent;
+
+    return node;
+  }
+
+  public $setSchema(name: string, schema: SchemaType) {
+    if (this.$schema.has(name)) return console.warn(`[karman warn] duplicate SchemaType '${name}'`);
+
+    this.$schema.set(name, schema);
   }
 
   private $invokeChildrenInherit(): void {

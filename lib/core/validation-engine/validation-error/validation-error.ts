@@ -15,6 +15,7 @@ export interface ValidationErrorOptions extends ParameterDescriptor {
 
 export default class ValidationError extends Error {
   name: string = "ValidationError";
+  option?: ValidationErrorOptions;
 
   constructor(options: ValidationErrorOptions | string) {
     let message: string = "";
@@ -44,5 +45,6 @@ export default class ValidationError extends Error {
     }
 
     super(message);
+    if (typeof options !== "string") this.option = options;
   }
 }
