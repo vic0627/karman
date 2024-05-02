@@ -26,7 +26,10 @@
           //   image: "asdf"
           // });
           // const [resPromise] = pathTest({ id: 3, name: "hello" });
-          const [resPromise] = arrTest({ arr: true });
+          // const [resPromise] = arrTest({ arr: true });
+          const [resPromise] = $karman.schemaTest({
+            data: [{ name: "hello" }, { name: "Peter", age: -1 }, { name: "Nancy", email: "hello@yahoo.com" }],
+          });
           // abort('what???')
           // const [resPromise] = $karman.facts.getAll();
           console.log(await resPromise);

@@ -5,12 +5,24 @@ import {
   ValidationError,
   isValidationError,
   defineCustomValidator,
+  defineSchemaType,
   defineIntersectionRules,
 } from "../../dist/karman.js";
 
 const $karman = defineKarman({
   root: true,
   validation: true,
+  api: {
+    schemaTest: defineAPI({
+      url: "https://fakestoreapi.com/products",
+      payloadDef: {
+        data: { rules: "Person[3:]" },
+      },
+      onBeforeRequest(_, payload) {
+        console.log(payload);
+      },
+    }),
+  },
   route: {
     facts: defineKarman({
       url: "https://cat-fact.herokuapp.com/facts",
@@ -66,6 +78,25 @@ const $karman = defineKarman({
 });
 
 $karman.$mount(window);
+
+defineSchemaType($karman, "Person", {
+  name: {
+    rules: "string",
+    required: true,
+  },
+  age: {
+    rules: ["int", { min: 0 }],
+  },
+  birth: {
+    rules: Date,
+  },
+  email: {
+    rules: {
+      regexp: /^\w+((-\w+)|(\.\w+))*\@[A-Za-z0-9]+((\.|-)[A-Za-z0-9]+)*\.[A-Za-z]+$/,
+      errorMessage: "wrong email format",
+    },
+  },
+});
 
 export default $karman;
 
@@ -204,7 +235,7 @@ const unionRules = defineIntersectionRules(
   "number",
   "boolean",
   "symbol",
-  "null"
+  "null",
 );
 
 export const arrTest = defineAPI({
