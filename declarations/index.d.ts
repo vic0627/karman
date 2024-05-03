@@ -93,7 +93,9 @@ interface ParamDef {
   defaultValue?: () => any;
 }
 
-export type PayloadDef = Record<string, ParamDef | null> | string[];
+export type Schema = Record<string, ParamDef | null>;
+
+export type PayloadDef = Schema | string[];
 
 declare class TypeCheck {
   get CorrespondingMap(): Record<Type, keyof this>;
@@ -374,6 +376,7 @@ interface KarmanOptions<A, R>
    * the base url or route of current layer
    */
   url?: string;
+  schema?: SchemaType[];
   /**
    * actual API on current layer
    */
@@ -401,3 +404,24 @@ export function defineCustomValidator(validatefn: (param: string, value: unknown
 export function defineIntersectionRules(...rules: ParamRules[]): IntersectionRules;
 
 export function defineUnionRules(...rules: ParamRules[]): UnionRules;
+
+interface ChainScope<D> {
+  def: D;
+
+  setRequired(...names: (keyof D)[]): ChainScope<D>;
+  setOptional(...names: (keyof D)[]): ChainScope<D>;
+  setPosition(position: ParamPosition, ...names: (keyof D)[]): ChainScope<D>;
+  setDefault(name: keyof D, defaultValue: () => any): ChainScope<D>;
+}
+
+class SchemaType<N extends string, D> implements ChainScope<D> {
+  name: N;
+  scope?: KarmanInstance;
+  def: D;
+  keys: (keyof D)[];
+  values: D[keyof D][];
+
+  attach(): ChainScope<D>;
+}
+
+export function defineSchemaType<N extends string, D>(name: N, def: D): SchemaType<N, D>;

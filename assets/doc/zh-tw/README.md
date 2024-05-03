@@ -31,8 +31,10 @@ HTTP 客戶端 / API 中心化管理 / API 抽象層
     - [Parameter Definition](#parameter-definition)
   - [Validation Engine](#validation-engine)
     - [Rules](#rules)
-    - [:new: String Rlue - Array Syntax](#new-string-rlue---array-syntax)
+    - [String Rule - Array Syntax](#string-rule---array-syntax)
     - [Rule Set](#rule-set)
+  - [Schema API](#schema-api)
+    - [將 Schema 作為 String Rule 使用](#將-schema-作為-string-rule-使用)
   - [Middleware](#middleware)
   - [Response Caching](#response-caching)
   - [Dynamic Type Annotation](#dynamic-type-annotation)
@@ -78,7 +80,7 @@ HTTP 客戶端 / API 中心化管理 / API 抽象層
 - 請求方法的生命週期
 - 參數驗證引擎
 - :new: 參數預設值
-- :new: 參數驗證引擎 - [陣列語法](#🆕-string-rlue---array-syntax)
+- :new: 參數驗證引擎 - [陣列語法](#new-string-rule---array-syntax)
 
 ## 開始
 
@@ -187,7 +189,7 @@ $ npm install @vic0627/karman
 安裝後，使用 `import` 導入套件：
 
 ```js
-import { defineKarman, defineAPI } from "@vic0627/karman"
+import { defineKarman, defineAPI } from "@vic0627/karman";
 ```
 
 如果你是使用 `vite` 作為建構工具，請將此套件排除在最佳化之外：
@@ -195,10 +197,10 @@ import { defineKarman, defineAPI } from "@vic0627/karman"
 ```js
 // vite.config.js
 export default {
-    optimizeDeps: {
-        exclude: ['@vic0627/karman'],
-    }
-}
+  optimizeDeps: {
+    exclude: ["@vic0627/karman"],
+  },
+};
 ```
 
 ### 簡易示範
@@ -219,11 +221,11 @@ GET https://karman.com/products
 `defineAPI` 的 `method` 預設為 GET，且此 API 無須任何參數，因此可以只帶入 `url` 即可完成配置：
 
 ```js
-import { defineAPI } from "@vic0627/karman"
+import { defineAPI } from "@vic0627/karman";
 
 export const getProducts = defineAPI({
-    url: "https://karman.com/products"
-})
+  url: "https://karman.com/products",
+});
 ```
 
 通常情況下，API 的參數將分為三種類型：
@@ -255,62 +257,64 @@ Headers:
 首先，先配置此 API 的方法及 url，並以 `payloadDef` 配置返還的函式所需參數，後用 `position` 屬性指定該參數的使用方式。配置路經參數時，需要以 `:參數名` 的格式在 url 中指定參數實際的位置，而若參數只會用於請求體，則可省略 `position` 屬性：
 
 ```js
-import { defineAPI } from "@vic0627/karman"
+import { defineAPI } from "@vic0627/karman";
 
 export const modifyProduct = defineAPI({
-    method: "PATCH",
-    url: "https://karman.com/products/:id",
-    payloadDef: {
-        id: {
-            position: "path"    // 用 `position` 屬性來指定參數用於哪裡
-        },
-        name: {
-            position: "query"
-        },
-        price: {
-            // position: "body" // 參數預設會帶入請求主體，可省略
-        },
-        // or
-        price: null             // 若無其他配置（驗證規則、預設值等）可直接給 null
-    }
-})
+  method: "PATCH",
+  url: "https://karman.com/products/:id",
+  payloadDef: {
+    id: {
+      position: "path", // 用 `position` 屬性來指定參數用於哪裡
+    },
+    name: {
+      position: "query",
+    },
+    price: {
+      // position: "body" // 參數預設會帶入請求主體，可省略
+    },
+    // or
+    price: null, // 若無其他配置（驗證規則、預設值等）可直接給 null
+  },
+});
 ```
 
 接著，依照文件上的資訊依序封裝驗證規則、請求頭，這邊將使用 `required` 或 `rules` 屬性指定驗證規則（其他更詳細的介紹請參考[驗證引擎](#validation-engine)），並在部分參數使用 `defaultValue` 屬性給予參數預設值：
 
 ```js
-import { defineAPI } from "@vic0627/karman"
+import { defineAPI } from "@vic0627/karman";
 
 export const modifyProduct = defineAPI({
-    method: "PATCH",
-    url: "https://karman.com/products/:id",
-    payloadDef: {
-        id: {
-            position: "path",
-            required: true,                         // 指定為必填參數
-            rules: [                                // 定義驗證規則，使用陣列觸發預設的交集規則
-                "int",                              // 指定型別為整數類型
-                { min: 1 }                          // 最小值 1
-            ]
-        },
-        name: {
-            position: "query",
-            rules: [
-                "string",                           // 指定型別為字串類型
-                { max: 10, measurement: "length" }  // 最大值 10，測量 length 屬性
-            ]
-        },
-        price: {
-            rules: "number",
-            required: true,
-            defaultValue: () => 100                 // 預設值 100 
-        },
+  method: "PATCH",
+  url: "https://karman.com/products/:id",
+  payloadDef: {
+    id: {
+      position: "path",
+      required: true, // 指定為必填參數
+      rules: [
+        // 定義驗證規則，使用陣列觸發預設的交集規則
+        "int", // 指定型別為整數類型
+        { min: 1 }, // 最小值 1
+      ],
     },
-    headers: {                                      // 帶入 headers 設定
-        "Content-Type": "application/json; charset=utf-8"
+    name: {
+      position: "query",
+      rules: [
+        "string", // 指定型別為字串類型
+        { max: 10, measurement: "length" }, // 最大值 10，測量 length 屬性
+      ],
     },
-    validation: true                                // 啟用驗證引擎
-})
+    price: {
+      rules: "number",
+      required: true,
+      defaultValue: () => 100, // 預設值 100
+    },
+  },
+  headers: {
+    // 帶入 headers 設定
+    "Content-Type": "application/json; charset=utf-8",
+  },
+  validation: true, // 啟用驗證引擎
+});
 ```
 
 `defineAPI` 會將整個 `payloadDef` 的類型作為泛型參數，因此可以對 `payloadDef` 的屬性加上 JSDoc 來強制註記屬性的型別，方便後續調用 API 時於懸停提示及自動完成顯示正確型別：
@@ -320,35 +324,35 @@ export const modifyProduct = defineAPI({
  * 更新部分商品資訊
  */
 export const modifyProduct = defineAPI({
-    // ...
-    payloadDef: {
-        /**
-         * 商品 id
-         * @description 大於等於 1 的整數
-         * @type {number}
-         */
-        id: {
-            // ...
-        },
-        /**
-         * 商品名稱
-         * @description 字串長度小於 10
-         * @type {string | void}        // 以 void 表示非必填
-         */
-        name: {
-            // ...
-        },
-        /**
-         * 商品價格
-         * @default 100
-         * @type {number}
-         */
-        price: {
-            // ...
-        },
-    }
-    // ...
-})
+  // ...
+  payloadDef: {
+    /**
+     * 商品 id
+     * @description 大於等於 1 的整數
+     * @type {number}
+     */
+    id: {
+      // ...
+    },
+    /**
+     * 商品名稱
+     * @description 字串長度小於 10
+     * @type {string | void}        // 以 void 表示非必填
+     */
+    name: {
+      // ...
+    },
+    /**
+     * 商品價格
+     * @default 100
+     * @type {number}
+     */
+    price: {
+      // ...
+    },
+  },
+  // ...
+});
 ```
 
 Karman 另外有提供配置響應規格的參數 `dto`，可使該函式支援更完整的返回類型，這邊以 JSDoc 示範，其他聲明型別的範例請參考 [DTO of Response](#dto-of-outputresponse) 章節：
@@ -361,10 +365,10 @@ Karman 另外有提供配置響應規格的參數 `dto`，可使該函式支援�
  */
 // ...
 export const modifyProduct = defineAPI({
-    // ...
-    /** @type {ModifyProductRes} */
-    dto: null
-})
+  // ...
+  /** @type {ModifyProductRes} */
+  dto: null,
+});
 ```
 
 按上述步驟進行完整的封裝，即可在調用時獲取完整的 API 訊息：
@@ -394,132 +398,136 @@ DELETE https://karman.com/carts/:id             # 刪除購物車
 
 ```js
 // /karman/index.js
-import { defineKarman, defineAPI } from "@vic0627/karman"
+import { defineKarman, defineAPI } from "@vic0627/karman";
 
-export default defineKarman({                               // 創建 Karman 抽象層實例/節點
-    root: true,                                             // 指定此層為根節點
-    url: "https://karman.com",                              // 此節點的基本 url
-    headers: {                                              // 配置共同 headers
-        "Content-Type": "application/json; charset=utf-8",
-    },
-    onRequest(req) {                                        // 攔截器定義每次請求前行為
-        const token = localStorage["TOKEN"]
-        if (this._typeCheck.isString(token))                // 使用插件檢查 token 型別
-            req.headers["Access-Token"] = token
-    },
-    onResponse(res) {                                       // 攔截器返回請求成功的狀態碼
-        return res.status === 200
-    },
-    api: {
-        login: defineAPI({
-            url: "auth/login",                              // 無其他相關 API，不另建節點
-            // ...
-            onSuccess(res) {
-                const { token } = res.data
-                if (this._typeCheck.isString(token))
-                    localStorage["TOKEN"] = token           // 請求成功，將 token 寫入 storage
+export default defineKarman({
+  // 創建 Karman 抽象層實例/節點
+  root: true, // 指定此層為根節點
+  url: "https://karman.com", // 此節點的基本 url
+  headers: {
+    // 配置共同 headers
+    "Content-Type": "application/json; charset=utf-8",
+  },
+  onRequest(req) {
+    // 攔截器定義每次請求前行為
+    const token = localStorage["TOKEN"];
+    if (this._typeCheck.isString(token))
+      // 使用插件檢查 token 型別
+      req.headers["Access-Token"] = token;
+  },
+  onResponse(res) {
+    // 攔截器返回請求成功的狀態碼
+    return res.status === 200;
+  },
+  api: {
+    login: defineAPI({
+      url: "auth/login", // 無其他相關 API，不另建節點
+      // ...
+      onSuccess(res) {
+        const { token } = res.data;
+        if (this._typeCheck.isString(token)) localStorage["TOKEN"] = token; // 請求成功，將 token 寫入 storage
 
-                return !!token                              // 返回登入成功與否
-            }
-        })
-    },
-    route: {
-        product: defineKarman({
-            url: "products",                                // 根據上一層節點延伸的路徑片段
-            api: {
-                getAll: defineAPI(),
-                addOne: defineAPI({
-                    method: "POST",
-                    // ...
-                }),
-                updateOne: defineAPI({
-                    url: ":id",                             // 根據此節點延伸的路徑片段
-                    method: "PUT",
-                    // ...
-                }),
-                delOne: defineAPI({
-                    url: ":id",
-                    method: "DELETE",
-                    // ...
-                }),
-                getCategories: defineAPI({
-                    url: "categories",
-                    // ...
-                })
-            }
+        return !!token; // 返回登入成功與否
+      },
+    }),
+  },
+  route: {
+    product: defineKarman({
+      url: "products", // 根據上一層節點延伸的路徑片段
+      api: {
+        getAll: defineAPI(),
+        addOne: defineAPI({
+          method: "POST",
+          // ...
         }),
-        cart: defineKarman({
-            url: "carts",
-            api: {
-                getAll: defineAPI(),
-                addNew: defineAPI({
-                    method: "POST",
-                    // ...
-                }),
-                modifyOne: defineAPI({
-                    url: ":id",
-                    method: "PATCH",
-                    // ...
-                }),
-                delOne: defineAPI({
-                    url: ":id",
-                    method: "DELETE",
-                    // ...
-                })
-            }
-        })
-    }
-})
+        updateOne: defineAPI({
+          url: ":id", // 根據此節點延伸的路徑片段
+          method: "PUT",
+          // ...
+        }),
+        delOne: defineAPI({
+          url: ":id",
+          method: "DELETE",
+          // ...
+        }),
+        getCategories: defineAPI({
+          url: "categories",
+          // ...
+        }),
+      },
+    }),
+    cart: defineKarman({
+      url: "carts",
+      api: {
+        getAll: defineAPI(),
+        addNew: defineAPI({
+          method: "POST",
+          // ...
+        }),
+        modifyOne: defineAPI({
+          url: ":id",
+          method: "PATCH",
+          // ...
+        }),
+        delOne: defineAPI({
+          url: ":id",
+          method: "DELETE",
+          // ...
+        }),
+      },
+    }),
+  },
+});
 ```
 
 配置完成後，`defineKarman()` 會返回包含 `api` 屬性內所有方法的 `Karman` 實例（karman node），可以透過該實例去調用封裝好的方法（final API），而 final API 本身是同步的，調用時會初始化請求並返回一個響應 Promise 與一個取消請求的同步方法，建議可以透過[解構賦值](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment)的方式將它們取出：
 
 ```js
 // /path/to/your-file.js
-import karman from "@/karman" // 根據專案的 path alias 的設定，路徑可能有所不同
+import karman from "@/karman"; // 根據專案的 path alias 的設定，路徑可能有所不同
 
 // 取得所有商品
-const [productsPromise] = karman.product.getAll()
+const [productsPromise] = karman.product.getAll();
 // 使用 Promise chaining 取得響應結果
 productsPromise.then((res) => {
-    console.log(res)
-})
+  console.log(res);
+});
 
 // 會員登入
 const [loginPromise] = karman.login({
-    email: "karman@gmail.com",
-    password: "karman_is_the_best",
-})
+  email: "karman@gmail.com",
+  password: "karman_is_the_best",
+});
 newProductPromise.then((res) => {
-    console.log(res)
+  console.log(res);
 });
 
 // async/await 二次封裝更新購物車方法
 const updateProduct = async ({ id, title }) => {
-    try {
-        const [resPromise] = karman.cart.modifyOne({
-            // ...
-        })
-        const res = await resPromise
-        console.log(res)
-    } catch (error) {
-        console.error(error)
-    }
+  try {
+    const [resPromise] = karman.cart.modifyOne({
+      // ...
+    });
+    const res = await resPromise;
+    console.log(res);
+  } catch (error) {
+    console.error(error);
+  }
 };
 
 // async/await 二次封裝刪除商品方法
 const deleteProduct = async ({ id }) => {
-    try {
-        // 除了響應 Promise 外，這邊取出了許消請求的方法
-        const [delPromise, abortDelete] = karman.product.delOne({ id })
-        // 滿足條件時，取消刪除商品請求
-        if (someReason()) abortDelete()
-        const res = await delPromise
-        console.log(res)
-    } catch (error) {
-        // 若請求被取消，程式控制權將轉移至 catch block
-        console.error(error)
-    }
+  try {
+    // 除了響應 Promise 外，這邊取出了許消請求的方法
+    const [delPromise, abortDelete] = karman.product.delOne({ id });
+    // 滿足條件時，取消刪除商品請求
+    if (someReason()) abortDelete();
+    const res = await delPromise;
+    console.log(res);
+  } catch (error) {
+    // 若請求被取消，程式控制權將轉移至 catch block
+    console.error(error);
+  }
 };
 ```
 
@@ -534,51 +542,51 @@ const deleteProduct = async ({ id }) => {
 每個 `defineKarman()` 內都可以配置屬於該層的 url 路徑，路徑可以配置或不配置，可以是完整的 url 也可以是 url 的片段，但要注意，你為 karman node 所配置的 url 會參考父節點的 url 組合成一組該節點的基本 url。
 
 ```js
-import { defineKarman } from "@vic0627/karman"
+import { defineKarman } from "@vic0627/karman";
 
 const rootKarman = defineKarman({
-    root: true,
-    // 此節點的 baseURL 是 "https://karman.com"
-    url: "https://karman.com",
-    route: {
-        product: defineKarman({
-            // 此節點的 baseURL 是 "https://karman.com/products"
-            url: "products"
-        }),
-        user: defineKarman({
-            // 此節點的 baseURL 是 "https://karman.com/users"
-            url: "users"
-        })
-    }
-})
+  root: true,
+  // 此節點的 baseURL 是 "https://karman.com"
+  url: "https://karman.com",
+  route: {
+    product: defineKarman({
+      // 此節點的 baseURL 是 "https://karman.com/products"
+      url: "products",
+    }),
+    user: defineKarman({
+      // 此節點的 baseURL 是 "https://karman.com/users"
+      url: "users",
+    }),
+  },
+});
 ```
 
 若是要配置子節點，可以透過 `route` 屬性進行配置，`route` 會是一個物件，key 是該節點的名稱，value 是 karman node，而 karman node 會在初始化後被掛載至父節點上，可以通過你為該子節點所配置的路徑名稱存取該 karman node 上的 final API 或孫節點。
 
 ```js
-rootKarman.product.someAPI()
-rootKarman.user.someNode.someAPI()
+rootKarman.product.someAPI();
+rootKarman.user.someNode.someAPI();
 ```
 
 另外，在不多見的情況下，前端可能會使用到不同網域下的 API，也可以透過 `defineKarman()` 進行整合，讓整份專案都通過單一窗口去和不同伺服器進行溝通。
 
 ```js
-import { defineKarman } from "@vic0627/karman"
+import { defineKarman } from "@vic0627/karman";
 
 export default defineKarman({
-    // 這層 url 為空
-    root: true,
-    route: {
-        source01: defineKarman({
-            // 這層管理 source01 底下的所有 API
-            url: "https://source01.com"
-        }),
-        source02: defineKarman({
-            // 這層管理 source02 底下的所有 API
-            url: "https://source02.com"
-        }),
-    }
-})
+  // 這層 url 為空
+  root: true,
+  route: {
+    source01: defineKarman({
+      // 這層管理 source01 底下的所有 API
+      url: "https://source01.com",
+    }),
+    source02: defineKarman({
+      // 這層管理 source02 底下的所有 API
+      url: "https://source02.com",
+    }),
+  },
+});
 ```
 
 #### Inheritance
@@ -586,31 +594,30 @@ export default defineKarman({
 「繼承事件」會發生在當該層 karman node 的 `root` 被設置為 `true` 時觸發，事件被觸發時，會將根節點的配置繼承至子節點甚至孫節點上，直到該配置被子孫節點複寫，而複寫後的配置也會有相同的繼承行為。
 
 ```js
-import { defineKarman } from "@vic0627/karman"
+import { defineKarman } from "@vic0627/karman";
 
 export default defineKarman({
-    // ...
-    root: true,
-    // 配置 headers 以供繼承
-    headers: {
-        "Content-Type": "application/json; charset=utf-8",
-    },
-    route: {
-        route01: defineKarman({
-            // 此節點會繼承上一層節點的 headers 配置
-        }),
-        route02: defineKarman({
-            // 此節點複寫了 headers
-            headers: {
-                // ...
-            }
-        }),
-    }
-})
+  // ...
+  root: true,
+  // 配置 headers 以供繼承
+  headers: {
+    "Content-Type": "application/json; charset=utf-8",
+  },
+  route: {
+    route01: defineKarman({
+      // 此節點會繼承上一層節點的 headers 配置
+    }),
+    route02: defineKarman({
+      // 此節點複寫了 headers
+      headers: {
+        // ...
+      },
+    }),
+  },
+});
 ```
 
-> [!CAUTION]
-> `headers` 請配置靜態的屬性，若要將動態資訊寫入 `headers`，請利用[攔截器](#middleware)。
+> [!CAUTION] > `headers` 請配置靜態的屬性，若要將動態資訊寫入 `headers`，請利用[攔截器](#middleware)。
 
 karman tree 若是沒有配置根節點，會有以下的注意事項：
 
@@ -671,14 +678,14 @@ karman.someAPI() // console output: true "foo/bar" 5
 ```js
 // /src/karman/constant.js
 const _constant = {
-    second: 1000,
-    minute: 1000 * 60,
-    hour: 1000 * 60 * 60,
-    install(karman) {
-        Object.defineProperty(karman, '_constant', { value: this })
-    }
-}
-export default _constant
+  second: 1000,
+  minute: 1000 * 60,
+  hour: 1000 * 60 * 60,
+  install(karman) {
+    Object.defineProperty(karman, "_constant", { value: this });
+  },
+};
+export default _constant;
 ```
 
 在同一個目錄下，新增一份名稱相同的 `.d.ts` 聲明文件：
@@ -686,21 +693,21 @@ export default _constant
 ```ts
 // /src/karman/constant.d.ts
 interface Constant {
-    second: number;
-    minute: number;
-    hour: number;
+  second: number;
+  minute: number;
+  hour: number;
 }
-declare const _constant: Constant
-export default _constant
+declare const _constant: Constant;
+export default _constant;
 
 // ⚠️ 模組擴展的聲明一定要記得撰寫，將依賴聲明在 KarmanDependencies 之中
 declare module "@vic0627/karman" {
-    interface KarmanDependencies {
-        /**
-         * 也可以用 block comment 為依賴撰寫註解文件
-         */
-        _constant: Constant;
-    }
+  interface KarmanDependencies {
+    /**
+     * 也可以用 block comment 為依賴撰寫註解文件
+     */
+    _constant: Constant;
+  }
 }
 ```
 
@@ -708,17 +715,17 @@ declare module "@vic0627/karman" {
 
 ```js
 // /src/karman/index.js
-import { defineKarman } from "@vic0627/karman"
-import constant from "./constant"
+import { defineKarman } from "@vic0627/karman";
+import constant from "./constant";
 
 const rootKarman = defineKarman({
-    // ...
-    onRequest() {
-        this._constant // <= hover 顯示型別、註解
-    }
-})
+  // ...
+  onRequest() {
+    this._constant; // <= hover 顯示型別、註解
+  },
+});
 
-rootKarman.$use(constant)
+rootKarman.$use(constant);
 ```
 
 ### Final API
@@ -728,19 +735,19 @@ rootKarman.$use(constant)
 final API 同樣可以選擇配置 url 或 url 的片段，當今天某路由上可能只有零星幾個 API 時，可以考慮將他們配置到父節點上，而不用另外在建立新的節點，讓路由的配置可以更彈性。
 
 ```js
-import { defineKarman, defineAPI } from "@vic0627/karman"
+import { defineKarman, defineAPI } from "@vic0627/karman";
 
 export default defineKarman({
-    root: true,
-    url: "https://karman.com/products",
-    api: {
-        getAll: defineAPI(),
-        // 此 final API 的 url 是 "https://karman.com/products/categories"
-        getCategories: defineAPI({
-            url: "categories"
-        })
-    }
-})
+  root: true,
+  url: "https://karman.com/products",
+  api: {
+    getAll: defineAPI(),
+    // 此 final API 的 url 是 "https://karman.com/products/categories"
+    getCategories: defineAPI({
+      url: "categories",
+    }),
+  },
+});
 ```
 
 #### Syntax
@@ -782,10 +789,10 @@ flowchart TB
 
 - Config Inheritance：Final API 的配置繼承與複寫又可分為幾個階段。
 
-    1. defineAPI 配置：此階段會先暫存接收到的配置，提供後續的繼承與複寫。
-    1. runtime 配置：final API 被呼叫時會提供最後複寫配置的機會，若有接收到配置，會先進行暫存動作。
-    1. 第一階段繼承：此階段會先比較 runtime 配置與暫存的 runtime 配置，若前後兩次的配置相同，會略過此階段的繼承行為，否則以 runtime 配置複寫 defineAPI 的配置。
-    1. 第二階段繼承：此階段會引用 final API 所屬 karman node 的配置，並以第一階段繼承後的配置進行複寫，進而獲得 final API 的最終配置。
+  1. defineAPI 配置：此階段會先暫存接收到的配置，提供後續的繼承與複寫。
+  1. runtime 配置：final API 被呼叫時會提供最後複寫配置的機會，若有接收到配置，會先進行暫存動作。
+  1. 第一階段繼承：此階段會先比較 runtime 配置與暫存的 runtime 配置，若前後兩次的配置相同，會略過此階段的繼承行為，否則以 runtime 配置複寫 defineAPI 的配置。
+  1. 第二階段繼承：此階段會引用 final API 所屬 karman node 的配置，並以第一階段繼承後的配置進行複寫，進而獲得 final API 的最終配置。
 
 - Parameter Builder：此階段將會依據 Final API 的 payload 來建構最終請求的 url 與 payload，這邊的 payload 始終會維持 `Record<string, any>` 的型別。
 - Transform Payload：此階段將會轉換 payload 至正式請求所需的型別，如 `string`、`FormData` 等等。
@@ -795,21 +802,21 @@ flowchart TB
 `requestStrategy` 屬性可以決定該 final API 所選用的 HTTP Client，目前支援 `"xhr"` 與 `"fetch"` 作為參數，並以 `"xhr"` 為預設選項。
 
 ```js
-import { defineKarman, defineAPI } from "@vic0627/karman"
+import { defineKarman, defineAPI } from "@vic0627/karman";
 
 export default defineKarman({
-    root: true,
-    url: "https://karman.com/products",
-    api: {
-        // 此方法將使用預設的 XMLHttpRequest 作為 HTTP Client
-        getAll: defineAPI(),
-        // 此方使用 fetch 作為 HTTP Client
-        getCategories: defineAPI({
-            url: "categories",
-            requestStrategy: "fetch",
-        })
-    }
-})
+  root: true,
+  url: "https://karman.com/products",
+  api: {
+    // 此方法將使用預設的 XMLHttpRequest 作為 HTTP Client
+    getAll: defineAPI(),
+    // 此方使用 fetch 作為 HTTP Client
+    getCategories: defineAPI({
+      url: "categories",
+      requestStrategy: "fetch",
+    }),
+  },
+});
 ```
 
 > [!WARNING]
@@ -832,43 +839,45 @@ export default defineKarman({
 最後在[參數驗證規則](#validation-enigine)的部分較為複雜，因此以獨立章節來解說。
 
 ```js
-import { defineKarman, defineAPI } from "@vic0627/karman"
+import { defineKarman, defineAPI } from "@vic0627/karman";
 
 const karmanProduct = defineKarman({
-    root: true,
-    url: "https://karman.com/products",
-    validation: true,                   // 先啟動該節點的驗證引擎
-    api: {
-        getAll: defineAPI({
-            payloadDef: {
-                limit: {
-                    position: "query"   // 非必要參數 limit 將用在查詢參數
-                }
-            }
-        }),
-        getById: defineAPI({
-            url: ":id/:category",
-            payloadDef: {
-                id: {                   
-                    required: true,
-                    position: "path"    // 必要參數 id 將用於 url 中的變數
-                },
-                category: {             // 非必要參數 category 將用於路徑中的變數與查詢參數
-                    position: ["path", "query"]
-                }
-            }
-        })
-    }
-})
+  root: true,
+  url: "https://karman.com/products",
+  validation: true, // 先啟動該節點的驗證引擎
+  api: {
+    getAll: defineAPI({
+      payloadDef: {
+        limit: {
+          position: "query", // 非必要參數 limit 將用在查詢參數
+        },
+      },
+    }),
+    getById: defineAPI({
+      url: ":id/:category",
+      payloadDef: {
+        id: {
+          required: true,
+          position: "path", // 必要參數 id 將用於 url 中的變數
+        },
+        category: {
+          // 非必要參數 category 將用於路徑中的變數與查詢參數
+          position: ["path", "query"],
+        },
+      },
+    }),
+  },
+});
 
-karmanProduct.getALL()                  // url: https://karman.com/products
-karmanProduct.getALL({ limit: 10 })     // url: https://karman.com/products?limit=10
-karmanProduct.getById()                 // ValidationError
-karmanProduct.getById({ id: 10 })       // url: https://karman.com/products/10
-karmanProduct.getById({                 // url: https://karman.com/products/10/clothes
-    id: 10,
-    category: "clothes"
-})
+karmanProduct.getALL(); // url: https://karman.com/products
+karmanProduct.getALL({ limit: 10 }); // url: https://karman.com/products?limit=10
+karmanProduct.getById(); // ValidationError
+karmanProduct.getById({ id: 10 }); // url: https://karman.com/products/10
+karmanProduct.getById({
+  // url: https://karman.com/products/10/clothes
+  id: 10,
+  category: "clothes",
+});
 ```
 
 在參數預設值的部分，可以通過 `defaultValue` 屬性來設定，該屬性必須為一個方法，而方法的返回值將作為該參數的預設值使用。
@@ -877,30 +886,30 @@ karmanProduct.getById({                 // url: https://karman.com/products/10/c
 
 ```js
 const setDefault = defineAPI({
-    // ...
-    validation: true,
-    payloadDef: {
-        param01: {
-            rules: "char",
-            // defaultValue: () => "Hi", // => ValidationError
-            defaultValue: () => "K"
-        }
-    }
-})
+  // ...
+  validation: true,
+  payloadDef: {
+    param01: {
+      rules: "char",
+      // defaultValue: () => "Hi", // => ValidationError
+      defaultValue: () => "K",
+    },
+  },
+});
 ```
 
 最後，假設說所有的參數接會用於請求體，且無其他驗證規則與預設值，你是可以使用 `string[]` 來替代原有的 `payloadDef` 物件的，但這將會使 API 失去自動完成等等開發上的優勢：
 
 ```js
 const lazyPayload = defineAPI({
-    payloadDef: ["name", "gender", "age"]
-})
+  payloadDef: ["name", "gender", "age"],
+});
 
 lazyPayload({
-    name: "Karman",
-    gender: "none",
-    age: 1,
-})
+  name: "Karman",
+  gender: "none",
+  age: 1,
+});
 ```
 
 **補充：復用參數定義**
@@ -941,89 +950,89 @@ export default (required, position = ["body"]) => ({
 
 - **String Rule**
 
-    由字串所描述的型別，為 JavaScript 原始型別的擴展，在某些特殊型別會有其獨有的定義，此規則會由驗證引擎自動產生錯誤訊息。
+  由字串所描述的型別，為 JavaScript 原始型別的擴展，在某些特殊型別會有其獨有的定義，此規則會由驗證引擎自動產生錯誤訊息。
 
-    - `"char"`：字符，長度為 1 的字串
-    - `"string"`：字串
-    - `"int"`：整數
-    - `"number"`：數字
-    - `"nan"`：NaN
-    - `"boolean"`：布林值
-    - `"object"`：廣義物件，包含 `null`、`() => {}`、`{}`、或`[]`
-    - `"null"`：null
-    - `"function"`：函式
-    - `"array"`：陣列
-    - `"object-literal"`：以花括號所表示的物件
-    - `"undefined"`：undefined
-    - `"bigint"`：bigint
-    - `"symbol"`：symbol
+  - `"char"`：字符，長度為 1 的字串
+  - `"string"`：字串
+  - `"int"`：整數
+  - `"number"`：數字
+  - `"nan"`：NaN
+  - `"boolean"`：布林值
+  - `"object"`：廣義物件，包含 `null`、`() => {}`、`{}`、或`[]`
+  - `"null"`：null
+  - `"function"`：函式
+  - `"array"`：陣列
+  - `"object-literal"`：以花括號所表示的物件
+  - `"undefined"`：undefined
+  - `"bigint"`：bigint
+  - `"symbol"`：symbol
 
 - **Constructor**
 
-    任何建構函式（class），驗證引擎會以 `instanceof` 進行驗證。
+  任何建構函式（class），驗證引擎會以 `instanceof` 進行驗證。
 
 - **Custom Validator**
 
-    客製化驗證函式，但理論上 JavaScript 無法辨識普通函式與建構函式的差異，因此需要透過 `defineCustomValidator()` 來進行定義，否則會將該函式視為建構函式來處理。
+  客製化驗證函式，但理論上 JavaScript 無法辨識普通函式與建構函式的差異，因此需要透過 `defineCustomValidator()` 來進行定義，否則會將該函式視為建構函式來處理。
 
 - **Regular Expression**
 
-    正則表達式，可以包含或不包含錯誤訊息。
+  正則表達式，可以包含或不包含錯誤訊息。
 
 - **Parameter Descriptor**
 
-    參數描述符，以物件形式構成，可以定義參數的最大、最小、相等值、以及測量屬性，使用上最好與 String Rule 搭配，形成一個 [Rule Set](#rule-set)，先進行型別的驗證後再進行單位的測量，確保驗證機制的完整性。
+  參數描述符，以物件形式構成，可以定義參數的最大、最小、相等值、以及測量屬性，使用上最好與 String Rule 搭配，形成一個 [Rule Set](#rule-set)，先進行型別的驗證後再進行單位的測量，確保驗證機制的完整性。
 
 ```js
-import { defineKarman, defineAPI, defineCustomValidator, ValidationError } from "@vic0627/karman"
+import { defineKarman, defineAPI, defineCustomValidator, ValidationError } from "@vic0627/karman";
 
 const customValidator = defineCustomValidator((prop, value) => {
-    if (value !== "@vic0627/karman")
-        throw new ValidationError(`參數 '${prop}' 必為 'karman' 但卻接收到 '${value}'`)
-})
+  if (value !== "@vic0627/karman") throw new ValidationError(`參數 '${prop}' 必為 'karman' 但卻接收到 '${value}'`);
+});
 
-const emailRule = { 
-    regexp: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-    errorMessage: "錯誤的 email 格式"
-}
+const emailRule = {
+  regexp: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+  errorMessage: "錯誤的 email 格式",
+};
 
 const karman = defineKarman({
-    // ...
-    validation: true,
-    api: {
-        ruleTest: defineAPI({
-            payloadDef: {
-                param01: { rules: "char" },             // String Rule
-                param02: { rules: Date },               // Constructor
-                param03: { rules: customValidator },    // Custom Validator
-                param04: { rules: emailRule },          // Regular Expression
-                param05: {                              // Parameter Descriptor
-                    rules: {
-                        min: 0,
-                        max: 5,
-                        measurement: "length"
-                    }
-                },
-            }
-        }),
-    }
-})
+  // ...
+  validation: true,
+  api: {
+    ruleTest: defineAPI({
+      payloadDef: {
+        param01: { rules: "char" }, // String Rule
+        param02: { rules: Date }, // Constructor
+        param03: { rules: customValidator }, // Custom Validator
+        param04: { rules: emailRule }, // Regular Expression
+        param05: {
+          // Parameter Descriptor
+          rules: {
+            min: 0,
+            max: 5,
+            measurement: "length",
+          },
+        },
+      },
+    }),
+  },
+});
 
-karman.ruleTest()                                       // 沒有參數設置 required，因此不會拋出錯誤
-karman.ruleTest({ param01: "A" })                       // Valid
-karman.ruleTest({ param01: "foo" })                     // ValidationError
-karman.ruleTest({ param02: new Date() })                // Valid
-karman.ruleTest({ param02: "2024-01-01" })              // ValidationError
-karman.ruleTest({ param03: "@vic0627/karman" })         // Valid
-karman.ruleTest({ param03: "bar" })                     // ValidationError: 參數 'param03' 必為 'karman' 但卻接收到 'bar'
-karman.ruleTest({ param04: "karman@gmail.com" })        // Valid
-karman.ruleTest({ param04: "karman is the best" })      // ValidationError: 錯誤的 email 格式
-karman.ruleTest({ param05: "@vic0627/karman" })         // Valid
-karman.ruleTest({ param05: "karman is the best" })      // ValidationError
-karman.ruleTest({ param05: 1 })                         // 會以警告提示找不到可測量的屬性
+karman.ruleTest(); // 沒有參數設置 required，因此不會拋出錯誤
+karman.ruleTest({ param01: "A" }); // Valid
+karman.ruleTest({ param01: "foo" }); // ValidationError
+karman.ruleTest({ param02: new Date() }); // Valid
+karman.ruleTest({ param02: "2024-01-01" }); // ValidationError
+karman.ruleTest({ param03: "@vic0627/karman" }); // Valid
+karman.ruleTest({ param03: "bar" }); // ValidationError: 參數 'param03' 必為 'karman' 但卻接收到 'bar'
+karman.ruleTest({ param04: "karman@gmail.com" }); // Valid
+karman.ruleTest({ param04: "karman is the best" }); // ValidationError: 錯誤的 email 格式
+karman.ruleTest({ param05: "@vic0627/karman" }); // Valid
+karman.ruleTest({ param05: "karman is the best" }); // ValidationError
+karman.ruleTest({ param05: 1 }); // 會以警告提示找不到可測量的屬性
 ```
 
-#### :new: String Rlue - Array Syntax
+#### String Rule - Array Syntax
 
 為 [String Rule](#rules) 的延伸語法，主要用來驗證陣列、陣列長度、陣列中元素的型別，基本語法如下：
 
@@ -1039,81 +1048,255 @@ karman.ruleTest({ param05: 1 })                         // 會以警告提示找
 
 ```js
 const arrTest = defineAPI({
-    // ...
-    payloadDef: {
-        param01: {
-            rules: "int[]"          // 需為整數陣列
-        },
-        param02: {
-            rules: "string[5]"      // 需為陣列長度 5 的字串陣列
-        },
-        param03: {
-            rules: "char[5:]"       // 需為陣列長度大於等於 5 的字符陣列
-        },
-        param04: {
-            rules: "number[:5]"     // 需為陣列長度小於等於 5 的數字陣列
-        },
-        param05: {
-            rules: "boolean[3:5]"   // 需為陣列長度大於等於 3 且小於等於 5 的布林陣列
-        },
-    }
-})
+  // ...
+  payloadDef: {
+    param01: {
+      rules: "int[]", // 需為整數陣列
+    },
+    param02: {
+      rules: "string[5]", // 需為陣列長度 5 的字串陣列
+    },
+    param03: {
+      rules: "char[5:]", // 需為陣列長度大於等於 5 的字符陣列
+    },
+    param04: {
+      rules: "number[:5]", // 需為陣列長度小於等於 5 的數字陣列
+    },
+    param05: {
+      rules: "boolean[3:5]", // 需為陣列長度大於等於 3 且小於等於 5 的布林陣列
+    },
+  },
+});
 ```
 
 #### Rule Set
 
-規則的集合，為上一章節所說明的規則所排列構成，會由集合索引首位的規則開始依序驗證，而種類有交集規則（Intersection Rules）與聯集規則（Union Rules），分別會觸發不同的驗證機制。
+規則的集合，為其幾個章節所說明的規則所排列構成，會由集合索引首位的規則開始依序驗證，而種類有交集規則（Intersection Rules）與聯集規則（Union Rules），分別會觸發不同的驗證機制。
 
 - **Intersection Rules**
 
-    可以透過 `defineIntersectionRules()` 或普通陣列來定義，驗證引擎在接收到普通陣列作為規則時，會將其隱式轉換成聯集規則，當使用此集合作為驗證規則時，參數須符合所有規則才算通過驗證。
+  可以透過 `defineIntersectionRules()` 或普通陣列來定義，驗證引擎在接收到普通陣列作為規則時，會將其隱式轉換成聯集規則，當使用此集合作為驗證規則時，參數須符合所有規則才算通過驗證。
 
 - **Union Rules**
 
-    透過 `defineUnionRules()` 定義，使用此集合作為驗證規則時，參數只須符合集合中的其中一項規則即代表通過驗證。
+  透過 `defineUnionRules()` 定義，使用此集合作為驗證規則時，參數只須符合集合中的其中一項規則即代表通過驗證。
 
 ```js
-import { defineKarman, defineAPI, defineIntersectionRules, defineUnionRules } from "@vic0627/karman"
+import { defineKarman, defineAPI, defineIntersectionRules, defineUnionRules } from "@vic0627/karman";
 
 const karman = defineKarman({
-    // ...
+  // ...
+  api: {
+    ruleSetTest: defineAPI({
+      param01: {
+        // 陣列將隱式轉換成聯集規則
+        rules: [
+          "string",
+          {
+            min: 1,
+            measurement: "length",
+          },
+        ],
+      },
+      param02: {
+        // 與 param01 的規則等效
+        rules: defineIntersection("string", {
+          min: 1,
+          measurement: "length",
+        }),
+      },
+      param03: {
+        // 交集規則
+        rules: defineUnionRules("string", "number", "boolean"),
+      },
+    }),
+  },
+});
+
+karman.ruleSetTest({ param01: "" }); // ValidationError
+karman.ruleSetTest({ param02: "foo" }); // Valid
+karman.ruleSetTest({ param03: false }); // Valid
+```
+
+### Schema API
+
+Schema API 允許你以整個 [`payloadDef`](#parameter-definition) 作為一個多功能、高彈性、高復用性的 `SchemaType`，`SchemaType` 除了能夠作為 `payloadDef` 來使用之外，還能將其註冊在 Karman Tree 上，當 `SchemaType` 註冊後，Karman Tree 下的所有 `payloadDef[param].rules` 都能以 `SchemaType` 的名子做為 [String Rule](#rules) 使用，更棒的是，以 String Rule 使用的 `SchemaType` 允許支援[陣列語法](#string-rule---array-syntax)，能夠讓你以最少的程式碼進行最複雜的驗證功能。
+
+在使用上，需要以 `defineSchemaType` 來定義一個 schema，該方法將接收兩個參數，第一個參數是這 schema 的名字，後續若要以這 schema 作為 String Rule 使用，必須使用這個名字，而第二個參數則與物件型態的 `payloadDef` 相同，可以定義參數的必填非必填（`required`）、驗證規則（`rules`）、使用位置（`position`）與預設值（`defaultValue`），這些參數相關的訊息將作為此 schema 的初值，並且除了 `rules` 以外的屬性，後序都能使用 `SchemaType.attach()` 來改變狀態。
+
+下面會先以商品種類的參數定義一個簡單的 schema，這個 schema 僅會包含一個參數 `category` 與其驗證規則：
+
+```js
+// schema/category.js
+import { defineSchemaType, defineCustomValidator, ValidationError } from "@vic0627/karman";
+
+export default defineSchemaType("Category", {
+  /**
+   * category of products
+   * @type {"electronics" | "jewelery" | "men's clothing" | "women's clothing"}
+   */
+  category: {
+    rules: [
+      "string",
+      defineCustomValidator((_, value) => {
+        if (!["electronics", "jewelery", "men's clothing", "women's clothing"].includes(value))
+          throw new ValidationError("invalid category");
+      }),
+    ],
+  },
+});
+```
+
+> [!NOTE]
+> 在 schema 中，仍然可以透過 JSDoc `@type` 標籤強制註記型別或加上其他參數說明，這會有利於後續調用 FinalAPI 時對於 `payload` 物件的型別判斷。
+
+接著，你可以在 `payloadDef` 中使用這個 schema，但需要以 `def` 屬性來存取 `payloadDef` 可使用的物件。另外，在這情境中，`category` 將作為路徑參數使用，且須為必要參數，因此可以用 `.attach()` 加上 `.setPosition()` 與 `.setRequired()` 方法來改變 schema 內的細部定義：
+
+```js
+// ...
+import category from "./schema/category.js";
+
+const getProductsByCategory = defineAPI({
+  url: "https://karman.com/products/:category",
+  payloadDef: category.attach().setPosition("path").setRequired().def,
+  validation: true,
+  // ...
+});
+
+const [resPromise] = getProductsByCategory({ category: "electronics" });
+resPromise.then((res) => console.log(res));
+```
+
+再來，我們可以嚐試定義一個商品資訊的 schema，並且將 `category` 引入作為商品資訊 schema 的一部分，在這邊我們使用 `category` schema 的初值，所以不需調用 `.attach()`，直接使用 `...` 運算子打散 `category.def` 就好：
+
+```js
+// schema/product.js
+// ...
+import category from "./category.js";
+
+export default defineSchemaType("Product", {
+  ...category.def,
+  /**
+   * name of the product
+   * @min 1
+   * @max 20
+   * @type {string}
+   */
+  title: {
+    rules: ["string", { min: 1, max: 20, measurement: "length" }],
+  },
+  /**
+   * price
+   * @min 1
+   * @type {number}
+   */
+  price: {
+    rules: ["number", { min: 1 }],
+  },
+  /**
+   * description
+   * @min 1
+   * @max 100
+   * @type {string}
+   */
+  description: {
+    rules: ["string", { min: 1, max: 100, measurement: "length" }],
+  },
+  /**
+   * image
+   * @max 5MiB
+   * @type {File}
+   */
+  image: {
+    rules: [File, { measurement: "size", max: 1024 * 1024 * 5 }],
+  },
+});
+```
+
+#### 將 Schema 作為 String Rule 使用
+
+若要將 schema 作為 string rule 使用，必須要將其註冊到 karman tree 上的 `schema` 屬性，這邊不會限定是否一定要在根節點上註冊，但最終註冊的 schema 一定會暫存在根節點中，並且標定該 karman tree 作為此 schema 的 string rule 型態的作用域，在此作用域下都可以以 schema 的名字作為驗證規則。
+
+假設我們將上面的 schema `product` 註冊到一個 karman tree 上，如此一來，將能將這 schema 做為某個參數的「型別」，並以這個 schema 作為驗證規則，除此之外，還能夠將此型別加入陣列語法，讓其對陣列進行深度的遍歷與驗證：
+
+```js
+// /product-management.js
+// ...
+import product from "./schema/product.js"
+
+export default defineKarman({
+    // root: true, // 假設此節點不是根節點
+    url: "products"
+    schema: [product],
     api: {
-        ruleSetTest: defineAPI({
-            param01: {
-                // 陣列將隱式轉換成聯集規則
-                rules: [
-                    "string",
-                    {
-                        min: 1,
-                        measurement: "length"
-                    }
-                ]
-            },
-            param02: {
-                // 與 param01 的規則等效
-                rules: defineIntersection(
-                    "string",
-                    {
-                        min: 1,
-                        measurement: "length"
-                    }
-                )
-            },
-            param03: {
-                // 交集規則
-                rules: defineUnionRules(
-                    "string",
-                    "number",
-                    "boolean"
-                )
+        addProducts: defineAPI({
+            method: "POST",
+            payloadDef: {
+                /** @type {typeof [product.def]} */
+                data: {
+                    rules: "Product[]",
+                    required: true
+                }
             }
         })
     }
 })
 
-karman.ruleSetTest({ param01: "" })     // ValidationError
-karman.ruleSetTest({ param02: "foo" })  // Valid
-karman.ruleSetTest({ param03: false })  // Valid
+// /index.js
+// ...
+import karman from "./karman.js"
+
+const [resPromise] = karman.productManagement.addProducts({
+    data: [
+        {
+            title: "blue shirt",
+            price: 100,
+            // ...
+        },
+        {
+            title: "red skirt",
+            price: 99.99,
+            // ...
+        }
+    ]
+})
+```
+
+事實上，我們還能將 schema 的 string rule 型態用在某個 schema 的屬性之內，只要確保有相互引用的 schema 都有被註冊在同一個 karman tree 上就行，但需要注意的是，schema 之間是否有出現[迴圈引用](https://en.wikipedia.org/wiki/Circular_reference)（包含自我引用或封閉循環）的狀況，由於 Schema API 不支援此類型的引用模式，因此會在註冊當下就會對同一作用域下的各個 schema 的引用狀況進行檢查，當有迴圈引用的情況出現，karman 會立即拋出錯誤並提示出現迴圈引用的 schema：
+
+```js
+// ...
+
+const schemaA = defineSchemaType("SchemaA", {
+  param01: {
+    // ...
+  },
+  param02: {
+    rules: "SchemaB", // 引用另一個 schema
+  },
+});
+const schemaB = defineSchemaType("SchemaB", {
+  param01: {
+    // ...
+  },
+  param02: {
+    rules: "SchemaA", // 引用上一個 schema，形成封閉循環
+  },
+});
+
+const routeA = defineKarman({
+  // ...
+  schema: [schemaB], // schema 不必都註冊在根節點上，只要確保兩個有引用關係的 schema 都同屬一個根節點就好
+});
+
+export default defineKarman({
+  // ...
+  root: true,
+  schema: [schemaA], // schemaA 與 schemaB 出現封閉循環，會在初始化階段就拋出錯誤
+  route: {
+    routeA,
+  },
+});
 ```
 
 ### Middleware
@@ -1124,90 +1307,90 @@ Middleware 是指在 final API 執行時的某個生命週期中執行的函式�
 - **Hooks**：於定義 API 或調用 final API 時配置，被定義的 hooks 只適用於該 final API，某些 hooks 可以以非同步任務定義，或具備返回值，可透過返回值來改變某些行為或參數。
 
 ```js
-import { defineKarman, defineAPI } from "@vic0627/karman"
+import { defineKarman, defineAPI } from "@vic0627/karman";
 
 const hooksKarman = defineKarman({
-    // ...
-    validation: true,
-    // Interceptors
-    /**
-     * 攔截請求物件，包括請求的 url、method、headers 等其他請求配置
-     * @param req - 請求物件
-     */
-    onRequest(req) {
-        console.log("onRequest")
-        req.headers["Access-Token"] = localStorage["TOKEN"]
-    },
-    /**
-     * 攔截響應物件，依照每個 final API 選用的請求策略不同，可能會有不同規格，在物件屬性的存取上需稍加注意
-     * @param res - 響應物件
-     * @returns {boolean | undefined} 可自行判斷合法狀態碼，並返回布林值，預設是大於等於 200、小於 300 的區間
-     */
-    onResponse(res) {
-        console.log("onResponse")
-        const { status } = res
+  // ...
+  validation: true,
+  // Interceptors
+  /**
+   * 攔截請求物件，包括請求的 url、method、headers 等其他請求配置
+   * @param req - 請求物件
+   */
+  onRequest(req) {
+    console.log("onRequest");
+    req.headers["Access-Token"] = localStorage["TOKEN"];
+  },
+  /**
+   * 攔截響應物件，依照每個 final API 選用的請求策略不同，可能會有不同規格，在物件屬性的存取上需稍加注意
+   * @param res - 響應物件
+   * @returns {boolean | undefined} 可自行判斷合法狀態碼，並返回布林值，預設是大於等於 200、小於 300 的區間
+   */
+  onResponse(res) {
+    console.log("onResponse");
+    const { status } = res;
 
-        return status >= 200 && status < 300
-    },
-    api: {
-        hookTest: defineAPI({
-            // ...
-            // Hooks
-            /**
-             * 於驗證前調用，但若 `validation === false` 則會被忽略
-             * 通常可以用來動態改變驗證規則、給予參數預設值、手動對較複雜的參數類型進行驗證等
-             * @param payloadDef - 參數定義物件
-             * @param payload - final API 實際接收參數
-             */
-            onBeforeValidate(payloadDef, payload) {
-                console.log("onBeforeValidate")
-            },
-            /**
-             * 會在建構最終的請求 url 及請求體前執行，可以用來給予參數預設值或對 payload 物件進行其他資料處理的動作
-             * @param payload - final API 實際接收參數
-             * @returns {Record<string, any> | undefined} 若返回值為物件，將做為新的 payload 來建構 url 與請求體
-             */
-            onRebuildPayload(payload) {
-                console.log("onRebuildPayload")
-            },
-            /**
-             * 於建立請求前呼叫，可以用來建立請求體，像是建立 FormData 等動作
-             * @param url - 請求 url
-             * @param payload - final API 實際接收參數
-             * @returns {Document | BodyInit | null | undefined} 若有返回值，將作為最後送出請求時的 request body
-             */
-            onBeforeRequest(url, payload) {
-                console.log("onBeforeRequest")
-            },
-            /**
-             * 請求成功時呼叫，可配置非同步任務，通常用於接收到響應結果後初步的資料處理
-             * @param res - 響應物件
-             * @returns {Promise<any> | undefined} 若有返回值，將作為 final API 的返回值
-             */
-            async onSuccess(res) {
-                console.log("onSuccess")
+    return status >= 200 && status < 300;
+  },
+  api: {
+    hookTest: defineAPI({
+      // ...
+      // Hooks
+      /**
+       * 於驗證前調用，但若 `validation === false` 則會被忽略
+       * 通常可以用來動態改變驗證規則、給予參數預設值、手動對較複雜的參數類型進行驗證等
+       * @param payloadDef - 參數定義物件
+       * @param payload - final API 實際接收參數
+       */
+      onBeforeValidate(payloadDef, payload) {
+        console.log("onBeforeValidate");
+      },
+      /**
+       * 會在建構最終的請求 url 及請求體前執行，可以用來給予參數預設值或對 payload 物件進行其他資料處理的動作
+       * @param payload - final API 實際接收參數
+       * @returns {Record<string, any> | undefined} 若返回值為物件，將做為新的 payload 來建構 url 與請求體
+       */
+      onRebuildPayload(payload) {
+        console.log("onRebuildPayload");
+      },
+      /**
+       * 於建立請求前呼叫，可以用來建立請求體，像是建立 FormData 等動作
+       * @param url - 請求 url
+       * @param payload - final API 實際接收參數
+       * @returns {Document | BodyInit | null | undefined} 若有返回值，將作為最後送出請求時的 request body
+       */
+      onBeforeRequest(url, payload) {
+        console.log("onBeforeRequest");
+      },
+      /**
+       * 請求成功時呼叫，可配置非同步任務，通常用於接收到響應結果後初步的資料處理
+       * @param res - 響應物件
+       * @returns {Promise<any> | undefined} 若有返回值，將作為 final API 的返回值
+       */
+      async onSuccess(res) {
+        console.log("onSuccess");
 
-                return "get response"
-            },
-            /**
-             * 請求失敗時呼叫，可配置非同步任務，通常用於錯誤處理
-             * @param err - 錯誤物件
-             * @returns {Promise<any> | undefined} 若有返回值，final API 就不會拋出錯誤，並將 onError 的返回值作為 final API 發生錯誤時的返回值
-             */
-            async onError(err) {
-                console.log("onError")
+        return "get response";
+      },
+      /**
+       * 請求失敗時呼叫，可配置非同步任務，通常用於錯誤處理
+       * @param err - 錯誤物件
+       * @returns {Promise<any> | undefined} 若有返回值，final API 就不會拋出錯誤，並將 onError 的返回值作為 final API 發生錯誤時的返回值
+       */
+      async onError(err) {
+        console.log("onError");
 
-                return "response from error"
-            },
-            /**
-             * final API 最後一定會執行的 hooks，可配置非同步任務，通常用於呼叫副作用
-             */
-            async onFinally() {
-                console.log("onFinally")
-            }
-        })
-    }
-})
+        return "response from error";
+      },
+      /**
+       * final API 最後一定會執行的 hooks，可配置非同步任務，通常用於呼叫副作用
+       */
+      async onFinally() {
+        console.log("onFinally");
+      },
+    }),
+  },
+});
 ```
 
 > [!WARNING]
@@ -1216,7 +1399,7 @@ const hooksKarman = defineKarman({
 嘗試執行：
 
 ```js
-hooksKarman.hookTest()[0].then((res) => console.log(res))
+hooksKarman.hookTest()[0].then((res) => console.log(res));
 ```
 
 請求成功時主控台輸出：
@@ -1248,12 +1431,14 @@ response from error
 在 final API 複寫部分 hooks 後嘗試執行：
 
 ```js
-hooksKarman.hookTest(null, {
+hooksKarman
+  .hookTest(null, {
     onSuccess() {
-        return "overwrite onSuccess"
+      return "overwrite onSuccess";
     },
-    onError() {}
-})[0].then((res) => console.log(res))
+    onError() {},
+  })[0]
+  .then((res) => console.log(res));
 ```
 
 請求成功時主控台輸出：
@@ -1297,32 +1482,32 @@ Uncaught Error: ...
 > 返回快取資料的 final API 無法使用 abort 方法來取消請求！
 
 ```js
-import { defineKarman, defineAPI } from "@vic0627/karman"
+import { defineKarman, defineAPI } from "@vic0627/karman";
 
-const min = 1000 * 60
+const min = 1000 * 60;
 
 const cacheKarman = defineKarman({
-    root: true,
-    scheduleInterval: min * 30,                 // 根節點可設置排程任務執行間隔
-    // ...
-    cache: true,                                // 批次啟用快取
-    cacheExpireTime: min * 5,                   // 批次設定快取壽命
-    api: {
-        getA: defineAPI(),                      // 預設使用 memory 策略
-        getB: defineAPI({
-            cacheStrategy: 'localStorage'       // 選用 localStorage 策略
-        }),
-    }
-})
+  root: true,
+  scheduleInterval: min * 30, // 根節點可設置排程任務執行間隔
+  // ...
+  cache: true, // 批次啟用快取
+  cacheExpireTime: min * 5, // 批次設定快取壽命
+  api: {
+    getA: defineAPI(), // 預設使用 memory 策略
+    getB: defineAPI({
+      cacheStrategy: "localStorage", // 選用 localStorage 策略
+    }),
+  },
+});
 
 const cacheTesting = async () => {
-    const res01 = await cacheKarman.getA()[0]   // 首次請求，紀錄請求參數與響應結果
-    console.log(res01)           
-    const res02 = await cacheKarman.getA()[0]   // 第二次請求，參數無變動，直接返回快取
-    console.log(res02)
-}
+  const res01 = await cacheKarman.getA()[0]; // 首次請求，紀錄請求參數與響應結果
+  console.log(res01);
+  const res02 = await cacheKarman.getA()[0]; // 第二次請求，參數無變動，直接返回快取
+  console.log(res02);
+};
 
-cacheTesting()
+cacheTesting();
 ```
 
 ### Dynamic Type Annotation
@@ -1337,49 +1522,49 @@ karman 提供的另一種額外的強大功能，就是透過 TypeScript 泛型�
 JSDoc 是一種註解方式的標準化規範，在支援自動解析 JSDoc 的 IDE 上（如 Visual Studio Code），能夠使被註解的變數、屬性、或方法等提供相應的註解訊息。
 
 ```js
-import { defineKarman, defineAPI } from "@vic0627/karman"
+import { defineKarman, defineAPI } from "@vic0627/karman";
 
 /**
  * # API 管理中心
  */
 const rootKarman = defineKarman({
-    // ...
-    api: {
+  // ...
+  api: {
+    /**
+     * ## 連線測試
+     */
+    connect: defineAPI(),
+  },
+  route: {
+    /**
+     * ## 用戶管理
+     */
+    user: defineKarman({
+      // ...
+      api: {
         /**
-         * ## 連線測試
+         * ### 取得所有用戶
          */
-        connect: defineAPI(),
-    },
-    route: {
+        getAll: defineAPI({
+          // ...
+        }),
         /**
-         * ## 用戶管理
+         * ### 創建新用戶
          */
-        user: defineKarman({
-            // ...
-            api: {
-                /**
-                 * ### 取得所有用戶
-                 */
-                getAll: defineAPI({
-                    // ...
-                }),
-                /**
-                 * ### 創建新用戶
-                 */
-                create: defineAPI({
-                    // ...
-                })
-            }
-        })
-    }
-})
+        create: defineAPI({
+          // ...
+        }),
+      },
+    }),
+  },
+});
 
 // 於 js 中嘗試 hover 以下變數、屬性、或方法會於懸停提示顯示右邊的註解內容
-rootKarman                  // API 管理中心
-rootKarman.connect()        // 連線測試
-rootKarman.user             // 用戶管理
-rootKarman.user.getAll()    // 取得所有用戶
-rootKarman.user.create()    // 創建新用戶
+rootKarman; // API 管理中心
+rootKarman.connect(); // 連線測試
+rootKarman.user; // 用戶管理
+rootKarman.user.getAll(); // 取得所有用戶
+rootKarman.user.create(); // 創建新用戶
 ```
 
 #### DTO of Input/Payload
@@ -1392,43 +1577,43 @@ rootKarman.user.create()    // 創建新用戶
 > 透過 `@type` 標籤強制註記型別，是為了調用 final API 時能夠獲得更完整的參數提示訊息，並不會影響到 karman 本身運行。
 
 ```js
-import { defineKarman, defineAPI } from "@vic0627/karman"
+import { defineKarman, defineAPI } from "@vic0627/karman";
 
 const rootKarman = defineKarman({
-    // ...
-    api: {
+  // ...
+  api: {
+    /**
+     * ### 取得所有結果
+     */
+    getAll: defineAPI({
+      // ...
+      payloadDef: {
         /**
-         * ### 取得所有結果
+         * 回傳筆數限制
+         * @type {number | void}
          */
-        getAll: defineAPI({
-            // ...
-            payloadDef: {
-                /**
-                 * 回傳筆數限制
-                 * @type {number | void}
-                 */
-                limit: {
-                    position: "query",
-                    rules: "int"
-                },
-                /**
-                 * 排序策略
-                 * @type {"asc" | "desc" | void}
-                 */
-                sort: {
-                    position: "query",
-                    rules: "string"
-                }
-            }
-        })
-    }
-})
+        limit: {
+          position: "query",
+          rules: "int",
+        },
+        /**
+         * 排序策略
+         * @type {"asc" | "desc" | void}
+         */
+        sort: {
+          position: "query",
+          rules: "string",
+        },
+      },
+    }),
+  },
+});
 
 // hover 在 limit 與 sort 上會顯示對應型別與註解
 rootKarman.getAll({
-    limit: 10,
-    sort: "asc"
-})
+  limit: 10,
+  sort: "asc",
+});
 ```
 
 在上面的例子當中，因為兩個參數都不是必要屬性，所以需要在映射時能夠表示該參數為可選屬性，但在 TypeScript 的型別映射中，無法做到過於複雜的操作，讓屬性有條件地可選（`{ [x: string]?: any; }`）或不可選，因此要以其他方式表示該參數是可選屬性。
@@ -1444,81 +1629,83 @@ Output 需要透過 `defineAPI()` 中的 `dto` 屬性來配置，`dto` 不會影
 
 - **直接賦值**
 
-    ```js
+  ```js
+  // ...
+  export default defineKarman({
     // ...
-    export default defineKarman({
-        // ...
-        api: {
-            getProducts: defineAPI({
-                dto: [{
-                    /** 編號 */
-                    id: 0,
-                    /** 名稱 */
-                    title: '',
-                    /** 價格 */
-                    price: 0,
-                    /** 說明 */
-                    description: ''
-                }]
-            })
-        }
-    })
-    ```
+    api: {
+      getProducts: defineAPI({
+        dto: [
+          {
+            /** 編號 */
+            id: 0,
+            /** 名稱 */
+            title: "",
+            /** 價格 */
+            price: 0,
+            /** 說明 */
+            description: "",
+          },
+        ],
+      }),
+    },
+  });
+  ```
 
 - **JSDoc**
 
-    ```js
-    /**
-     * @typedef {object} Product
-     * @prop {number} Product.id - 編號
-     * @prop {string} Product.title - 名稱
-     * @prop {number} Product.price - 價格
-     * @prop {string} Product.description - 說明
-     */
+  ```js
+  /**
+   * @typedef {object} Product
+   * @prop {number} Product.id - 編號
+   * @prop {string} Product.title - 名稱
+   * @prop {number} Product.price - 價格
+   * @prop {string} Product.description - 說明
+   */
+  // ...
+  export default defineKarman({
     // ...
-    export default defineKarman({
-        // ...
-        api: {
-            getProducts: defineAPI({
-                /**
-                 * @type {Product[]}
-                 */
-                dto: null
-            })
-        }
-    })
-    ```
+    api: {
+      getProducts: defineAPI({
+        /**
+         * @type {Product[]}
+         */
+        dto: null,
+      }),
+    },
+  });
+  ```
 
 - **TypeScript + JSDoc**
 
-    ```ts
-    // /product.type.ts
-    export interface Product {
-        /** 編號 */
-        id: number;
-        /** 名稱 */
-        title: string;
-        /** 價格 */
-        price: number;
-        /** 說明 */
-        description: string;
-    }
-    ```
+  ```ts
+  // /product.type.ts
+  export interface Product {
+    /** 編號 */
+    id: number;
+    /** 名稱 */
+    title: string;
+    /** 價格 */
+    price: number;
+    /** 說明 */
+    description: string;
+  }
+  ```
 
-    ```js
+  ```js
+  // ...
+  export default defineKarman({
     // ...
-    export default defineKarman({
-        // ...
-        api: {
-            getProducts: defineAPI({
-                /**
-                 * @type {import("product.type").Product[]}
-                 */
-                dto: null
-            })
-        }
-    })
-    ```
+    api: {
+      getProducts: defineAPI({
+        /**
+         * @type {import("product.type").Product[]}
+         */
+        dto: null,
+      }),
+    },
+  });
+  ```
 
 ## API 文件
 
@@ -1529,61 +1716,71 @@ Output 需要透過 `defineAPI()` 中的 `dto` 屬性來配置，`dto` 不會影
 #### 語法
 
 ```js
-defineKarman(option)
+defineKarman(option);
 ```
+
 #### 參數
 
 - `option: KarmanOption<A, R>`：
 
-    ```ts
-    interface KarmanOption<A, R> {
-        // 👇 結構相關配置
-        root?: boolean;
-        url?: string;
-        api?: {
-            [ApiName in keyof A]: A[ApiName];
-        };
-        route?: {
-            [RouteName in keyof R]: R[RouteName];
-        };
+  ```ts
+  interface KarmanOption<A, R> {
+    // 👇 結構相關配置
+    root?: boolean;
+    url?: string;
+    api?: {
+      [ApiName in keyof A]: A[ApiName];
+    };
+    route?: {
+      [RouteName in keyof R]: R[RouteName];
+    };
 
-        // 👇 Middleware 配置
-        nRequest?(this: Karman, req: object): void;
-        onResponse?(this: Karman, res: object): boolean | void;
+    // 👇 Middleware 配置
+    nRequest?(this: Karman, req: object): void;
+    onResponse?(this: Karman, res: object): boolean | void;
 
-        // 👇 功能相關配置
-        scheduleInterval?: number;
-        cache?: boolean;
-        cacheExpireTime?: number;
-        cacheStrategy?: "sessionStorage" | "localStorage" | "memory";
-        validation?: boolean;
+    // 👇 功能相關配置
+    scheduleInterval?: number;
+    cache?: boolean;
+    cacheExpireTime?: number;
+    cacheStrategy?: "sessionStorage" | "localStorage" | "memory";
+    validation?: boolean;
 
-        // 👇 請求相關配置
-        headers?: {
-            ["Content-Type"]?: string;
-            ["Authorization"]?: `Basic ${string}:${string}`;
-        };
-        auth?: {
-            username: string;
-            password: string;
-        };
-        timeout?: number;
-        timeoutErrorMessage?: string;
-        responseType?: string;
-        headerMap?: boolean;
-        withCredentials?: boolean;
-        // 以下配置僅適用於 fetch 請求策略
-        requestCache?: "default" | "force-cache" | "no-cache" | "no-store" | "only-if-cached" | "reload";
-        credentials?: "include" | "omit" | "same-origin";
-        integrity?: string;
-        keepalive?: boolean;
-        mode?: "cors" | "navigate" | "no-cors" | "same-origin";
-        redirect?: "error" | "follow" | "manual";
-        referrer?: string;
-        referrerPolicy?: "" | "no-referrer" | "no-referrer-when-downgrade" | "origin" | "origin-when-cross-origin" | "same-origin" | "strict-origin" | "strict-origin-when-cross-origin" | "unsafe-url";
-        window?: null;
-    }
-    ```
+    // 👇 請求相關配置
+    headers?: {
+      ["Content-Type"]?: string;
+      ["Authorization"]?: `Basic ${string}:${string}`;
+    };
+    auth?: {
+      username: string;
+      password: string;
+    };
+    timeout?: number;
+    timeoutErrorMessage?: string;
+    responseType?: string;
+    headerMap?: boolean;
+    withCredentials?: boolean;
+    // 以下配置僅適用於 fetch 請求策略
+    requestCache?: "default" | "force-cache" | "no-cache" | "no-store" | "only-if-cached" | "reload";
+    credentials?: "include" | "omit" | "same-origin";
+    integrity?: string;
+    keepalive?: boolean;
+    mode?: "cors" | "navigate" | "no-cors" | "same-origin";
+    redirect?: "error" | "follow" | "manual";
+    referrer?: string;
+    referrerPolicy?:
+      | ""
+      | "no-referrer"
+      | "no-referrer-when-downgrade"
+      | "origin"
+      | "origin-when-cross-origin"
+      | "same-origin"
+      | "strict-origin"
+      | "strict-origin-when-cross-origin"
+      | "unsafe-url";
+    window?: null;
+  }
+  ```
 
 #### 返回值
 
@@ -1596,106 +1793,133 @@ defineKarman(option)
 #### 語法
 
 ```js
-defineAPI(option)
+defineAPI(option);
 ```
 
 #### 參數
 
 - `option: ApiOption`：
 
-    ```ts
-    type Type =
-      | "char"
-      | "string"
-      | "int"
-      | "number"
-      | "nan"
-      | "boolean"
-      | "object"
-      | "null"
-      | "function"
-      | "array"
-      | "object-literal"
-      | "undefined"
-      | "bigint"
-      | "symbol";
+  ```ts
+  type Type =
+    | "char"
+    | "string"
+    | "int"
+    | "number"
+    | "nan"
+    | "boolean"
+    | "object"
+    | "null"
+    | "function"
+    | "array"
+    | "object-literal"
+    | "undefined"
+    | "bigint"
+    | "symbol";
 
-    type ObjectLiteral = { [x: string | number | symbol]: any };
+  type ObjectLiteral = { [x: string | number | symbol]: any };
 
-    type ConstructorFn = { new (...args: any[]): any };
+  type ConstructorFn = { new (...args: any[]): any };
 
-    type RegExpWithMessage = { regexp: RegExp; errorMessage?: string };
+  type RegExpWithMessage = { regexp: RegExp; errorMessage?: string };
 
-    type RegularExpression = RegExp | RegExpWithMessage;
+  type RegularExpression = RegExp | RegExpWithMessage;
 
-    type CustomValidator = ((param: string, value: unknown) => void) & { _karman: true };
+  type CustomValidator = ((param: string, value: unknown) => void) & { _karman: true };
 
-    interface ParameterDescriptor {
-      min?: number;
-      max?: number;
-      equality?: number;
-      measurement?: "self" | "length" | "size" | string;
-    }
+  interface ParameterDescriptor {
+    min?: number;
+    max?: number;
+    equality?: number;
+    measurement?: "self" | "length" | "size" | string;
+  }
 
-    type ParamRules = Type | ConstructorFn | RegularExpression | CustomValidator | ParameterDescriptor;
+  type ParamRules = Type | ConstructorFn | RegularExpression | CustomValidator | ParameterDescriptor;
 
-    type ParamPosition = "path" | "query" | "body";
+  type ParamPosition = "path" | "query" | "body";
 
-    interface ParamDef {
-        rules?: ParamRules | ParamRules[] | RuleSet;
-        required?: boolean;
-        position?: ParamPosition | ParamPosition[];
-        defaultValue?: () => any;
-    }
+  interface ParamDef {
+    rules?: ParamRules | ParamRules[] | RuleSet;
+    required?: boolean;
+    position?: ParamPosition | ParamPosition[];
+    defaultValue?: () => any;
+  }
 
-    interface ApiOption {
-        // 👇 API 基本配置
-        url?: string;
-        method?: "get" | "GET" | "delete" | "DELETE" | "head" | "HEAD" | "options" | "OPTIONS" | "post" | "POST" | "put" | "PUT" | "patch" | "PATCH";
-        payloadDef?: Record<string, ParamDef | null> | string[];
-        dto?: any;
-        
-        // 👇 Hooks
-        onBeforeValidate?(this: KarmanInstance, payloadDef: P, payload: Record<string, any>): void;
-        onRebuildPayload?(this: KarmanInstance, payload: Record<string, any>): Record<string, any> | void;
-        onBeforeRequest?(this: KarmanInstance, url: string, payload: Record<string, any>): Document | BodyInit | null | void;
-        onSuccess?(this: KarmanInstance, res: object): any;
-        onError?(this: KarmanInstance, err: Error): any;
-        onFinally?(this: KarmanInstance): void;
+  interface ApiOption {
+    // 👇 API 基本配置
+    url?: string;
+    method?:
+      | "get"
+      | "GET"
+      | "delete"
+      | "DELETE"
+      | "head"
+      | "HEAD"
+      | "options"
+      | "OPTIONS"
+      | "post"
+      | "POST"
+      | "put"
+      | "PUT"
+      | "patch"
+      | "PATCH";
+    payloadDef?: Record<string, ParamDef | null> | string[];
+    dto?: any;
 
-        // 👇 功能相關配置
-        scheduleInterval?: number;
-        cache?: boolean;
-        cacheExpireTime?: number;
-        cacheStrategy?: "sessionStorage" | "localStorage" | "memory";
-        validation?: boolean;
-        
-        // 👇 請求相關配置
-        headers?: {
-            ["Content-Type"]?: string;
-            ["Authorization"]?: `Basic ${string}:${string}`;
-        };
-        auth?: {
-            username: string;
-            password: string;
-        };
-        timeout?: number;
-        timeoutErrorMessage?: string;
-        responseType?: string;
-        headerMap?: boolean;
-        withCredentials?: boolean;
-        // 以下配置僅適用於 fetch 請求策略
-        requestCache?: "default" | "force-cache" | "no-cache" | "no-store" | "only-if-cached" | "reload";
-        credentials?: "include" | "omit" | "same-origin";
-        integrity?: string;
-        keepalive?: boolean;
-        mode?: "cors" | "navigate" | "no-cors" | "same-origin";
-        redirect?: "error" | "follow" | "manual";
-        referrer?: string;
-        referrerPolicy?: "" | "no-referrer" | "no-referrer-when-downgrade" | "origin" | "origin-when-cross-origin" | "same-origin" | "strict-origin" | "strict-origin-when-cross-origin" | "unsafe-url";
-        window?: null;
-    }
-    ```
+    // 👇 Hooks
+    onBeforeValidate?(this: KarmanInstance, payloadDef: P, payload: Record<string, any>): void;
+    onRebuildPayload?(this: KarmanInstance, payload: Record<string, any>): Record<string, any> | void;
+    onBeforeRequest?(
+      this: KarmanInstance,
+      url: string,
+      payload: Record<string, any>,
+    ): Document | BodyInit | null | void;
+    onSuccess?(this: KarmanInstance, res: object): any;
+    onError?(this: KarmanInstance, err: Error): any;
+    onFinally?(this: KarmanInstance): void;
+
+    // 👇 功能相關配置
+    scheduleInterval?: number;
+    cache?: boolean;
+    cacheExpireTime?: number;
+    cacheStrategy?: "sessionStorage" | "localStorage" | "memory";
+    validation?: boolean;
+
+    // 👇 請求相關配置
+    headers?: {
+      ["Content-Type"]?: string;
+      ["Authorization"]?: `Basic ${string}:${string}`;
+    };
+    auth?: {
+      username: string;
+      password: string;
+    };
+    timeout?: number;
+    timeoutErrorMessage?: string;
+    responseType?: string;
+    headerMap?: boolean;
+    withCredentials?: boolean;
+    // 以下配置僅適用於 fetch 請求策略
+    requestCache?: "default" | "force-cache" | "no-cache" | "no-store" | "only-if-cached" | "reload";
+    credentials?: "include" | "omit" | "same-origin";
+    integrity?: string;
+    keepalive?: boolean;
+    mode?: "cors" | "navigate" | "no-cors" | "same-origin";
+    redirect?: "error" | "follow" | "manual";
+    referrer?: string;
+    referrerPolicy?:
+      | ""
+      | "no-referrer"
+      | "no-referrer-when-downgrade"
+      | "origin"
+      | "origin-when-cross-origin"
+      | "same-origin"
+      | "strict-origin"
+      | "strict-origin-when-cross-origin"
+      | "unsafe-url";
+    window?: null;
+  }
+  ```
 
 #### 返回值
 
@@ -1708,16 +1932,16 @@ defineAPI(option)
 #### 語法
 
 ```js
-defineCustomValidator(validator)
+defineCustomValidator(validator);
 ```
 
 #### 參數
 
 - `validator: Validator`：
 
-    ```ts
-    type Validator = (prop: string, value: unknown) => void
-    ```
+  ```ts
+  type Validator = (prop: string, value: unknown) => void;
+  ```
 
 #### 返回值
 
@@ -1730,30 +1954,44 @@ defineCustomValidator(validator)
 #### 語法
 
 ```js
-defineUnionRules(...rules)
-defineIntersectionRules(...rules)
+defineUnionRules(...rules);
+defineIntersectionRules(...rules);
 ```
 
 #### 參數
 
 - `rules: ParamRules[]`：
 
-    ```ts
-    type ParamRules = Type | ConstructorFn | RegularExpression | CustomValidator | ParameterDescriptor;
+  ```ts
+  type ParamRules = Type | ConstructorFn | RegularExpression | CustomValidator | ParameterDescriptor;
 
-    type Type = "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined" | "object" | "function" | "char" | "int" | "nan" | "null" | "array" | "object-literal";
+  type Type =
+    | "string"
+    | "number"
+    | "bigint"
+    | "boolean"
+    | "symbol"
+    | "undefined"
+    | "object"
+    | "function"
+    | "char"
+    | "int"
+    | "nan"
+    | "null"
+    | "array"
+    | "object-literal";
 
-    type ConstructorFn = new (...args: any[]) => any;
+  type ConstructorFn = new (...args: any[]) => any;
 
-    type RegularExpression = RegExp | { regexp: RegExp; errorMessage?: string };
+  type RegularExpression = RegExp | { regexp: RegExp; errorMessage?: string };
 
-    interface ParameterDescriptor {
-        min?: number;
-        max?: number;
-        equality?: number;
-        measurement?: "self" | "length" | "size" | string;
-    }
-    ```
+  interface ParameterDescriptor {
+    min?: number;
+    max?: number;
+    equality?: number;
+    measurement?: "self" | "length" | "size" | string;
+  }
+  ```
 
 #### 返回值
 
@@ -1766,27 +2004,27 @@ defineIntersectionRules(...rules)
 #### 語法
 
 ```js
-new ValidationError(option)
+new ValidationError(option);
 ```
 
 #### 參數
 
 - `option: string | ValidationErrorOption`：
 
-    ```ts
-    interface ValidationErrorOptions {
-        prop: string;
-        value: any;
-        message?: string;
-        type?: string;
-        instance?: ConstructorFn;
-        required?: boolean;
-        min?: number;
-        max?: number;
-        equality?: number;
-        measurement?: "self" | "length" | "size" | string;
-    }
-    ```
+  ```ts
+  interface ValidationErrorOptions {
+    prop: string;
+    value: any;
+    message?: string;
+    type?: string;
+    instance?: ConstructorFn;
+    required?: boolean;
+    min?: number;
+    max?: number;
+    equality?: number;
+    measurement?: "self" | "length" | "size" | string;
+  }
+  ```
 
 #### 返回值
 
@@ -1799,7 +2037,7 @@ new ValidationError(option)
 #### 語法
 
 ```js
-isValidationError(error)
+isValidationError(error);
 ```
 
 #### 參數

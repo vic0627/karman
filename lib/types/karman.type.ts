@@ -2,6 +2,7 @@ import Karman from "@/core/karman/karman";
 import { KarmanInterceptors } from "./hooks.type";
 import { ReqStrategyTypes, RequestConfig } from "./http.type";
 import { SelectPrimitive } from "./common.type";
+import SchemaType from "@/core/validation-engine/schema-type/schema-type";
 
 export type CacheStrategyTypes = "sessionStorage" | "localStorage" | "memory";
 
@@ -23,6 +24,7 @@ export interface KarmanConfig<A, R>
     UtilConfig {
   root?: boolean;
   url?: string;
+  schema?: SchemaType[];
   route?: R;
   api?: A;
 }

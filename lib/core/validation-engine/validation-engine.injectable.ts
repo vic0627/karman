@@ -53,13 +53,11 @@ export default class ValidationEngine {
     return new IntersectionRules(...rules);
   }
 
-  public defineSchemaType(karman: Karman, name: string, def: Schema): SchemaType {
-    if (!this.typeCheck.isValidName(name)) this.template.throw(`invalid name '${name}' for schema type`);
+  public defineSchemaType(name: string, def: Schema): SchemaType {
+    const existedType = this.typeCheck.TypeSet.includes(name);
+    if (!this.typeCheck.isValidName(name) || existedType) this.template.throw(`invalid name '${name}' for schema type`);
 
-    if (!karman.$root) karman = karman.$getRoot();
-
-    const schema = new SchemaType(karman, name, def);
-    karman.$setSchema(name, schema);
+    const schema = new SchemaType(name, def);
     schema.setValidFn(this.getSchemaValidator(schema));
 
     return schema;

@@ -5,6 +5,7 @@ import PathResolver from "@/utils/path-resolver.provider";
 import ScheduledTask from "../scheduled-task/scheduled-task.injectable";
 import Karman from "../karman/karman";
 import Template from "@/utils/template.provider";
+import SchemaType from "../validation-engine/schema-type/schema-type";
 
 @Injectable()
 export default class LayerBuilder {
@@ -15,10 +16,11 @@ export default class LayerBuilder {
     private readonly template: Template,
   ) {}
 
-  public configure<A extends unknown, R extends unknown>(k: KarmanConfig<A, R>) {
+  public configure<A, R>(k: KarmanConfig<A, R>) {
     const {
       root,
       url,
+      schema,
       // util config
       validation,
       scheduleInterval,
@@ -102,10 +104,16 @@ export default class LayerBuilder {
       currentKarman.$inherit();
     }
 
+    this.setSchema(currentKarman, schema);
+
     return currentKarman as FinalKarman<A, R>;
   }
 
   private createKarman(k: KarmanInstanceConfig): Karman {
     return new Karman(k);
+  }
+
+  private setSchema(k: Karman, schema?: SchemaType[]) {
+    schema?.forEach((s) => k.$getRoot().$setSchema(s.name, s));
   }
 }

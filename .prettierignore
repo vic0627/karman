@@ -3,4 +3,4 @@ node_modules
 .husky
 docs
 test/_coverage
-README.md
+# README.md

@@ -192,6 +192,8 @@ export default class Karman {
     if (this.$schema.has(name)) return console.warn(`[karman warn] duplicate SchemaType '${name}'`);
 
     this.$schema.set(name, schema);
+    schema.$setScope(this);
+    schema.circularRefCheck();
   }
 
   private $invokeChildrenInherit(): void {

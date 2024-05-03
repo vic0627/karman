@@ -1,8 +1,9 @@
 import { ValidateOption } from "@/abstract/parameter-validator.abstract";
 import Karman from "@/core/karman/karman";
-import { Schema } from "@/types/payload-def.type";
+import { ParamDef, ParamPosition, Schema } from "@/types/payload-def.type";
 import ValidationError from "../validation-error/validation-error";
 import RuleSet from "../rule-set/rule-set";
+import { cloneDeep } from "lodash-es";
 
 /**
  * @issue
@@ -14,8 +15,9 @@ type ValidateFn = (value: any) => void;
 
 export default class SchemaType {
   readonly #name: string;
-  readonly #scope: Karman;
   readonly #def: Schema;
+  readonly #attachDef: Schema = {};
+  #scope?: Karman;
   #validFn?: ValidateFn;
 
   get name() {
@@ -27,7 +29,15 @@ export default class SchemaType {
   }
 
   get def() {
-    return this.#def;
+    const copyDef = cloneDeep(this.#def);
+
+    for (const key in copyDef) {
+      if (!copyDef[key]) copyDef[key] = {};
+
+      Object.assign(copyDef[key] as ParamDef, this.#attachDef[key]);
+    }
+
+    return copyDef;
   }
 
   get keys() {
@@ -38,15 +48,70 @@ export default class SchemaType {
     return Object.values(this.def);
   }
 
-  constructor(scope: Karman, name: string, def: Schema) {
-    this.#scope = scope;
+  constructor(name: string, def: Schema) {
     this.#name = name;
     this.#def = def;
-
-    this.circularRefCheck();
   }
 
-  private circularRefCheck() {
+  private chainScope() {
+    const scope = {
+      def: this.def,
+      setRequired: this.setRequired.bind(this),
+      setOptional: this.setOptional.bind(this),
+      setPosition: this.setPosition.bind(this),
+      setDefault: this.setDefault.bind(this),
+    } as this;
+
+    return scope;
+  }
+
+  public attach() {
+    for (const prop in this.#def) this.#attachDef[prop] = {};
+
+    return this.chainScope();
+  }
+
+  public setRequired(...names: (keyof Schema)[]) {
+    return this.traverseDef(names, (_, prop) => (prop.required = true));
+  }
+
+  public setOptional(...names: (keyof Schema)[]) {
+    return this.traverseDef(names, (_, prop) => (prop.required = false));
+  }
+
+  public setPosition(position: ParamPosition, ...names: (keyof Schema)[]) {
+    if (!names.length) names = this.keys;
+
+    return this.traverseDef(names, (_, prop) => {
+      prop.position ??= [];
+      if (Array.isArray(prop.position)) prop.position.push(position);
+    });
+  }
+
+  public setDefault(name: string, defaultValue: () => any) {
+    (this.#attachDef[name] as ParamDef).defaultValue = defaultValue;
+
+    return this.chainScope();
+  }
+
+  private traverseDef(names: (keyof Schema)[], cb: (name: keyof Schema, prop: ParamDef) => void) {
+    if (!names.length) names = this.keys;
+
+    names.forEach((name) => {
+      if (!(name in this.#def)) return;
+
+      cb(name, this.#attachDef[name] as ParamDef);
+    });
+
+    return this.chainScope();
+  }
+
+  public $setScope(karman: Karman) {
+    karman = karman.$getRoot();
+    this.#scope = karman;
+  }
+
+  public circularRefCheck() {
     this.traverseStringRules((rule: string) => this.checkRefByString(rule));
   }
 
@@ -58,14 +123,14 @@ export default class SchemaType {
     // break recursion
     if (circular) throw new ReferenceError(`Circular reference in SchemaType '${rules}'`);
 
-    const schema = this.scope.$schema.get(rules);
+    const schema = this.scope?.$schema.get(rules);
 
     if (!schema) return;
 
     schema.traverseStringRules((rule: string) => this.checkRefByString(rule));
   }
 
-  traverseStringRules(cb: (rule: string) => void) {
+  public traverseStringRules(cb: (rule: string) => void) {
     this.values.forEach((def) => {
       const { rules } = def ?? {};
 
@@ -80,13 +145,13 @@ export default class SchemaType {
     });
   }
 
-  setValidFn(validFn: ValidateFn) {
+  public setValidFn(validFn: ValidateFn) {
     if (typeof validFn !== "function") return;
 
     this.#validFn = validFn;
   }
 
-  validate(option: ValidateOption): void {
+  public validate(option: ValidateOption): void {
     const { param, value } = option;
 
     try {
