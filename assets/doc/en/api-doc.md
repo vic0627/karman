@@ -8,6 +8,8 @@
   - [RuleSet](#ruleset)
   - [ValidationError](#validationerror)
   - [isValidationError](#isvalidationerror)
+  - [defineSchemaType](#defineschematype)
+  - [SchemaType](#schematype)
 
 ## Additional Types
 
@@ -65,7 +67,9 @@ interface ParamDef {
   defaultValue?: () => any;
 }
 
-type PayloadDef = Record<string, ParamDef | null> | string[];
+type Schema = Record<string, ParamDef | null>
+
+type PayloadDef = Schema | string[];
 ```
 
 ## defineKarman
@@ -104,6 +108,7 @@ Construct an abstract layer node called "Karman Node" to manage multiple FinalAP
       cacheExpireTime?: number;
       cacheStrategy?: "sessionStorage" | "localStorage" | "memory";
       validation?: boolean;
+      schema?: SchemaType[];
 
       // 👇 Request Config
       headers?: {
@@ -341,3 +346,88 @@ Validate whether the passed-in parameter is a `ValidationError`.
 - Returns
 
   - `value is ValidationError`
+
+## defineSchemaType
+
+Defines a specialized structure for object data, enhancing the flexibility and reusability of `payloadDef`. For usage, please refer to [Schema API](./schema-api.md).
+
+- Syntax
+  
+  ```js
+  function defineSchemaType<N extends string, D extends Schema>(name: N, def: D): SchemaType<N, D>;
+  ```
+
+- Parameters
+
+  - `name: string`
+
+    The name of the schema, used as the name when the schema is used as a string rule validation, must adhere to JavaScript variable naming conventions.
+
+  - `payloadDef: Schema`
+
+    A payload definition similar to an object type, this parameter serves as the initial state of the current schema.
+
+- Returns
+
+  - `SchemaType`
+
+## SchemaType
+
+The return value of `defineSchemaType`, allowing the use of a series of APIs to simplify the configuration of `payloadDef`.
+
+- Properties
+
+  - `name: string`
+  
+    The name of the current schema, also the keyword used when the schema is used as a string rule type.
+
+  - `scope?: Karman`
+
+    The scope to which it belongs. All rules properties under this scope can use `SchemaType.name` as a parameter validation rule.
+
+  - `keys: string[]`
+
+    The list of field names in the current schema.
+
+  - `values: (ParamDef | null)[]`
+
+    The list of all parameter definitions in the current schema.
+
+  - `def: Schema`
+
+    Same as `payloadDef`.
+  
+- Methods
+
+  - `mutate(): this`
+
+    Allows a series of methods to be called to change the initial configuration of the schema. These methods will not change the original schema but will generate a new schema.
+
+    > [!NOTE]
+    > These methods follow the design pattern of [Fluent Interface](https://en.wikipedia.org/wiki/Fluent_interface), gradually changing the schema configuration through chained calls.
+
+  - `pick(...names: string[]): this`
+  
+    Similar to TypeScript's `Pick<>`, it selects specific fields. It does not take effect when no values are passed. Only one of `pick` or `omit` can be used in the same method chain.
+
+  - `omit(...names: string[]): this`
+  
+    Similar to TypeScript's `Omit<>`, it excludes specific fields. It does not take effect when no values are passed. Only one of `pick` or `omit` can be used in the same method chain.
+
+  - `setRequired(...names: string[]): this`
+  
+    Specifies which fields are to be set as required parameters. When no values are passed, all fields are specified as required parameters.
+
+  - `setOptional(...names: string[]): this`
+  
+    Specifies which fields are to be set as optional parameters. When no values are passed, all fields are specified as optional parameters.
+
+  - `setPosition(position: ParamPosition, ...names: string[]): this`
+  
+    Specifies which fields FinalAPI should use for which parameter positions. The same field can be set to different positions repeatedly.
+
+  - `setDefault(name: string, defaultValue: () => any): this`
+  
+    Specifies the parameter default value for a field.
+
+

@@ -1,6 +1,6 @@
 # Final API
 
-The "final API" is a method set within the `api` property of a karman node configured through `defineAPI`. It behaves similarly to the karman tree in terms of inheritance and overriding. The final API records the configuration provided by `defineAPI` during initialization and then references the configuration of the parent karman node at runtime before overriding it with the recorded configuration.
+The "Final API" is a method set within the `api` property of a karman node configured through `defineAPI`. It behaves similarly to the karman tree in terms of inheritance and overriding. The final API records the configuration provided by `defineAPI` during initialization and then references the configuration of the parent karman node at runtime before overriding it with the recorded configuration.
 
 - [Final API](#final-api)
   - [Syntax](#syntax)
@@ -187,6 +187,9 @@ lazyPayload({
 ```
 
 **Supplementary: Reusing Parameter Definitions**
+
+> [!TIP]
+> Check out [Schema API](./schema-api.md) for more powerful functionality of reusability for parameter definition!
 
 In many cases, multiple sets of APIs may use identical parameters. In such situations, it's advisable to abstract the parameter definitions and encapsulate them using a factory approach. This allows for optional parameters and their positions to be passed in, enabling greater flexibility in configuration while maintaining consistent validation rules.
 

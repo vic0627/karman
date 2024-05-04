@@ -29,6 +29,7 @@ HTTP Client / API Centralized Management / API Abstraction Layer
 - [Karman Tree](./assets/doc/en/karman-tree.md)
 - [Final API](./assets/doc/en/final-api.md)
 - [Validation Engine](./assets/doc/en/validation-engine.md)
+- :new: [Schema API](./assets/doc/en/schema-api.md)
 - [Middleware](./assets/doc/en/middleware.md)
 - [Response Caching](./assets/doc/en/response-caching.md)
 - [Dynamic Type Annotation](./assets/doc/en/dynamic-type-annotation.md)
@@ -47,8 +48,6 @@ HTTP Client / API Centralized Management / API Abstraction Layer
 - Dynamic type annotation
 - Lifecycle of request methods
 - Parameter validation engine
-- Default parameter values
-- :new: [String Rule - Array Syntax](./assets/doc/en/validation-engine.md)
 
 ## Getting Started
 

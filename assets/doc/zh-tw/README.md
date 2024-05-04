@@ -66,6 +66,13 @@ HTTP 客戶端 / API 中心化管理 / API 抽象層
     - [語法](#語法-5)
     - [參數](#參數-5)
     - [返回值](#返回值-5)
+  - [defineSchemaType](#defineschematype)
+    - [語法](#語法-6)
+    - [參數](#參數-6)
+    - [返回值](#返回值-6)
+  - [SchemaType](#schematype)
+    - [屬性](#屬性)
+    - [方法](#方法)
 
 ## 特色
 
@@ -1122,13 +1129,13 @@ karman.ruleSetTest({ param03: false }); // Valid
 
 Schema API 允許你以整個 [`payloadDef`](#parameter-definition) 作為一個多功能、高彈性、高復用性的 `SchemaType`，`SchemaType` 除了能夠作為 `payloadDef` 來使用之外，還能將其註冊在 Karman Tree 上，當 `SchemaType` 註冊後，Karman Tree 下的所有 `payloadDef[param].rules` 都能以 `SchemaType` 的名子做為 [String Rule](#rules) 使用，更棒的是，以 String Rule 使用的 `SchemaType` 允許支援[陣列語法](#string-rule---array-syntax)，能夠讓你以最少的程式碼進行最複雜的驗證功能。
 
-在使用上，需要以 `defineSchemaType` 來定義一個 schema，該方法將接收兩個參數，第一個參數是這 schema 的名字，後續若要以這 schema 作為 String Rule 使用，必須使用這個名字，而第二個參數則與物件型態的 `payloadDef` 相同，可以定義參數的必填非必填（`required`）、驗證規則（`rules`）、使用位置（`position`）與預設值（`defaultValue`），這些參數相關的訊息將作為此 schema 的初值，並且除了 `rules` 以外的屬性，後序都能使用 `SchemaType.attach()` 來改變狀態。
+在使用上，需要以 `defineSchemaType` 來定義一個 schema，該方法將接收兩個參數，第一個參數是這 schema 的名字，後續若要以這 schema 作為 String Rule 使用，必須使用這個名字，而第二個參數則與物件型態的 `payloadDef` 相同，可以定義參數的必填非必填（`required`）、驗證規則（`rules`）、使用位置（`position`）與預設值（`defaultValue`），這些參數相關的訊息將作為此 schema 的初使狀態，並且除了 `rules` 以外的屬性，後序都能使用 `SchemaType.mutate()` 來改變狀態。
 
 下面會先以商品種類的參數定義一個簡單的 schema，這個 schema 僅會包含一個參數 `category` 與其驗證規則：
 
 ```js
 // schema/category.js
-import { defineSchemaType, defineCustomValidator, ValidationError } from "@vic0627/karman";
+import { defineSchemaType, defineCustomValidator, ValidationError } from "@vic0627/karman"
 
 export default defineSchemaType("Category", {
   /**
@@ -1144,13 +1151,13 @@ export default defineSchemaType("Category", {
       }),
     ],
   },
-});
+})
 ```
 
 > [!NOTE]
 > 在 schema 中，仍然可以透過 JSDoc `@type` 標籤強制註記型別或加上其他參數說明，這會有利於後續調用 FinalAPI 時對於 `payload` 物件的型別判斷。
 
-接著，你可以在 `payloadDef` 中使用這個 schema，但需要以 `def` 屬性來存取 `payloadDef` 可使用的物件。另外，在這情境中，`category` 將作為路徑參數使用，且須為必要參數，因此可以用 `.attach()` 加上 `.setPosition()` 與 `.setRequired()` 方法來改變 schema 內的細部定義：
+接著，你可以在 `payloadDef` 中使用這個 schema，但需要以 `def` 屬性來存取 `payloadDef` 可使用的物件。另外，在這情境中，`category` 將作為路徑參數使用，且須為必要參數，因此可以用 `.mutate()` 先初始化 schema 的附加資訊，再用 `.setPosition()` 與 `.setRequired()` 方法來改變 schema 內的細部定義，最後透過 `def` 屬性來取得編輯過的 schema：
 
 ```js
 // ...
@@ -1158,7 +1165,7 @@ import category from "./schema/category.js";
 
 const getProductsByCategory = defineAPI({
   url: "https://karman.com/products/:category",
-  payloadDef: category.attach().setPosition("path").setRequired().def,
+  payloadDef: category.mutate().setPosition("path").setRequired().def,
   validation: true,
   // ...
 });
@@ -1167,12 +1174,12 @@ const [resPromise] = getProductsByCategory({ category: "electronics" });
 resPromise.then((res) => console.log(res));
 ```
 
-再來，我們可以嚐試定義一個商品資訊的 schema，並且將 `category` 引入作為商品資訊 schema 的一部分，在這邊我們使用 `category` schema 的初值，所以不需調用 `.attach()`，直接使用 `...` 運算子打散 `category.def` 就好：
+再來，我們可以嚐試定義一個商品資訊的 schema，並且將 `category` 引入作為商品資訊 schema 的一部分，在這邊我們使用 `category` schema 的初值，所以不需調用 `.mutate()`，直接使用 `...` 運算子打散 `category.def` 就好：
 
 ```js
 // schema/product.js
 // ...
-import category from "./category.js";
+import category from "./category.js"
 
 export default defineSchemaType("Product", {
   ...category.def,
@@ -1210,12 +1217,12 @@ export default defineSchemaType("Product", {
   image: {
     rules: [File, { measurement: "size", max: 1024 * 1024 * 5 }],
   },
-});
+})
 ```
 
 #### 將 Schema 作為 String Rule 使用
 
-若要將 schema 作為 string rule 使用，必須要將其註冊到 karman tree 上的 `schema` 屬性，這邊不會限定是否一定要在根節點上註冊，但最終註冊的 schema 一定會暫存在根節點中，並且標定該 karman tree 作為此 schema 的 string rule 型態的作用域，在此作用域下都可以以 schema 的名字作為驗證規則。
+若要將 schema 作為 string rule 使用，必須要將其註冊到 karman tree 上的 `schema` 屬性，這邊不會限定是否一定要在根節點上註冊，但最終註冊的 schema 一定會暫存在根節點中，並且標定該 karman tree 作為此 schema 的 string rule 型態的作用域，在此作用域下都可以以 schema 的名字作為驗證規則，但要特別注意，當 schema 作為 string rule 使用時，僅會以 schema 最初的定義作為驗證規則，並且不適用 `defaultValue` 屬性。
 
 假設我們將上面的 schema `product` 註冊到一個 karman tree 上，如此一來，將能將這 schema 做為某個參數的「型別」，並以這個 schema 作為驗證規則，除此之外，還能夠將此型別加入陣列語法，讓其對陣列進行深度的遍歷與驗證：
 
@@ -1232,7 +1239,7 @@ export default defineKarman({
         addProducts: defineAPI({
             method: "POST",
             payloadDef: {
-                /** @type {typeof [product.def]} */
+                /** @type {typeof product.def[]} */
                 data: {
                     rules: "Product[]",
                     required: true
@@ -1292,7 +1299,7 @@ const routeA = defineKarman({
 export default defineKarman({
   // ...
   root: true,
-  schema: [schemaA], // schemaA 與 schemaB 出現封閉循環，會在初始化階段就拋出錯誤
+  schema: [schemaA], // Reference Error: schemaA 與 schemaB 出現封閉循環，會在初始化階段就拋出錯誤
   route: {
     routeA,
   },
@@ -1745,6 +1752,7 @@ defineKarman(option);
     cacheExpireTime?: number;
     cacheStrategy?: "sessionStorage" | "localStorage" | "memory";
     validation?: boolean;
+    schema?: SchemaType[];
 
     // 👇 請求相關配置
     headers?: {
@@ -2047,3 +2055,90 @@ isValidationError(error);
 #### 返回值
 
 布林值，表示傳入值是否為驗證錯誤。
+
+### defineSchemaType
+
+定義特殊的物件結構資料，強化對於 `payloadDef` 的彈性與可復用性，使用方法請參考 [Schema API](#schema-api)。
+
+#### 語法
+
+```js
+defineSchema(name, payloadDef);
+```
+
+#### 參數
+
+- `name: string`
+
+  schema 的名字，當 schema 作為 string rule 驗證規則使用時的名稱，須符合 JavaScript 的變數命名規則。
+
+- `payloadDef: Schema`
+
+  同物件型態的 `payloadDef`，此參數將作為當前 schema 的初始狀態。
+
+  ```ts
+  type Schema = Record<string, ParamDef | null>;
+  ```
+
+#### 返回值
+
+- [`SchemaType`](#schematype)
+
+### SchemaType
+
+`defineSchemaType` 的返回值，可使用一系列的 API 來簡化 `payloadDef` 的配置。
+
+#### 屬性
+
+- `name: string`
+
+  當前 schema 的名字，同時也是作為 string rule 型態使用時的關鍵字。
+
+- `scope?: Karman`
+
+  所屬作用域，作用域底下的所有 `rules` 屬性都能以 `SchemaType.name` 作為一個參數的驗證規則。
+
+- `keys: string[]`
+
+  當前 schema 的欄位名稱列表。
+
+- `values: (ParamDef | null)[]`
+
+  當前 schema 的所有參數定義列表。
+
+- `def: Schema`
+
+  同 `payloadDef`。
+
+#### 方法
+
+- `mutate(): this`
+
+  呼叫後可開始調用一系列改變 schema 初始配置的方法，這些方法不會改變最初的 schema，而是會產生新的 schema。
+
+  > [!NOTE]
+  > 這些方法會遵循 [Fluent Interface](https://en.wikipedia.org/wiki/Fluent_interface) 的設計模式，透過鏈式調用逐漸改變 schema 配置。
+
+- `pick(...names: string[]): this`
+
+  類似 TypeScript 的 `Pick<>`，可選擇特定欄位，當沒有傳入值時不會生效，同一條 method chain 只能與 `omit` 方法擇一使用。
+
+- `omit(...names: string[]): this`
+
+  類似 TypeScript 的 `Omit<>`，可忽略特定欄位，當沒有傳入值時不會生效，同一條 method chain 只能與 `pick` 方法擇一使用。
+
+- `setRequired(...names: string[]): this`
+
+  指定要被設定成必要參數的欄位，當沒有傳入值時，會指定所有欄位為必要參數。
+
+- `setOptional(...names: string[]): this`
+
+  指定要被設定成非必要參數的欄位，當沒有傳入值時，會指定所有欄位為非必要參數。
+
+- `setPosition(position: ParamPosition, ...names: string[]): this`
+
+  指定哪些欄位要被 FinalAPI 用於哪個參數的位置，同一個欄位可重複設定不同位置。
+
+- `setDefault(name: string, defaultValue: () => any): this`
+
+  指定欄位的參數預設值。
