@@ -412,16 +412,17 @@ interface ChainScope<D> {
   setOptional(...names: (keyof D)[]): ChainScope<D>;
   setPosition(position: ParamPosition, ...names: (keyof D)[]): ChainScope<D>;
   setDefault(name: keyof D, defaultValue: () => any): ChainScope<D>;
+  pick<N extends (keyof D)[]>(...names: N): ChainScope<Pick<D, N[number]>>;
+  omit<N extends (keyof D)[]>(...names: N): ChainScope<Omit<D, N[number]>>;
 }
 
 class SchemaType<N extends string, D> implements ChainScope<D> {
   name: N;
   scope?: KarmanInstance;
-  def: D;
   keys: (keyof D)[];
   values: D[keyof D][];
 
-  attach(): ChainScope<D>;
+  mutate(): ChainScope<D>;
 }
 
 export function defineSchemaType<N extends string, D>(name: N, def: D): SchemaType<N, D>;
