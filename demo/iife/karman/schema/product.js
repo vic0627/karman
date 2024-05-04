@@ -10,6 +10,7 @@ export default defineSchemaType("Product", {
    */
   title: {
     rules: ["string", { min: 1, max: 20, measurement: "length" }],
+    required: true,
   },
   /**
    * price
@@ -18,6 +19,7 @@ export default defineSchemaType("Product", {
    */
   price: {
     rules: ["number", { min: 1 }],
+    required: true,
   },
   /**
    * description
@@ -27,6 +29,7 @@ export default defineSchemaType("Product", {
    */
   description: {
     rules: ["string", { min: 1, max: 100, measurement: "length" }],
+    required: true,
   },
   /**
    * image
@@ -35,6 +38,7 @@ export default defineSchemaType("Product", {
    */
   image: {
     rules: [File, { measurement: "size", max: 1024 * 1024 * 5 }],
+    required: true,
   },
   ...category.def,
 });

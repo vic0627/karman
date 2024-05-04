@@ -17,7 +17,7 @@ const request1 = async () => {
 const request2 = async () => {
   try {
     const [resPromise] = $karman.schemaTest2({
-      title: "hello",
+      price: 2134,
       category: "electronics",
     });
 
@@ -26,14 +26,39 @@ const request2 = async () => {
     console.error(error);
   }
 };
+const products = Array.from({ length: 100 }, (_, i) => {
+  const p = {
+    title: "hello",
+    category: "men's clothing",
+    price: 34,
+    description: "hello",
+    image: new File([], "sth"),
+  };
 
-let delegate = request1;
+  if (i === parseInt(Math.random() * 100)) p.image = "wtf";
+
+  return p;
+});
+const request3 = async () => {
+  try {
+    const [resPromise] = $karman.schemaTest3({
+      products,
+    });
+
+    console.log(await resPromise);
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+let delegate = request2;
 
 send.addEventListener("click", () => {
   delegate();
 });
 
 set.addEventListener("click", () => {
-  if (delegate === request1) delegate = request2;
-  else delegate = request1;
+  // if (delegate === request1) delegate = request2;
+  // else delegate = request1;
 });
+

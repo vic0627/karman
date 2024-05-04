@@ -8,13 +8,16 @@ import {
   defineSchemaType,
   defineIntersectionRules,
 } from "../../../dist/karman.js";
+import category from "./schema/category.js";
 import product from "./schema/product.js";
+
+window.product = product;
 
 const $karman = defineKarman({
   root: true,
   url: "https://fakestoreapi.com/",
   validation: true,
-  // schema: [product],
+  schema: [product, category],
   headers: {
     "Content-Type": "application/json; charset=utf-8",
   },
@@ -32,11 +35,17 @@ const $karman = defineKarman({
           required: true,
           rules: ["int", { min: 1 }],
         },
-        ...product.attach().setPosition("body").def,
+        ...product.mutate().setPosition("body").def,
       },
     }),
     schemaTest2: defineAPI({
-      payloadDef: product.attach().setRequired().def,
+      payloadDef: product.mutate().pick("price", "category").setRequired().def,
+    }),
+    schemaTest3: defineAPI({
+      payloadDef: {
+        /** @type {typeof product.def[]} */
+        products: { rules: "Product[1:]", required: true },
+      },
     }),
   },
 });
