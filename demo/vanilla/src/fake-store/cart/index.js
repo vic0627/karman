@@ -1,75 +1,83 @@
 import { defineKarman, defineAPI } from "@vic0627/karman";
-import limitAndSort from "../payload-def/limit-and-sort";
-import id from "../payload-def/id";
-import dateRange from "../payload-def/date-range";
-import dtoCart from "./dto/dto-cart";
-import cart from "./payload-def/cart";
+import limitAndSortSchema from "../schema/limit-and-sort-schema";
+import dateRangeSchema from "../schema/date-range-schema";
+import idSchema from "../schema/id-schema";
+import cartSchema from "../schema/cart-schema";
 
 export default defineKarman({
   url: "carts",
   api: {
     /**
-     * ### 取得所有購物車
+     * ### Get all carts
      */
     getAll: defineAPI({
       payloadDef: {
-        ...limitAndSort(true),
-        ...dateRange(true),
+        ...limitAndSortSchema
+          .mutate()
+          .setPosition("query")
+          .setOptional()
+          .setDefault("limit", () => 10).def,
+        ...dateRangeSchema.mutate().setPosition("query").setOptional().def,
       },
-      dto: [dtoCart],
+      /** @type {typeof cartSchema.def[]} */
+      dto: null,
     }),
     /**
      * ### get single cart by id
      */
     getById: defineAPI({
-      payloadDef: {
-        ...id(true, { path: 0 }),
-      },
-      dto: dtoCart,
+      url: ":id",
+      payloadDef: idSchema.mutate().setPosition("path").def,
+      /** @type {typeof cartSchema.def} */
+      dto: null,
     }),
     /**
      * ### get single cart by user id
      */
     getUserCarts: defineAPI({
-      url: "user",
-      payloadDef: {
-        ...id(true, { path: 0 }),
-      },
-      dto: [dtoCart],
+      url: "user/:id",
+      payloadDef: idSchema.mutate().setPosition("path").def,
+      /** @type {typeof cartSchema.def[]} */
+      dto: null,
     }),
     /**
      * ### add a new cart
      */
     add: defineAPI({
       method: "POST",
-      payloadDef: cart,
+      payloadDef: cartSchema.mutate().omit("id").def,
+      /** @type {typeof cartSchema.def} */
+      dto: null,
     }),
     /**
      * ### update a cart
      */
     update: defineAPI({
+      url: ":id",
       method: "PUT",
-      payloadDef: {
-        ...id(true, { path: 0 }),
-        ...cart,
-      },
+      payloadDef: cartSchema.mutate().setPosition("path", "id").def,
+      /** @type {typeof cartSchema.def} */
+      dto: null,
     }),
     /**
      * ### modify a cart
      */
     modify: defineAPI({
+      url: ":id",
       method: "PATCH",
-      payloadDef: {
-        ...id(true, { path: 0 }),
-        ...cart,
-      },
+      payloadDef: cartSchema.mutate().setPosition("path", "id").setOptional("date", "products", "userId").def,
+      /** @type {typeof cartSchema.def} */
+      dto: null,
     }),
     /**
      * delete a cart by id
      */
     delete: defineAPI({
+      url: ":id",
       method: "DELETE",
-      payloadDef: id(true, { path: 0 }),
+      payloadDef: idSchema.mutate().setPosition("path").def,
+      /** @type {typeof cartSchema.def} */
+      dto: null,
     }),
   },
 });

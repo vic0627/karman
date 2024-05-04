@@ -1,15 +1,12 @@
 import { defineKarman, defineAPI } from "@vic0627/karman";
-import limitAndSort from "../payload-def/limit-and-sort";
-import dtoProductInfo from "./dto/dto-product-info";
-import dtoCategory from "./dto/dto-category";
-import category from "./payload-def/category";
-import productInfo from "./payload-def/product-info";
-import imageBase64 from "../../utils/imageBase64";
-import id from "../payload-def/id";
+import limitAndSortSchema from "../schema/limit-and-sort-schema";
+import idSchema from "../schema/id-schema";
+import productInfoSchema from "../schema/product-info-schema";
+import categorySchema from "../schema/category-schema";
 
-async function convertImage(_, payload) {
-  payload.image = await imageBase64(payload.image);
-}
+/**
+ * @typedef {typeof idSchema.def & typeof productInfoSchema.def} Product
+ */
 
 export default defineKarman({
   url: "products",
@@ -18,11 +15,13 @@ export default defineKarman({
      * ### get all products
      */
     getAll: defineAPI({
-      payloadDef: limitAndSort(false),
-      dto: [dtoProductInfo],
-      onRebuildPayload(payload) {
-        if (!payload.limit) payload.limit = 10;
-      },
+      payloadDef: limitAndSortSchema
+        .mutate()
+        .setOptional()
+        .setPosition("query")
+        .setDefault("limit", () => 10).def,
+      /** @type {Product[]} */
+      dto: null,
       requestStrategy: "fetch",
     }),
     /**
@@ -30,75 +29,71 @@ export default defineKarman({
      */
     getById: defineAPI({
       url: ":id",
-      payloadDef: {
-        ...id(true, { path: 0 }),
-      },
-      dto: dtoProductInfo,
-      requestStrategy: "fetch",
-      onSuccess(res) {
-        return res.body;
-      },
+      payloadDef: idSchema.mutate().setPosition("path").def,
+      /** @type {Product} */
+      dto: null,
     }),
     /**
      * ### create a new product
      */
     create: defineAPI({
       method: "POST",
-      payloadDef: {
-        ...productInfo(true),
-      },
-      dto: dtoProductInfo,
+      payloadDef: productInfoSchema.def,
+      /** @type {Product} */
+      dto: null,
     }),
     /**
      * ### update single product
      */
     update: defineAPI({
+      url: ":id",
       method: "PUT",
       payloadDef: {
-        ...id(true, { path: 0 }),
-        ...productInfo(true),
+        ...idSchema.mutate().setPosition("path").def,
+        ...productInfoSchema.def,
       },
-      dto: dtoProductInfo,
-      onBeforeRequest: convertImage,
+      /** @type {Product} */
+      dto: null,
     }),
     /**
      * ### modify single product
      */
     modify: defineAPI({
+      url: ":id",
       method: "PATCH",
       payloadDef: {
-        ...id(true, { path: 0 }),
-        ...productInfo(false),
+        ...idSchema.mutate().setPosition("path").def,
+        ...productInfoSchema.def,
       },
-      dto: dtoProductInfo,
-      onBeforeRequest: convertImage,
+      /** @type {Product} */
+      dto: null,
     }),
     /**
      * ### delete a product
      */
     delete: defineAPI({
+      url: ":id",
       method: "DELETE",
-      payloadDef: {
-        ...id(true, { path: 0 }),
-      },
-      dto: dtoProductInfo,
+      payloadDef: idSchema.mutate().setPosition("path").def,
+      /** @type {Product} */
+      dto: null,
     }),
     /**
      * ### get all product's categories
      */
     getCategories: defineAPI({
       url: "categories",
-      /** @type {Array<dtoCategory>} */
-      dto: [],
+      /** @type {Array<typeof categorySchema.def.category>} */
+      dto: null,
     }),
     /**
      * ### get products by category
      */
     getProductsByCategory: defineAPI({
-      url: "category",
-      payloadDef: {
-        ...category(true, { path: 0 }),
-      },
+      url: "category/:category",
+      payloadDef: categorySchema.mutate().setPosition("path").def,
+      /** @type {Product[]} */
+      dto: null,
     }),
   },
 });

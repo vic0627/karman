@@ -4,12 +4,32 @@ import cart from "./cart";
 import user from "./user";
 import _constant from "../utils/constant";
 import convertToBase64 from "../utils/imageBase64";
+import userSchema, { addressSchema, geoSchema, nameSchema } from "./schema/user-schema";
+import productInfoSchema from "./schema/product-info-schema";
+import limitAndSortSchema from "./schema/limit-and-sort-schema";
+import idSchema from "./schema/id-schema";
+import dateRangeSchema from "./schema/date-range-schema";
+import categorySchema from "./schema/category-schema";
+import cartSchema, { productsInCarSchema } from "./schema/cart-schema";
 
 const fakeStore = defineKarman({
   root: true,
   headerMap: true,
   validation: true,
   scheduleInterval: 1000 * 10,
+  schema: [
+    userSchema,
+    geoSchema,
+    addressSchema,
+    nameSchema,
+    productInfoSchema,
+    limitAndSortSchema,
+    idSchema,
+    dateRangeSchema,
+    categorySchema,
+    productsInCarSchema,
+    cartSchema,
+  ],
   // cache: true,
   cacheExpireTime: 5000,
   // timeout: 100,
@@ -26,32 +46,7 @@ const fakeStore = defineKarman({
       url: "auth/login",
       method: "POST",
       requestStrategy: "fetch",
-      payloadDef: {
-        /**
-         * user name
-         * @type {string}
-         */
-        username: {
-          required: true,
-          body: true,
-          rules: ["string", { min: 1, measurement: "length" }],
-        },
-        /**
-         * password
-         * @type {string}
-         */
-        password: {
-          required: true,
-          body: true,
-          rules: ["string", { min: 1, measurement: "length" }],
-        },
-      },
-      onBeforeRequest(_, payload) {
-        return JSON.stringify(payload);
-      },
-      headers: {
-        "Content-Type": "text/plain; charset=utf-8",
-      },
+      payloadDef: userSchema.mutate().pick("username", "password").def,
       /**
        * @typedef {object} LoginRes
        * @prop {string} LoginRes.token token of user account

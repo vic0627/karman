@@ -1,31 +1,26 @@
-const query = true;
+import { defineSchemaType } from "@vic0627/karman";
 
+const required = true;
 export const dateRegexp = /^\d{4}-\d{2}-\d{2}$/;
-
 export const dateRule = { regexp: dateRegexp, errorMessage: "invalid date format" };
-/**
- * @param {R} required
- * @template {boolean} R
- */
-export default (required) => ({
+
+export default defineSchemaType("DateRange", {
   /**
-   * 起始日期
+   * start date
    * @format "YYYY-MM-DD"
-   * @type {R extends true ? string : import("@/karman").Optional<string>}
+   * @type {string}
    */
   startdate: {
     required,
-    query,
     rules: ["string", dateRule],
   },
   /**
-   * 結束日期
+   * end date
    * @format "YYYY-MM-DD"
-   * @type {R extends true ? string :import("@/karman"). Optional<string>}
+   * @type {string}
    */
   enddate: {
     required,
-    query,
     rules: ["string", dateRule],
   },
 });

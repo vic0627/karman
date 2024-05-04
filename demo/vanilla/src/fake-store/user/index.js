@@ -1,8 +1,11 @@
 import { defineAPI, defineKarman } from "@vic0627/karman";
-import limitAndSort from "../payload-def/limit-and-sort";
-import dtoUser from "./dto/dto-user";
-import id from "../payload-def/id";
-import user from "./payload-def/user";
+import limitAndSortSchema from "../schema/limit-and-sort-schema";
+import idSchema from "../schema/id-schema";
+import userSchema from "../schema/user-schema";
+
+/**
+ * @typedef {typeof userSchema.def & typeof idSchema.def} User
+ */
 
 export default defineKarman({
   url: "users",
@@ -11,54 +14,67 @@ export default defineKarman({
      * ### get all user info
      */
     getAll: defineAPI({
-      payloadDef: limitAndSort(false),
-      dto: [dtoUser],
+      payloadDef: limitAndSortSchema
+        .mutate()
+        .setOptional()
+        .setPosition("query")
+        .setDefault("limit", () => 10).def,
+      /** @type {User[]} */
+      dto: null,
     }),
     /**
      * ### get a user info by id
      */
     getById: defineAPI({
-      payloadDef: id(true, { path: 0 }),
-      dto: dtoUser,
+      url: ":id",
+      payloadDef: idSchema.mutate().setPosition("path").def,
+      /** @type {User} */
+      dto: null,
     }),
     /**
      * ### create a new user
      */
     add: defineAPI({
       method: "POST",
-      payloadDef: user(true),
-      dto: dtoUser,
+      payloadDef: userSchema.def,
+      /** @type {User} */
+      dto: null,
     }),
     /**
      * ### update a user
      */
     update: defineAPI({
+      url: ":id",
       method: "PUT",
-      payloadDef: user(true),
-      dto: dtoUser,
+      payloadDef: {
+        ...idSchema.mutate().setPosition("path").def,
+        ...userSchema.def,
+      },
+      /** @type {User} */
+      dto: null,
     }),
     /**
      * ### modify a user
      */
     modify: defineAPI({
-      method: "PUT",
-      payloadDef: { ...user(false), ...id(true, { path: 0 }) },
-      dto: dtoUser,
-      requestStrategy: "fetch",
-      onSuccess(res) {
-        return res.body;
+      url: ":id",
+      method: "PATCH",
+      payloadDef: {
+        ...idSchema.mutate().setPosition("path").def,
+        ...userSchema.mutate().setOptional().def,
       },
-      onError() {
-        return {};
-      },
+      /** @type {User} */
+      dto: null,
     }),
     /**
      * ### delete a user
      */
     delete: defineAPI({
+      url: ":id",
       method: "DELETE",
-      payloadDef: id(true, { path: 0 }),
-      dto: dtoUser,
+      payloadDef: idSchema.mutate().setPosition("path").def,
+      /** @type {User} */
+      dto: null,
     }),
   },
 });
