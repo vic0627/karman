@@ -33,7 +33,7 @@ export default class ValidationError extends Error {
 
         if (required) message += "is required";
         else if (existValue(type)) message += `should be '${type}' type`;
-        else if (existValue(instance)) message += `should be instance of '${instance}'`;
+        else if (existValue(instance)) message += `should be instance of '${instance?.name ?? instance}'`;
         else if (existValue(equality)) message += `should be equal to '${equality}'`;
         else if (existValue(min) && !existValue(max)) message += `should be greater than or equal to '${min}'`;
         else if (existValue(max) && !existValue(min)) message += `should be less than or equal to '${max}'`;

@@ -5,20 +5,17 @@ import ValidationError from "../validation-error/validation-error";
 import RuleSet from "../rule-set/rule-set";
 import { cloneDeep } from "lodash-es";
 
-/**
- * @issue
- * 1. default value of schema
- * 2. schema to payloadDef
- */
-
 type ValidateFn = (value: any) => void;
 
 export default class SchemaType {
   readonly #name: string;
   readonly #def: Schema;
   readonly #attachDef: Schema = {};
+  #pick?: (keyof Schema)[];
+  #omit?: (keyof Schema)[];
   #scope?: Karman;
   #validFn?: ValidateFn;
+  #onMutate = false;
 
   get name() {
     return this.#name;
@@ -29,15 +26,7 @@ export default class SchemaType {
   }
 
   get def() {
-    const copyDef = cloneDeep(this.#def);
-
-    for (const key in copyDef) {
-      if (!copyDef[key]) copyDef[key] = {};
-
-      Object.assign(copyDef[key] as ParamDef, this.#attachDef[key]);
-    }
-
-    return copyDef;
+    return this.#def;
   }
 
   get keys() {
@@ -53,19 +42,58 @@ export default class SchemaType {
     this.#def = def;
   }
 
+  private computeDef() {
+    const copyDef = cloneDeep(this.#def);
+
+    for (const key in copyDef) {
+      if (!copyDef[key]) copyDef[key] = {};
+
+      const isPicked = this.#pick?.length ? this.#pick.includes(key) : true;
+      const isOmitted = this.#omit?.length ? this.#omit.includes(key) : false;
+
+      if (isPicked && !isOmitted) Object.assign(copyDef[key] as ParamDef, this.#attachDef[key]);
+      else delete copyDef[key];
+    }
+
+    this.#pick = undefined;
+    this.#omit = undefined;
+
+    return copyDef;
+  }
+
   private chainScope() {
-    const scope = {
-      def: this.def,
-      setRequired: this.setRequired.bind(this),
-      setOptional: this.setOptional.bind(this),
-      setPosition: this.setPosition.bind(this),
-      setDefault: this.setDefault.bind(this),
-    } as this;
+    if (!this.#onMutate) return;
+
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const self = this;
+    const scope: this = new Proxy(
+      {
+        setRequired: self.setRequired.bind(self),
+        setOptional: self.setOptional.bind(self),
+        setPosition: self.setPosition.bind(self),
+        setDefault: self.setDefault.bind(self),
+      } as unknown as this,
+      {
+        get(target, p) {
+          if (p === "def") return self.computeDef();
+          else if (p === "pick" && self.#pick?.length === 0) return self.pick.bind(self);
+          else if (p === "omit" && self.#omit?.length === 0) return self.omit.bind(self);
+          else return target[p as keyof typeof target];
+        },
+        set() {
+          return false;
+        },
+      },
+    );
 
     return scope;
   }
 
-  public attach() {
+  public mutate() {
+    this.#onMutate = true;
+    this.#pick = [];
+    this.#omit = [];
+
     for (const prop in this.#def) this.#attachDef[prop] = {};
 
     return this.chainScope();
@@ -90,6 +118,24 @@ export default class SchemaType {
 
   public setDefault(name: string, defaultValue: () => any) {
     (this.#attachDef[name] as ParamDef).defaultValue = defaultValue;
+
+    return this.chainScope();
+  }
+
+  public pick(...names: (keyof Schema)[]) {
+    if (!this.#pick) return;
+
+    this.#pick.push(...names);
+    this.#omit = undefined;
+
+    return this.chainScope();
+  }
+
+  public omit(...names: (keyof Schema)[]) {
+    if (!this.#omit) return;
+
+    this.#omit.push(...names);
+    this.#pick = undefined;
 
     return this.chainScope();
   }
