@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unnecessary-type-constraint */
+// #region Utility Types
 type Primitive = string | number | boolean | bigint | symbol | undefined | object;
 
 type SelectPrimitive<T, D = any> = T extends Primitive ? T : D;
@@ -11,10 +14,10 @@ type SelectPrimitive3<T, S, F, D = any> = F extends Primitive
     : T extends Primitive
       ? T
       : D;
+// #endregion
 
-export type Optional<T> = T | void;
-
-type Type =
+// #region Validation Types
+type StringRuleType =
   | "char"
   | "string"
   | "int"
@@ -61,7 +64,7 @@ interface ParameterDescriptor {
   measurement?: "self" | "length" | "size" | string;
 }
 
-type ParamRules = Type | ConstructorFn | RegularExpression | CustomValidator | ParameterDescriptor;
+type ParamRules = StringRuleType | ConstructorFn | RegularExpression | CustomValidator | ParameterDescriptor;
 
 declare class RuleSet {
   protected readonly rules: ParamRules[];
@@ -77,64 +80,90 @@ declare class UnionRules extends RuleSet {}
 
 declare class IntersectionRules extends RuleSet {}
 
+export function defineCustomValidator(validateFn: (param: string, value: unknown) => void): CustomValidator;
+
+export function defineIntersectionRules(...rules: ParamRules[]): IntersectionRules;
+
+export function defineUnionRules(...rules: ParamRules[]): UnionRules;
+// #endregion
+
+// #region Validation Error Types
+interface ValidationErrorOptions extends ParameterDescriptor {
+  prop: string;
+  value: any;
+  message?: string;
+  type?: string;
+  instance?: ConstructorFn;
+  required?: boolean;
+}
+
+export declare class ValidationError extends Error {
+  public readonly name: "ValidationError";
+
+  constructor(options: ValidationErrorOptions | string);
+}
+
+export declare function isValidationError(error: unknown): error is ValidationError;
+// #endregion
+
+// #region Payload Definition Types
 export type ParamPosition = "path" | "query" | "body";
 
-interface ParamDef {
+export interface ParamDef {
   /**
    * validation rule of the param
    * @description if received an array, it will be implicitly converted into an `IntersectionRules`
    */
   rules?: ParamRules | ParamRules[] | RuleSet;
+  /**
+   * specify as a required parameter
+   * @default false
+   */
   required?: boolean;
   /**
+   * determine where the parameter should be used
+   * @description
+   * This attribute can be an array,
+   * indicating that the same parameter can be used in different parts of the request.
    * @default "body"
    */
   position?: ParamPosition | ParamPosition[];
+  /**
+   * @returns default value for the parameter
+   */
   defaultValue?: () => any;
 }
 
 export type Schema = Record<string, ParamDef | null>;
 
 export type PayloadDef = Schema | string[];
+// #endregion
 
-declare class TypeCheck {
-  get CorrespondingMap(): Record<Type, keyof this>;
-  get TypeSet(): Type[];
-  isChar(value: unknown): boolean;
-  isString(value: unknown): value is string;
-  isNumber(value: unknown): value is number;
-  isInteger(value: unknown): boolean;
-  isFloat(value: unknown): boolean;
-  isNaN(value: unknown): boolean;
-  isBoolean(value: unknown): value is boolean;
-  isObject(value: unknown): value is object;
-  isNull(value: unknown): value is null;
-  isFunction(value: unknown): value is Function;
-  isArray(value: unknown): value is unknown[];
-  isObjectLiteral(value: unknown): value is ObjectLiteral;
-  isUndefined(value: unknown): value is undefined;
-  isUndefinedOrNull(value: unknown): value is null | undefined;
-  isBigInt(value: unknown): value is bigint;
-  isSymbol(value: unknown): value is symbol;
+// #region Middleware
+interface KarmanInterceptors {
+  onRequest?(this: KarmanInstance, req: HttpConfig<ReqStrategyTypes>): void;
+  onResponse?(this: KarmanInstance, res: XhrResponse<any, ReqStrategyTypes> | FetchResponse<any>): boolean | void;
 }
 
-declare class PathResolver {
-  trimStart(path: string): string;
-  trimEnd(path: string): string;
-  trim(path: string): string;
-  antiSlash(path: string): string[];
-  split(...paths: string[]): string[];
-  join(...paths: string[]): string;
-  resolve(...paths: string[]): string;
-  resolveURL(options: { query?: Record<string, string>; paths: string[] }): string;
+interface ValidationHooks<P> {
+  onBeforeValidate?(this: KarmanInstance, payloadDef: P, payload: P): void;
 }
 
-declare class Template {
-  withPrefix(options: { type?: "warn" | "error"; messages: (string | number)[] }): string;
-  warn(...messages: (string | number)[]): void;
-  throw(...messages: (string | number)[]): void;
+interface SyncHooks<P> extends ValidationHooks<P> {
+  onRebuildPayload?(this: KarmanInstance, payload: P): Record<string, any> | void;
+  onBeforeRequest?(this: KarmanInstance, url: string, payload: P): HttpBody;
 }
 
+interface AsyncHooks<ST, D, S, E> {
+  onSuccess?(this: KarmanInstance, res: SelectResponseForm<ST, D>): S;
+  onError?(this: KarmanInstance, err: Error): E;
+  onFinally?(this: KarmanInstance): void;
+}
+
+interface Hooks<ST, P, D, S, E> extends AsyncHooks<ST, D, S, E>, SyncHooks<P> {}
+// #endregion
+
+// #region Some Configs
 type CacheStrategyTypes = "sessionStorage" | "localStorage" | "memory";
 
 interface CacheConfig {
@@ -154,32 +183,24 @@ interface CacheConfig {
   cacheStrategy?: CacheStrategyTypes;
 }
 
+interface UtilConfig {
+  /**
+   * activating the validation engine
+   * @default true
+   */
+  validation?: boolean;
+  /**
+   * The time interval for calling scheduled tasks
+   * @default 216000000 an hour
+   */
+  scheduleInterval?: number;
+}
+// #endregion
+
+// #region Request Types
 type ReqStrategyTypes = "xhr" | "fetch";
 
 type HttpBody = Document | BodyInit | null;
-
-type RemoveOptional<T extends string> = T extends `${infer K}?` ? K : T;
-
-type GetPayloadType<P> = {
-  [K in keyof P as RemoveOptional<Extract<K, string>>]: P[K];
-};
-
-interface ValidationHooks<P> {
-  onBeforeValidate?(this: KarmanInstance, payloadDef: P, payload: GetPayloadType<P>): void;
-}
-
-interface SyncHooks<P> extends ValidationHooks<P> {
-  onRebuildPayload?(this: KarmanInstance, payload: GetPayloadType<P>): Record<string, any> | void;
-  onBeforeRequest?(this: KarmanInstance, url: string, payload: GetPayloadType<P>): HttpBody;
-}
-
-interface AsyncHooks<ST, D, S, E> {
-  onSuccess?(this: KarmanInstance, res: SelectResponseForm<ST, D>): S;
-  onError?(this: KarmanInstance, err: Error): E;
-  onFinally?(this: KarmanInstance): void;
-}
-
-interface Hooks<ST, P, D, S, E> extends AsyncHooks<ST, D, S, E>, SyncHooks<P> {}
 
 type MimeType =
   | "text/plain"
@@ -233,7 +254,6 @@ interface RequestConfig<ST> extends Omit<RequestInit, "cache" | "method" | "sign
   headerMap?: boolean;
   withCredentials?: boolean;
   requestStrategy?: ST;
-
   requestCache?: RequestCache;
 }
 
@@ -241,37 +261,9 @@ interface HttpConfig<ST> extends RequestConfig<ST> {
   url: string;
   method?: HttpMethod;
 }
+// #endregion
 
-interface UtilConfig {
-  /**
-   * activating the validation engine
-   * @default true
-   */
-  validation?: boolean;
-  /**
-   * The time interval for calling scheduled tasks
-   * @default 216000000 an hour
-   */
-  scheduleInterval?: number;
-}
-
-interface ValidationErrorOptions extends ParameterDescriptor {
-  prop: string;
-  value: any;
-  message?: string;
-  type?: string;
-  instance?: ConstructorFn;
-  required?: boolean;
-}
-
-export declare class ValidationError {
-  public readonly name: "ValidationError";
-
-  constructor(options: ValidationErrorOptions | string);
-}
-
-export declare function isValidationError(error: unknown): error is ValidationError;
-
+// #region Response Types
 interface XhrResponse<D, ST> {
   data: D;
   status: number;
@@ -300,40 +292,33 @@ interface FetchResponse<D> {
 }
 
 type SelectResponseForm<ST, D> = ST extends "xhr" ? XhrResponse<D, ST> : ST extends "fetch" ? FetchResponse<D> : never;
+// #endregion
 
-type RequestExecutor<D> = () => [requestPromise: Promise<D>, abortController: () => void];
-
+// #region Final API Types
 interface RuntimeOptions<ST, ST2, P, D, S, E>
   extends Hooks<SelectPrimitive2<ST, ST2>, P, D, S, E>,
     RequestConfig<SelectPrimitive2<ST, ST2>>,
     CacheConfig,
     Omit<UtilConfig, "scheduleInterval"> {}
 
-type FinalAPI<ST, P, D, S, E> = <ST2 extends unknown, S2 extends unknown, E2 extends unknown>(
-  this: KarmanInstance,
-  payload: P extends string[]
-    ? {
-        [K in P[number]]: any;
-      }
-    : P extends object
-      ? { [K in keyof P]: P[K] }
-      : never,
-  runtimeOptions?: RuntimeOptions<ST, ST2, P, D, S2, E2>,
-) => ReturnType<RequestExecutor<FinalAPIRes<SelectResponseForm<SelectPrimitive2<ST, ST2>, D>, S, S2, E, E2>>>;
+type ConvertPayload<P> = P extends string[]
+  ? {
+      [K in P[number]]: any;
+    }
+  : P extends object
+    ? { [K in keyof P]: P[K] }
+    : never;
 
 type FinalAPIRes<D, S, S2, E, E2> = SelectPrimitive2<E, E2, undefined> | SelectPrimitive3<D, S, S2, undefined>;
 
-interface KarmanDependencies {
-  _typeCheck: TypeCheck;
-  _pathResolver: PathResolver;
-}
-
-export declare class Karman {
-  public $mount<O extends object>(o: O, name?: string): void;
-  public $use<T extends { install(k: KarmanInstance): void }>(dependency: T): void;
-}
-
-export type KarmanInstance = Karman & KarmanDependencies;
+type FinalAPI<ST, P, D, S, E> = <ST2 extends unknown, S2 extends unknown, E2 extends unknown>(
+  this: KarmanInstance,
+  payload: ConvertPayload<P>,
+  runtimeOptions?: RuntimeOptions<ST, ST2, P, D, S2, E2>,
+) => [
+  requestPromise: Promise<FinalAPIRes<SelectResponseForm<SelectPrimitive2<ST, ST2>, D>, S, S2, E, E2>>,
+  abortController: () => void,
+];
 
 interface ApiOptions<ST, P, D, S, E> extends Hooks<ST, P, D, S, E>, UtilConfig, CacheConfig, RequestConfig<ST> {
   /**
@@ -357,9 +342,46 @@ interface ApiOptions<ST, P, D, S, E> extends Hooks<ST, P, D, S, E>, UtilConfig, 
   dto?: D;
 }
 
-interface KarmanInterceptors {
-  onRequest?(this: KarmanInstance, req: HttpConfig<ReqStrategyTypes>): void;
-  onResponse?(this: KarmanInstance, res: XhrResponse<any, ReqStrategyTypes> | FetchResponse<any>): boolean | void;
+export function defineAPI<
+  ST extends ReqStrategyTypes = "xhr",
+  P extends unknown,
+  D extends unknown,
+  S extends unknown,
+  E extends unknown,
+>(options: ApiOptions<ST, P, D, S, E>): FinalAPI<ST, P, D, S, E>;
+// #endregion
+
+// #region Karman Types
+declare class TypeCheck {
+  get CorrespondingMap(): Record<StringRuleType, keyof this>;
+  get TypeSet(): StringRuleType[];
+  isChar(value: unknown): boolean;
+  isString(value: unknown): value is string;
+  isNumber(value: unknown): value is number;
+  isInteger(value: unknown): boolean;
+  isFloat(value: unknown): boolean;
+  isNaN(value: unknown): boolean;
+  isBoolean(value: unknown): value is boolean;
+  isObject(value: unknown): value is object;
+  isNull(value: unknown): value is null;
+  isFunction(value: unknown): value is Function;
+  isArray(value: unknown): value is unknown[];
+  isObjectLiteral(value: unknown): value is ObjectLiteral;
+  isUndefined(value: unknown): value is undefined;
+  isUndefinedOrNull(value: unknown): value is null | undefined;
+  isBigInt(value: unknown): value is bigint;
+  isSymbol(value: unknown): value is symbol;
+}
+
+declare class PathResolver {
+  trimStart(path: string): string;
+  trimEnd(path: string): string;
+  trim(path: string): string;
+  antiSlash(path: string): string[];
+  split(...paths: string[]): string[];
+  join(...paths: string[]): string;
+  resolve(...paths: string[]): string;
+  resolveURL(options: { query?: Record<string, string>; paths: string[] }): string;
 }
 
 interface KarmanOptions<A, R>
@@ -387,24 +409,24 @@ interface KarmanOptions<A, R>
   route?: R;
 }
 
-export function defineAPI<
-  ST extends ReqStrategyTypes = "xhr",
-  P extends unknown,
-  D extends unknown,
-  S extends unknown,
-  E extends unknown,
->(options: ApiOptions<ST, P, D, S, E>): FinalAPI<ST, P, D, S, E>;
-
 export function defineKarman<A extends unknown, R extends unknown>(
   options: KarmanOptions<A, R>,
 ): SelectPrimitive<A, void> & SelectPrimitive<R, void> & KarmanInstance;
 
-export function defineCustomValidator(validatefn: (param: string, value: unknown) => void): CustomValidator;
+interface KarmanDependencies {
+  _typeCheck: TypeCheck;
+  _pathResolver: PathResolver;
+}
 
-export function defineIntersectionRules(...rules: ParamRules[]): IntersectionRules;
+declare class Karman {
+  public $mount<O extends object>(o: O, name?: string): void;
+  public $use<T extends { install(k: KarmanInstance): void }>(dependency: T): void;
+}
 
-export function defineUnionRules(...rules: ParamRules[]): UnionRules;
+type KarmanInstance = Karman & KarmanDependencies;
+// #endregion
 
+// #region Schema API Types
 interface ChainScope<D> {
   def: D;
 
@@ -416,8 +438,9 @@ interface ChainScope<D> {
   omit<N extends (keyof D)[]>(...names: N): ChainScope<Omit<D, N[number]>>;
 }
 
-class SchemaType<N extends string, D> implements ChainScope<D> {
+class SchemaType<N extends string, D> {
   name: N;
+  def: D;
   scope?: KarmanInstance;
   keys: (keyof D)[];
   values: D[keyof D][];
@@ -426,3 +449,4 @@ class SchemaType<N extends string, D> implements ChainScope<D> {
 }
 
 export function defineSchemaType<N extends string, D>(name: N, def: D): SchemaType<N, D>;
+// #endregion
