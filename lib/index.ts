@@ -1,7 +1,6 @@
 import "reflect-metadata";
 import core from "@/core";
 import ValidationError from "./core/validation-engine/validation-error/validation-error";
-import Karman from "./core/karman/karman";
 
 const facade = new core();
 
@@ -22,5 +21,4 @@ export {
   defineUnionRules,
   defineSchemaType,
   ValidationError,
-  Karman,
 };
