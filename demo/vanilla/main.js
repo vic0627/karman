@@ -10,7 +10,9 @@ let abortFn = () => {};
 
 const request = async () => {
   try {
-    const [resPromise, abort] = fakeStore.cart.getAll();
+    const [resPromise, abort] = fakeStore.product.getAll({
+      limit: -1,
+    });
     abortFn = abort;
     const res = await resPromise;
     console.log(res.data);

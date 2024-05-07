@@ -37,6 +37,7 @@ const fakeStore = defineKarman({
   url: "https://fakestoreapi.com",
   headers: {
     "Content-Type": "application/json; charset=utf-8",
+    from: "parent"
   },
   api: {
     /**
@@ -46,6 +47,7 @@ const fakeStore = defineKarman({
       url: "auth/login",
       method: "POST",
       requestStrategy: "fetch",
+      // payloadDef: ["username", "password"],
       payloadDef: userSchema.mutate().pick("username", "password").def,
       /**
        * @typedef {object} LoginRes
