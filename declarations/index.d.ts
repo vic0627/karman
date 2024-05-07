@@ -14,6 +14,20 @@ type SelectPrimitive3<T, S, F, D = any> = F extends Primitive
     : T extends Primitive
       ? T
       : D;
+
+type PartialProp<T, K extends keyof T> = Partial<Pick<T, K>> & Omit<T, K>;
+
+type RequiredProp<T, K extends keyof T> = Required<Pick<T, K>> & Omit<T, K>;
+
+type NoKeys<T extends any[]> = T["length"] extends 0 ? true : false;
+
+type HasUndefined<T> = undefined extends T ? true : false;
+
+type UndefinedKeys<T> = keyof {
+  [K in keyof T as HasUndefined<T[K]> extends true ? K : never]: K;
+};
+
+type PartialByUndefined<T> = UndefinedKeys<T> extends never ? T : PartialProp<T, UndefinedKeys<T>>;
 // #endregion
 
 // #region Validation Types
@@ -306,7 +320,7 @@ type ConvertPayload<P> = P extends string[]
       [K in P[number]]: any;
     }
   : P extends object
-    ? { [K in keyof P]: P[K] }
+    ? P
     : never;
 
 type FinalAPIRes<D, S, S2, E, E2> = SelectPrimitive2<E, E2, undefined> | SelectPrimitive3<D, S, S2, undefined>;
@@ -409,10 +423,6 @@ interface KarmanOptions<A, R>
   route?: R;
 }
 
-export function defineKarman<A extends unknown, R extends unknown>(
-  options: KarmanOptions<A, R>,
-): SelectPrimitive<A, void> & SelectPrimitive<R, void> & KarmanInstance;
-
 interface KarmanDependencies {
   _typeCheck: TypeCheck;
   _pathResolver: PathResolver;
@@ -424,29 +434,60 @@ declare class Karman {
 }
 
 type KarmanInstance = Karman & KarmanDependencies;
+
+export function defineKarman<A extends unknown, R extends unknown>(
+  options: KarmanOptions<A, R>,
+): SelectPrimitive<A, void> & SelectPrimitive<R, void> & KarmanInstance;
 // #endregion
 
 // #region Schema API Types
-interface ChainScope<D> {
+type RequiredChainScope<D, N extends (keyof D)[]> = NoKeys<N> extends true ? Required<D> : RequiredProp<D, N[number]>;
+
+type PartialChainScope<D, N extends (keyof D)[]> = NoKeys<N> extends true ? Partial<D> : PartialProp<D, N[number]>;
+
+interface ChainScope<D, K extends keyof ChainScope<D>> {
+  /**
+   * mutated schema
+   */
   def: D;
 
-  setRequired(...names: (keyof D)[]): ChainScope<D>;
-  setOptional(...names: (keyof D)[]): ChainScope<D>;
-  setPosition(position: ParamPosition, ...names: (keyof D)[]): ChainScope<D>;
-  setDefault(name: keyof D, defaultValue: () => any): ChainScope<D>;
-  pick<N extends (keyof D)[]>(...names: N): ChainScope<Pick<D, N[number]>>;
-  omit<N extends (keyof D)[]>(...names: N): ChainScope<Omit<D, N[number]>>;
+  setRequired<N extends (keyof D)[]>(
+    ...names: N
+  ): Omit<ChainScope<RequiredChainScope<D, N>, "setRequired" | K>, "setRequired" | K>;
+  setOptional<N extends (keyof D)[]>(
+    ...names: N
+  ): Omit<ChainScope<PartialChainScope<D, N>, "setOptional" | K>, "setOptional" | K>;
+  setPosition(position: ParamPosition, ...names: (keyof D)[]): Omit<ChainScope<D, K>, K>;
+  setDefault(name: keyof D, defaultValue: () => any): Omit<ChainScope<D, K>, K>;
+  pick<N extends (keyof D)[]>(
+    ...names: N
+  ): Omit<ChainScope<Pick<D, N[number]>, "pick" | "omit" | K>, "pick" | "omit" | K>;
+  omit<N extends (keyof D)[]>(
+    ...names: N
+  ): Omit<ChainScope<Omit<D, N[number]>, "pick" | "omit" | K>, "pick" | "omit" | K>;
 }
 
-class SchemaType<N extends string, D> {
+declare class SchemaType<N extends string, D> {
+  /**
+   * name of the schema
+   * @description It is necessary to adhere to the naming conventions for JavaScript variables
+   */
   name: N;
+  /**
+   * original schema
+   */
   def: D;
   scope?: KarmanInstance;
   keys: (keyof D)[];
   values: D[keyof D][];
 
-  mutate(): ChainScope<D>;
+  mutate(): ChainScope<D, never>;
 }
 
+/**
+ * defining reusable `payloadDef` object
+ * @param name Name of the schema, and it is necessary to adhere to the naming conventions for JavaScript variables
+ * @param def `payloadDef` in object type. @see Schema
+ */
 export function defineSchemaType<N extends string, D>(name: N, def: D): SchemaType<N, D>;
 // #endregion
