@@ -17,6 +17,7 @@ module.exports = {
     "public",
     "example",
     "scripts",
+    "declarations"
   ],
   rules: {
     semi: 2,

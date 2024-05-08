@@ -1,6 +1,6 @@
 {
   "name": "@vic0627/karman",
-  "version": "1.2.2",
+  "version": "1.2.4",
   "description": "API abstract layer / API centralized management builder",
   "main": "dist/karman",
   "scripts": {
@@ -22,7 +22,7 @@
     "centralized management"
   ],
   "author": "VICTOR HSU",
-  "license": "ISC",
+  "license": "Apache-2.0",
   "devDependencies": {
     "@babel/core": "^7.23.2",
     "@babel/preset-env": "^7.23.2",
