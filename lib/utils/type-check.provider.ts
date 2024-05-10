@@ -64,7 +64,9 @@ export default class TypeCheck {
   }
 
   isObject(value: any): value is object {
-    return typeof value === "object" || Array.isArray(value) || typeof value === "function";
+    const isObj = typeof value === "object" && value !== null;
+
+    return isObj || Array.isArray(value) || typeof value === "function";
   }
 
   isNull(value: any): value is null {
