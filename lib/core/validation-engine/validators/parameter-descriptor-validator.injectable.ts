@@ -58,11 +58,17 @@ export default class ParameterDescriptorValidator implements Validator {
 
     let valid: boolean | null = null;
 
-    if (!this.typeCheck.isUndefinedOrNull(equality)) {
+    const hasEqual = !this.typeCheck.isUndefinedOrNull(equality);
+    const hasMin = !this.typeCheck.isUndefinedOrNull(min);
+    const hasMax = !this.typeCheck.isUndefinedOrNull(max);
+
+    if (hasEqual) {
       valid = equality === value;
-    } else if (!this.typeCheck.isUndefinedOrNull(min)) {
+    } else if (hasMin && hasMax) {
+      valid = min <= value && max >= value;
+    } else if (hasMin) {
       valid = min <= value;
-    } else if (!this.typeCheck.isUndefinedOrNull(max)) {
+    } else if (hasMax) {
       valid = max >= value;
     }
 
