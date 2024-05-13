@@ -4,6 +4,7 @@ const terser = require("@rollup/plugin-terser");
 const { nodeResolve } = require("@rollup/plugin-node-resolve");
 const cleanup = require("rollup-plugin-cleanup");
 const { resolve } = require("path");
+const license = require("rollup-plugin-license");
 
 const relativePathToRoot = "../../";
 
@@ -30,6 +31,27 @@ const babelOptions = {
 };
 
 const babelPlugin = babel(babelOptions);
+
+const licensePlugin = license({
+  sourcemap: true,
+  cwd: process.cwd(),
+
+  banner: {
+    commentStyle: "regular",
+    content: {
+      file: getPath("./COPYRIGHT.txt"),
+      encoding: "utf-8",
+    },
+  },
+
+  thirdParty: {
+    includePrivate: false,
+    multipleVersions: true,
+    output: {
+      file: getPath("./dist/dependencies.txt"),
+    },
+  },
+});
 
 const baseFileName = "dist/karman";
 const name = "karman";
@@ -63,6 +85,6 @@ const tsOption = {
   tsconfig: getPath("tsconfig.json"),
 };
 
-const plugins = [babelPlugin, typescript(tsOption), nodeResolve(), cleanupPlugin];
+const plugins = [licensePlugin, babelPlugin, typescript(tsOption), nodeResolve(), cleanupPlugin];
 
 module.exports = { input, output, plugins, treeshake: false };
