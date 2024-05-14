@@ -121,23 +121,10 @@ export default class Karman {
     Object.defineProperty(o, name, { value: this });
   }
 
-  public $use<T extends { install(k: Karman): void }>(plugin: T) {
-    if (!this.$root) throw new Error("[karman error] plugins can only be installed from the root Karman!");
-
+  public $use<T extends { install(k: typeof Karman): void }>(plugin: T) {
     if (!isFunction(plugin?.install)) throw new TypeError("[karman error] plugin must has an install function!");
 
-    plugin.install(this);
-
-    const onTraverse = (k: any) => {
-      if (!(k instanceof Karman)) return;
-
-      plugin.install(k);
-      k.$traverseInstanceTree({ onTraverse });
-    };
-
-    this.$traverseInstanceTree({
-      onTraverse,
-    });
+    plugin.install(Karman);
   }
 
   /**
