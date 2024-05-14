@@ -1,13 +1,10 @@
 import $karman from "./karman/index.js";
 import { send, set } from "./dom/index.js";
+import { defineAPI, defineIntersectionRules, defineUnionRules } from "../../dist/karman.js";
 
 const request1 = async () => {
   try {
-    const [resPromise] = $karman.schemaTest({
-      id: 3,
-      title: "hello",
-      category: "electronics",
-    });
+    const [resPromise] = $karman.product.getAll();
 
     console.log(await resPromise);
   } catch (error) {
@@ -51,7 +48,7 @@ const request3 = async () => {
   }
 };
 
-let delegate = request2;
+let delegate = request1;
 
 send.addEventListener("click", () => {
   delegate();
@@ -61,4 +58,3 @@ set.addEventListener("click", () => {
   // if (delegate === request1) delegate = request2;
   // else delegate = request1;
 });
-
