@@ -23,7 +23,7 @@ HTTP Client / API Centralized Management / API Abstraction Layer
   - [Simple Demonstration](#simple-demonstration)
     - [Single Encapsulation](#single-encapsulation)
     - [Group Encapsulation](#group-encapsulation)
-  
+
 ### Core
 
 - [Karman Tree](./assets/doc/en/karman-tree.md)
@@ -156,7 +156,7 @@ $ npm install @vic0627/karman
 After installation, import the package using import:
 
 ```js
-import { defineKarman, defineAPI } from "@vic0627/karman"
+import { defineKarman, defineAPI } from "@vic0627/karman";
 ```
 
 If you are using vite as your build tool, exclude this package from optimization:
@@ -164,10 +164,10 @@ If you are using vite as your build tool, exclude this package from optimization
 ```js
 // vite.config.js
 export default {
-    optimizeDeps: {
-        exclude: ['@vic0627/karman'],
-    }
-}
+  optimizeDeps: {
+    exclude: ["@vic0627/karman"],
+  },
+};
 ```
 
 ### Simple Demonstration
@@ -188,11 +188,11 @@ GET https://karman.com/products
 By default, the method of `defineAPI` is set to GET, and this API does not require any parameters. Therefore, we can simply provide the url to complete the configuration:
 
 ```js
-import { defineAPI } from "@vic0627/karman"
+import { defineAPI } from "@vic0627/karman";
 
 export const getProducts = defineAPI({
-    url: "https://karman.com/products"
-})
+  url: "https://karman.com/products",
+});
 ```
 
 Typically, API parameters fall into three categories:
@@ -224,62 +224,64 @@ Headers:
 Firstly, configure the method and URL for this API, and use `payloadDef` to configure the parameters required by the returned function. Use the `position` property to specify where each parameter should be used. When configuring path parameters, specify the actual position of the parameter in the URL using the format `:parameterName`, and if the parameter will only be used in the request body, the `position` property can be omitted:
 
 ```js
-import { defineAPI } from "@vic0627/karman"
+import { defineAPI } from "@vic0627/karman";
 
 export const modifyProduct = defineAPI({
-    method: "PATCH",
-    url: "https://karman.com/products/:id",
-    payloadDef: {
-        id: {
-            position: "path"    // Specify where the parameter will be used using the `position` property
-        },
-        name: {
-            position: "query"
-        },
-        price: {
-            // position: "body" // The parameter will be automatically included in the request body, so `position` can be omitted
-        },
-        // or
-        price: null             // Directly assign null if there are no additional configurations (validation rules, default values, etc.)
-    }
-})
+  method: "PATCH",
+  url: "https://karman.com/products/:id",
+  payloadDef: {
+    id: {
+      position: "path", // Specify where the parameter will be used using the `position` property
+    },
+    name: {
+      position: "query",
+    },
+    price: {
+      // position: "body" // The parameter will be automatically included in the request body, so `position` can be omitted
+    },
+    // or
+    price: null, // Directly assign null if there are no additional configurations (validation rules, default values, etc.)
+  },
+});
 ```
 
 Next, encapsulate the validation rules and request headers according to the information in the document. Use the `required` or `rules` property to specify validation rules (for more detailed explanations, refer to the [Validation Engine](./assets/doc/en/validation-engine.md) section). Additionally, for some parameters, use the `defaultValue` property to assign default values:
 
 ```js
-import { defineAPI } from "@vic0627/karman"
+import { defineAPI } from "@vic0627/karman";
 
 export const modifyProduct = defineAPI({
-    method: "PATCH",
-    url: "https://karman.com/products/:id",
-    payloadDef: {
-        id: {
-            position: "path",
-            required: true,                         // Specify as a required parameter
-            rules: [                                // Define validation rules using an array to trigger the default intersection rules
-                "int",                              // Specify the type as integer
-                { min: 1 }                          // Minimum value is 1
-            ]
-        },
-        name: {
-            position: "query",
-            rules: [
-                "string",                           // Specify the type as string
-                { max: 10, measurement: "length" }  // Maximum value is 10, measured by the length property
-            ]
-        },
-        price: {
-            rules: "number",
-            required: true,
-            defaultValue: () => 100                 // Default value is 100
-        },
+  method: "PATCH",
+  url: "https://karman.com/products/:id",
+  payloadDef: {
+    id: {
+      position: "path",
+      required: true, // Specify as a required parameter
+      rules: [
+        // Define validation rules using an array to trigger the default intersection rules
+        "int", // Specify the type as integer
+        { min: 1 }, // Minimum value is 1
+      ],
     },
-    headers: {                                      // Provide header settings
-        "Content-Type": "application/json; charset=utf-8"
+    name: {
+      position: "query",
+      rules: [
+        "string", // Specify the type as string
+        { max: 10, measurement: "length" }, // Maximum value is 10, measured by the length property
+      ],
     },
-    validation: true                                // Enable validation engine
-})
+    price: {
+      rules: "number",
+      required: true,
+      defaultValue: () => 100, // Default value is 100
+    },
+  },
+  headers: {
+    // Provide header settings
+    "Content-Type": "application/json; charset=utf-8",
+  },
+  validation: true, // Enable validation engine
+});
 ```
 
 `defineAPI` takes the entire type of `payloadDef` as a generic parameter, allowing JSDoc to be added to the attributes of `payloadDef` to enforce type annotations for the attributes, facilitating correct type hints and auto-completion during API invocation:
@@ -289,35 +291,35 @@ export const modifyProduct = defineAPI({
  * Update partial product information
  */
 export const modifyProduct = defineAPI({
-    // ...
-    payloadDef: {
-        /**
-         * Product ID
-         * @description An integer greater than or equal to 1
-         * @type {number}
-         */
-        id: {
-            // ...
-        },
-        /**
-         * Product name
-         * @description String length less than 10
-         * @type {string | void}        // Use void to indicate non-required
-         */
-        name: {
-            // ...
-        },
-        /**
-         * Product price
-         * @default 100
-         * @type {number}
-         */
-        price: {
-            // ...
-        },
-    }
-    // ...
-})
+  // ...
+  payloadDef: {
+    /**
+     * Product ID
+     * @description An integer greater than or equal to 1
+     * @type {number}
+     */
+    id: {
+      // ...
+    },
+    /**
+     * Product name
+     * @description String length less than 10
+     * @type {string | void}        // Use void to indicate non-required
+     */
+    name: {
+      // ...
+    },
+    /**
+     * Product price
+     * @default 100
+     * @type {number}
+     */
+    price: {
+      // ...
+    },
+  },
+  // ...
+});
 ```
 
 Karman also provides the `dto` parameter for configuring the response specification, enabling the function to support a more complete return type. Here's a JSDoc example; for other type declaration examples, please refer to the [DTO of Response](./assets/doc/en/dynamic-type-annotation.md) section:
@@ -330,10 +332,10 @@ Karman also provides the `dto` parameter for configuring the response specificat
  */
 // ...
 export const modifyProduct = defineAPI({
-    // ...
-    /** @type {ModifyProductRes} */
-    dto: null
-})
+  // ...
+  /** @type {ModifyProductRes} */
+  dto: null,
+});
 ```
 
 By following the above steps to complete the encapsulation, you can obtain complete API information when invoking it:
@@ -363,131 +365,135 @@ Next, use `defineKarman` to create the abstraction layer and set common configur
 
 ```js
 // /karman/index.js
-import { defineKarman, defineAPI } from "@vic0627/karman"
+import { defineKarman, defineAPI } from "@vic0627/karman";
 
-export default defineKarman({                               // Create an instance/node of Karman abstraction layer
-    root: true,                                             // Specify this layer as the root node
-    url: "https://karman.com",                              // Base URL for this node
-    headers: {                                              // Configure common headers
-        "Content-Type": "application/json; charset=utf-8",
-    },
-    onRequest(req) {                                        // Interceptor to define behavior before each request
-        const token = localStorage["TOKEN"]
-        if (this._typeCheck.isString(token))                // Use plugin to check token type
-            req.headers["Access-Token"] = token
-    },
-    onResponse(res) {                                       // Interceptor to return the status code for successful requests
-        return res.status === 200
-    },
-    api: {
-        login: defineAPI({
-            url: "auth/login",                              // No other related APIs, no need to create another node
-            // ...
-            onSuccess(res) {
-                const { token } = res.data
-                if (this._typeCheck.isString(token))
-                    localStorage["TOKEN"] = token           // Write token to storage on successful request
+export default defineKarman({
+  // Create an instance/node of Karman abstraction layer
+  root: true, // Specify this layer as the root node
+  url: "https://karman.com", // Base URL for this node
+  headers: {
+    // Configure common headers
+    "Content-Type": "application/json; charset=utf-8",
+  },
+  onRequest(req) {
+    // Interceptor to define behavior before each request
+    const token = localStorage["TOKEN"];
+    if (this._typeCheck.isString(token))
+      // Use plugin to check token type
+      req.headers["Access-Token"] = token;
+  },
+  onResponse(res) {
+    // Interceptor to return the status code for successful requests
+    return res.status === 200;
+  },
+  api: {
+    login: defineAPI({
+      url: "auth/login", // No other related APIs, no need to create another node
+      // ...
+      onSuccess(res) {
+        const { token } = res.data;
+        if (this._typeCheck.isString(token)) localStorage["TOKEN"] = token; // Write token to storage on successful request
 
-                return !!token                              // Return whether login was successful
-            }
-        })
-    },
-    route: {
-        product: defineKarman({
-            url: "products",                                // Path segment extended based on the parent node
-            api: {
-                getAll: defineAPI(),
-                addOne: defineAPI({
-                    method: "POST",
-                    // ...
-                }),
-                updateOne: defineAPI({
-                    url: ":id",                             // Path segment extended based on this node
-                    method: "PUT",
-                    // ...
-                }),
-                delOne: defineAPI({
-                    url: ":id",
-                    method: "DELETE",
-                    // ...
-                }),
-                getCategories: defineAPI({
-                    url: "categories",
-                    // ...
-                })
-            }
+        return !!token; // Return whether login was successful
+      },
+    }),
+  },
+  route: {
+    product: defineKarman({
+      url: "products", // Path segment extended based on the parent node
+      api: {
+        getAll: defineAPI(),
+        addOne: defineAPI({
+          method: "POST",
+          // ...
         }),
-        cart: defineKarman({
-            url: "carts",
-            api: {
-                getAll: defineAPI(),
-                addNew: defineAPI({
-                    method: "POST",
-                    // ...
-                }),
-                modifyOne: defineAPI({
-                    url: ":id",
-                    method: "PATCH",
-                    // ...
-                }),
-                delOne: defineAPI({
-                    url: ":id",
-                    method: "DELETE",
-                    // ...
-                })
-            }
-        })
-    }
-})
+        updateOne: defineAPI({
+          url: ":id", // Path segment extended based on this node
+          method: "PUT",
+          // ...
+        }),
+        delOne: defineAPI({
+          url: ":id",
+          method: "DELETE",
+          // ...
+        }),
+        getCategories: defineAPI({
+          url: "categories",
+          // ...
+        }),
+      },
+    }),
+    cart: defineKarman({
+      url: "carts",
+      api: {
+        getAll: defineAPI(),
+        addNew: defineAPI({
+          method: "POST",
+          // ...
+        }),
+        modifyOne: defineAPI({
+          url: ":id",
+          method: "PATCH",
+          // ...
+        }),
+        delOne: defineAPI({
+          url: ":id",
+          method: "DELETE",
+          // ...
+        }),
+      },
+    }),
+  },
+});
 ```
 
 Once configured, `defineKarman()` will return a `Karman` instance (karman node) containing all methods within the `api` property. You can use this instance to call the encapsulated methods (final API). The final API itself is synchronous and initializes a request when called, returning a Promise for the response and a synchronous method to cancel the request. It's recommended to destructure them for easier access:
 
 ```js
 // /path/to/your-file.js
-import karman from "@/karman" // Path may vary depending on project's path alias configuration
+import karman from "@/karman"; // Path may vary depending on project's path alias configuration
 
 // Retrieve all products
-const [productsPromise] = karman.product.getAll()
+const [productsPromise] = karman.product.getAll();
 // Use Promise chaining to retrieve response result
 productsPromise.then((res) => {
-    console.log(res)
-})
+  console.log(res);
+});
 
 // Member login
 const [loginPromise] = karman.login({
-    email: "karman@gmail.com",
-    password: "karman_is_the_best",
-})
+  email: "karman@gmail.com",
+  password: "karman_is_the_best",
+});
 newProductPromise.then((res) => {
-    console.log(res)
+  console.log(res);
 });
 
 // Async/await re-encapsulation for updating shopping cart method
 const updateProduct = async () => {
-    try {
-        const [resPromise] = karman.cart.modifyOne({
-            // ...
-        })
-        const res = await resPromise
-        console.log(res)
-    } catch (error) {
-        console.error(error)
-    }
+  try {
+    const [resPromise] = karman.cart.modifyOne({
+      // ...
+    });
+    const res = await resPromise;
+    console.log(res);
+  } catch (error) {
+    console.error(error);
+  }
 };
 
 // Async/await re-encapsulation for deleting product method
 const deleteProduct = async ({ id }) => {
-    try {
-        // Besides the response Promise, here we retrieve the synchronous method to cancel the request
-        const [delPromise, abortDelete] = karman.product.delOne({ id })
-        // Cancel the delete product request if certain conditions are met
-        if (someReason()) abortDelete()
-        const res = await delPromise
-        console.log(res)
-    } catch (error) {
-        // If the request is canceled, control will transfer to the catch block
-        console.error(error)
-    }
+  try {
+    // Besides the response Promise, here we retrieve the synchronous method to cancel the request
+    const [delPromise, abortDelete] = karman.product.delOne({ id });
+    // Cancel the delete product request if certain conditions are met
+    if (someReason()) abortDelete();
+    const res = await delPromise;
+    console.log(res);
+  } catch (error) {
+    // If the request is canceled, control will transfer to the catch block
+    console.error(error);
+  }
 };
 ```
