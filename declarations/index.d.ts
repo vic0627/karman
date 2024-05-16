@@ -1,14 +1,14 @@
 /**!
- * Copyright (c) 2024 Victor Hsu and Microsoft Corporation. All rights reserved. 
+ * Copyright (c) 2024 Victor Hsu and Microsoft Corporation. All rights reserved.
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use
  * this file except in compliance with the License. You may obtain a copy of the
- * License at http://www.apache.org/licenses/LICENSE-2.0  
- *  
+ * License at http://www.apache.org/licenses/LICENSE-2.0
+ *
  * THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
- * WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE, 
- * MERCHANTABLITY OR NON-INFRINGEMENT. 
- *  
+ * WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+ * MERCHANTABLITY OR NON-INFRINGEMENT.
+ *
  * See the Apache Version 2.0 License for specific language governing permissions
  * and limitations under the License.
  */
@@ -159,6 +159,7 @@ export interface ParamDef {
    * @returns default value for the parameter
    */
   defaultValue?: () => any;
+  type?: unknown;
 }
 
 export type Schema = Record<string, ParamDef | null>;
@@ -328,12 +329,16 @@ interface RuntimeOptions<ST, ST2, P, D, S, E>
     CacheConfig,
     Omit<UtilConfig, "scheduleInterval"> {}
 
+type ConvertPayloadFromSchema<S extends Schema> = {
+  [K in keyof S]: S[K] extends ParamDef ? S[K]["type"] : any;
+};
+
 type ConvertPayload<P> = P extends string[]
   ? {
       [K in P[number]]: any;
     }
-  : P extends object
-    ? P
+  : P extends Schema
+    ? ConvertPayloadFromSchema<P>
     : never;
 
 type FinalAPIRes<D, S, S2, E, E2> = SelectPrimitive2<E, E2, undefined> | SelectPrimitive3<D, S, S2, undefined>;
@@ -371,7 +376,7 @@ interface ApiOptions<ST, P, D, S, E> extends Hooks<ST, P, D, S, E>, UtilConfig, 
 
 export function defineAPI<
   ST extends ReqStrategyTypes = "xhr",
-  P extends unknown,
+  P extends PayloadDef,
   D extends unknown,
   S extends unknown,
   E extends unknown,
@@ -502,5 +507,5 @@ declare class SchemaType<N extends string, D> {
  * @param name Name of the schema, and it is necessary to adhere to the naming conventions for JavaScript variables
  * @param def `payloadDef` in object type. @see Schema
  */
-export function defineSchemaType<N extends string, D>(name: N, def: D): SchemaType<N, D>;
+export function defineSchemaType<N extends string, D extends Schema>(name: N, def: D): SchemaType<N, D>;
 // #endregion

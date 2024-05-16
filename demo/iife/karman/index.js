@@ -30,18 +30,19 @@ const $karman = defineKarman({
       payloadDef: {
         /**
          * @min 1
-         * @type {number | undefined}
          */
         id: {
           position: "path",
           required: true,
           rules: ["int", { min: 1 }],
+          /** @type {number} */
+          type: null
         },
-        ...productSchema.mutate().setPosition("body").setOptional().def,
+        // ...productSchema.mutate().setPosition("body").setOptional().def,
       },
     }),
     schemaTest2: defineAPI({
-      payloadDef: productSchema.mutate().omit("category").def,
+      payloadDef: productSchema.mutate().omit("category").setOptional().def,
     }),
     schemaTest3: defineAPI({
       payloadDef: {
