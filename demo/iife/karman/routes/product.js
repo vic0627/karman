@@ -1,4 +1,5 @@
-import { defineKarman, defineAPI } from "../../../../dist/karman.js";
+import { defineKarman, defineAPI, getType } from "../../../../dist/karman.js";
+import product from "../schema/product.js";
 
 export default defineKarman({
   url: "products",
@@ -7,6 +8,7 @@ export default defineKarman({
       onSuccess(res) {
         return this._getData(res);
       },
+      dto: getType([product.def]),
     }),
   },
 });

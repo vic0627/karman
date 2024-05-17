@@ -7,6 +7,8 @@ import {
   defineCustomValidator,
   defineSchemaType,
   defineIntersectionRules,
+  getConst,
+  getType,
 } from "../../../dist/karman.js";
 import category from "./schema/category.js";
 import productSchema from "./schema/product.js";
@@ -14,6 +16,24 @@ import getData from "./utils/get-data.js";
 import product from "./routes/product.js";
 
 window.product = product;
+
+const a = getType([productSchema.def]);
+/** @type {import('../../../dist/karman').Schema<"products" | "id">} */
+const b = {
+  /**
+   * products in an array
+   */
+  products: { rules: "Product[1:]", required: true },
+  /**
+   * identifier
+   */
+  id: {
+    position: "path",
+    required: true,
+    rules: ["int", { min: 1 }],
+    type: 1,
+  },
+};
 
 const $karman = defineKarman({
   root: true,
@@ -36,19 +56,33 @@ const $karman = defineKarman({
           required: true,
           rules: ["int", { min: 1 }],
           /** @type {number} */
-          type: null
+          type: null,
         },
-        // ...productSchema.mutate().setPosition("body").setOptional().def,
+        ...productSchema.mutate().setPosition("body").setOptional().def,
       },
     }),
     schemaTest2: defineAPI({
-      payloadDef: productSchema.mutate().omit("category").setOptional().def,
+      payloadDef: productSchema.def,
     }),
     schemaTest3: defineAPI({
       payloadDef: {
-        /** @type {typeof product.def[]} */
-        products: { rules: "Product[1:]", required: true },
+        /**
+         * products in an array
+         */
+        products: { rules: "Product[1:]", required: true, type: getType([productSchema.def]) },
+        /**
+         * identifier
+         */
+        id: {
+          position: "path",
+          required: true,
+          rules: ["int", { min: 1 }],
+          type: 1,
+        },
       },
+    }),
+    arrPayloadDefTest: defineAPI({
+      payloadDef: ["id", "title", "image"],
     }),
   },
   route: {

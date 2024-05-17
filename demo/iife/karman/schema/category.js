@@ -1,7 +1,11 @@
-import { defineSchemaType, ValidationError, defineCustomValidator } from "../../../../dist/karman.js";
+import { defineSchemaType, ValidationError, defineCustomValidator, getType } from "../../../../dist/karman.js";
 /**
  * @typedef {"electronics" | "jewelery" | "men's clothing" | "women's clothing"} Category
  */
+
+/** @type {Category[]} */
+const categories = ["electronics", "jewelery", "men's clothing", "women's clothing"];
+
 export default defineSchemaType("Category", {
   /**
    * category of products
@@ -10,11 +14,9 @@ export default defineSchemaType("Category", {
     rules: [
       "string",
       defineCustomValidator((_, value) => {
-        if (!["electronics", "jewelery", "men's clothing", "women's clothing"].includes(value))
-          throw new ValidationError("invalid category");
+        if (!categories.includes(value)) throw new ValidationError("invalid category");
       }),
     ],
-    /** @type {Category} */
-    type: null,
+    type: getType(categories, undefined),
   },
 });

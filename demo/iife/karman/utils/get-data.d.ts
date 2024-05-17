@@ -5,8 +5,8 @@ type ResObj<D> = {
 
 type ValidData = string | number | boolean | object | symbol | bigint;
 
-export default function getData<D, T extends ResObj<D>>(
-  res: T<D>,
+export default function getData<T>(
+  res: T,
 ): T["body"] extends ValidData ? T["body"] : T["data"] extends ValidData ? T["data"] : "no data";
 
 declare module "../../../../dist/karman" {
