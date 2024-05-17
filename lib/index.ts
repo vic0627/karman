@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import core from "@/core";
 import ValidationError from "./core/validation-engine/validation-error/validation-error";
+import getType from "./core/out-of-paradigm/get-type";
 
 const facade = new core();
 
@@ -21,4 +22,5 @@ export {
   defineUnionRules,
   defineSchemaType,
   ValidationError,
+  getType,
 };
