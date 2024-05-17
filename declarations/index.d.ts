@@ -41,10 +41,18 @@ type UndefinedKeys<T> = keyof {
 };
 
 type PartialByUndefined<T> = UndefinedKeys<T> extends never ? T : PartialProp<T, UndefinedKeys<T>>;
+
+type ExtractFromUndefined<T> = T extends undefined ? never : T;
+
+type ExtractString<T> = T extends `${infer K}` ? K : never;
+
+export function getType<T>(
+  ...types: T[]
+): T extends Schema ? ConvertPayloadFromSchema<T> : T extends Schema[] ? ConvertPayloadFromSchema<T[number]>[] : T;
 // #endregion
 
 // #region Validation Types
-type StringRuleType =
+type StringTypes =
   | "char"
   | "string"
   | "int"
@@ -59,6 +67,10 @@ type StringRuleType =
   | "undefined"
   | "bigint"
   | "symbol";
+
+type ArraySyntax = `${StringTypes}[]`;
+
+type StringRuleType = StringTypes | ArraySyntax | string;
 
 type ObjectLiteral = { [x: string | number | symbol]: any };
 
@@ -93,7 +105,7 @@ interface ParameterDescriptor {
 
 type ParamRules = StringRuleType | ConstructorFn | RegularExpression | CustomValidator | ParameterDescriptor;
 
-declare class RuleSet {
+class RuleSet {
   protected readonly rules: ParamRules[];
   protected errors: Error[];
   public get valid(): boolean;
@@ -103,34 +115,68 @@ declare class RuleSet {
   public execute(callbackfn: (value: ParamRules, index: number, array: ParamRules[]) => void): void;
 }
 
-declare class UnionRules extends RuleSet {}
+class UnionRules extends RuleSet {}
 
-declare class IntersectionRules extends RuleSet {}
+class IntersectionRules extends RuleSet {}
 
-export function defineCustomValidator(validateFn: (param: string, value: unknown) => void): CustomValidator;
+/**
+ * customize a validate function for the rules of a parameter
+ * @param validateFn validate function
+ */
+export function defineCustomValidator(
+  validateFn: (
+    /** param name */
+    param: string,
+    /** received value */
+    value: unknown,
+  ) => void,
+): CustomValidator;
 
+/**
+ * define a rule set that the parameter must pass every rules to be considered valid
+ * @param rules
+ */
 export function defineIntersectionRules(...rules: ParamRules[]): IntersectionRules;
 
+/**
+ * define a rule set that the parameter must pass any one of the rules to be considered valid
+ * @param rules
+ */
 export function defineUnionRules(...rules: ParamRules[]): UnionRules;
 // #endregion
 
 // #region Validation Error Types
 interface ValidationErrorOptions extends ParameterDescriptor {
+  /**
+   * parameter name
+   */
   prop: string;
+  /**
+   * received value of tha parameter
+   */
   value: any;
+  /**
+   * error message
+   */
   message?: string;
+  /**
+   * correct type of ths parameter
+   */
   type?: string;
+  /**
+   * constructor of the parameter
+   */
   instance?: ConstructorFn;
   required?: boolean;
 }
 
-export declare class ValidationError extends Error {
+export class ValidationError extends Error {
   public readonly name: "ValidationError";
 
   constructor(options: ValidationErrorOptions | string);
 }
 
-export declare function isValidationError(error: unknown): error is ValidationError;
+export function isValidationError(error: unknown): error is ValidationError;
 // #endregion
 
 // #region Payload Definition Types
@@ -164,7 +210,7 @@ export interface ParamDef {
 
 export type Schema = Record<string, ParamDef | null>;
 
-export type PayloadDef = Schema | string[];
+export type PayloadDef<T> = Schema | T[];
 // #endregion
 
 // #region Middleware
@@ -214,7 +260,7 @@ interface CacheConfig {
 interface UtilConfig {
   /**
    * activating the validation engine
-   * @default true
+   * @default false
    */
   validation?: boolean;
   /**
@@ -329,13 +375,13 @@ interface RuntimeOptions<ST, ST2, P, D, S, E>
     CacheConfig,
     Omit<UtilConfig, "scheduleInterval"> {}
 
-type ConvertPayloadFromSchema<S extends Schema> = {
-  [K in keyof S]: S[K] extends ParamDef ? S[K]["type"] : any;
+type ConvertPayloadFromSchema<S> = {
+  [K in keyof S]: ExtractFromUndefined<S[K]> extends ParamDef ? ExtractFromUndefined<S[K]>["type"] : any;
 };
 
 type ConvertPayload<P> = P extends string[]
   ? {
-      [K in P[number]]: any;
+      [K in P[number] as ExtractString<K>]: any;
     }
   : P extends Schema
     ? ConvertPayloadFromSchema<P>
@@ -354,9 +400,11 @@ type FinalAPI<ST, P, D, S, E> = <ST2 extends unknown, S2 extends unknown, E2 ext
 
 interface ApiOptions<ST, P, D, S, E> extends Hooks<ST, P, D, S, E>, UtilConfig, CacheConfig, RequestConfig<ST> {
   /**
-   * endpoint of an API
-   * @description if received value, the value would be place after the
+   * url fragment or complete url
+   * @description
+   * 1. if received value, the value would be place after the
    * base url of current layer, and before all url parameters
+   * 2. the only property that allows to define path parameters
    */
   url?: string;
   /**
@@ -376,15 +424,16 @@ interface ApiOptions<ST, P, D, S, E> extends Hooks<ST, P, D, S, E>, UtilConfig, 
 
 export function defineAPI<
   ST extends ReqStrategyTypes = "xhr",
-  P extends PayloadDef,
+  P extends PayloadDef<PARAMS>,
   D extends unknown,
   S extends unknown,
   E extends unknown,
+  PARAMS extends string,
 >(options: ApiOptions<ST, P, D, S, E>): FinalAPI<ST, P, D, S, E>;
 // #endregion
 
 // #region Karman Types
-declare class TypeCheck {
+class TypeCheck {
   get CorrespondingMap(): Record<StringRuleType, keyof this>;
   get TypeSet(): StringRuleType[];
   isChar(value: unknown): boolean;
@@ -405,14 +454,73 @@ declare class TypeCheck {
   isSymbol(value: unknown): value is symbol;
 }
 
-declare class PathResolver {
+class PathResolver {
+  /**
+   * get rid of all slashes `/` that start from the input string
+   * @example
+   * const str = pathResolver.trimStart("//hello/world/");
+   * console.log(str); // => "hello/world/"
+   */
   trimStart(path: string): string;
+  /**
+   * get rid of all slashes `/` that end in the input string
+   * @example
+   * const str = pathResolver.trimEnd("/hello/world//")
+   * console.log(str); // => "/hello/world";
+   */
   trimEnd(path: string): string;
+  /**
+   * get rid of all slashes `/` that start from or end in the input string
+   * @example
+   * const str = pathResolver.trim("/hello/world//");
+   * console.log(str); // => "hello/world"
+   */
   trim(path: string): string;
+  /**
+   * get rid of all slashes `/` from the input string and returns all paths' name
+   * @example
+   * const arr = pathResolver.antiSlash("/hello/world//");
+   * console.log(arr); // => ["hello", "world"]
+   */
   antiSlash(path: string): string[];
+  /**
+   * split all paths from all given strings
+   * @example
+   * const arr = pathResolver.split("https://wtf.com//projects/", "/karman/issues//");
+   * console.log(arr); // => ["https://wtf.com", "projects", "karman", "issues"]
+   */
   split(...paths: string[]): string[];
+  /**
+   * combine all path fragments, but be aware of this method doesn't handle relative paths
+   * @example
+   * const str = pathResolver.split("https://wtf.com//projects/", "/karman/issues//");
+   * console.log(str); // => "https://wtf.com/projects/karman/issues"
+   */
   join(...paths: string[]): string;
+  /**
+   * handle and combine all absolute paths and relative paths
+   * @example
+   * const str = DI.resolve(
+   *   "https://wtf.com/projects/",
+   *   "../../karman//issues",
+   *   "./hello/world/",
+   *   "/how//../are/you///"
+   * );
+   * console.log(str); // => "https://wtf.com/karman/issues/hello/world/are/you"
+   */
   resolve(...paths: string[]): string;
+  /**
+   * build a complete URL string
+   * @example
+   * const url = DI.resolveURL({
+   *   paths: ["https://wtf.com/", "/hello", "../world/"],
+   *   query: {
+   *     foo: "bar",
+   *     some: "how"
+   *   }
+   * });
+   * console.log(url); // => "https://wtf.com/world?foo=bar&some=how"
+   */
   resolveURL(options: { query?: Record<string, string>; paths: string[] }): string;
 }
 
@@ -428,11 +536,15 @@ interface KarmanOptions<A, R>
   root?: boolean;
   /**
    * the base url or route of current layer
+   * @description can be a url fragment or complete url
    */
   url?: string;
+  /**
+   * schemas that you want to use as a string rule on this Karman Tree
+   */
   schema?: SchemaType[];
   /**
-   * actual API on current layer
+   * actual APIs on current layer
    */
   api?: A;
   /**
@@ -446,7 +558,7 @@ interface KarmanDependencies {
   _pathResolver: PathResolver;
 }
 
-declare class Karman {
+class Karman {
   public $mount<O extends object>(o: O, name?: string): void;
   public $use<T extends { install(k: KarmanInstance): void }>(dependency: T): void;
 }
@@ -468,24 +580,43 @@ interface ChainScope<D, K extends keyof ChainScope<D>> {
    * mutated schema
    */
   def: D;
-
+  /**
+   * set required parameters according to the given names
+   * @description if no value is received, all parameters are set to required by default
+   */
   setRequired<N extends (keyof D)[]>(
     ...names: N
   ): Omit<ChainScope<RequiredChainScope<D, N>, "setRequired" | K>, "setRequired" | K>;
+  /**
+   * set optional parameters according to the given names
+   * @description if no value is received, all parameters are set to optional by default
+   */
   setOptional<N extends (keyof D)[]>(
     ...names: N
   ): Omit<ChainScope<PartialChainScope<D, N>, "setOptional" | K>, "setOptional" | K>;
+  /**
+   * determine where to use the certain parameters
+   */
   setPosition(position: ParamPosition, ...names: (keyof D)[]): Omit<ChainScope<D, K>, K>;
+  /**
+   * set default value of the parameter
+   */
   setDefault(name: keyof D, defaultValue: () => any): Omit<ChainScope<D, K>, K>;
+  /**
+   * analog of TypeScript utility type `Pick`
+   */
   pick<N extends (keyof D)[]>(
     ...names: N
   ): Omit<ChainScope<Pick<D, N[number]>, "pick" | "omit" | K>, "pick" | "omit" | K>;
+  /**
+   * analog of TypeScript utility type `Omit`
+   */
   omit<N extends (keyof D)[]>(
     ...names: N
   ): Omit<ChainScope<Omit<D, N[number]>, "pick" | "omit" | K>, "pick" | "omit" | K>;
 }
 
-declare class SchemaType<N extends string, D> {
+class SchemaType<N extends string, D> {
   /**
    * name of the schema
    * @description It is necessary to adhere to the naming conventions for JavaScript variables
@@ -499,6 +630,10 @@ declare class SchemaType<N extends string, D> {
   keys: (keyof D)[];
   values: D[keyof D][];
 
+  /**
+   * start mutating schema
+   * @description this method will create a new schema according to the original schema instead, while ending mutation, please access `.def` property to get the mutated schema.
+   */
   mutate(): ChainScope<D, never>;
 }
 
@@ -509,3 +644,5 @@ declare class SchemaType<N extends string, D> {
  */
 export function defineSchemaType<N extends string, D extends Schema>(name: N, def: D): SchemaType<N, D>;
 // #endregion
+
+type MissingConst = "id" | "title" | string;
