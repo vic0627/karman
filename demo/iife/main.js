@@ -1,47 +1,33 @@
 import fakeStore from "./fake-store/index.js";
 import { send, set } from "./dom/index.js";
 import { defineAPI, defineIntersectionRules, defineUnionRules, getType } from "../../dist/karman.js";
+import limitAndSortSchema from "./fake-store/schema/limit-and-sort-schema.js";
+import { fromEvent } from "rxjs";
 
-fakeStore.user.add(
-  {
-    email: "god@karman.com",
-    username: "karman",
-    password: "hello",
-    name: {
-      firstname: "karman",
-      lastname: "hello",
-    },
-    address: {
-      city: "karman",
-      street: "string",
-      number: 1324,
-      zipcode: "111",
-      geolocation: {
-        lat: "123",
-        long: "123",
-      },
-    },
-    phone: "123",
-  },
-  {
-    onSuccess(res) {
-      console.log(res.data.id);
-      return res.data;
-    },
-    onError(err) {
-      console.error(err);
-      return 1;
-    },
-  },
-);
-
-// let delegate = request1;
-
-send.addEventListener("click", () => {
-  // delegate();
+const getProducts = defineAPI({
+  url: "https://fakestoreapi.com/products",
+  payloadDef: limitAndSortSchema
+    .mutate()
+    .setPosition("query")
+    .setDefault("limit", () => 10)
+    .setOptional().def,
+  rx: true,
+  validation: true,
 });
 
-set.addEventListener("click", () => {
-  // if (delegate === request1) delegate = request2;
-  // else delegate = request1;
+let subscription;
+
+fromEvent(send, "click").subscribe(() => {
+  subscription = getProducts({ sort: "desc" }).subscribe((value) => console.log(value));
 });
+
+fromEvent(set, "click").subscribe(() => {
+  subscription?.unsubscribe();
+});
+
+// send.addEventListener("click", () => {
+//   subscription = getProducts({ sort: "desc" }).subscribe((value) => console.log(value));
+// });
+// set.addEventListener("click", () => {
+//   subscription.unsubscribe();
+// });
