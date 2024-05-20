@@ -87,4 +87,4 @@ const tsOption = {
 
 const plugins = [licensePlugin, babelPlugin, typescript(tsOption), nodeResolve(), cleanupPlugin];
 
-module.exports = { input, output, plugins, treeshake: false };
+module.exports = { input, output, plugins, treeshake: false, external: ["rxjs"] };

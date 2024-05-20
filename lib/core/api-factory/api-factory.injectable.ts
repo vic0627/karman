@@ -15,6 +15,7 @@ import { PayloadDef } from "@/types/payload-def.type";
 import { isEqual, cloneDeep } from "lodash-es";
 import Fetch from "../request-strategy/fetch.injectable";
 import Template from "@/utils/template.provider";
+import type * as RxJS from "rxjs";
 
 export type ApiReturns<D> = [resPromise: Promise<D>, abortFn: () => void];
 
@@ -49,6 +50,8 @@ export interface PreqBuilderOptions<D, T extends ReqStrategyTypes>
 
 @Injectable()
 export default class ApiFactory {
+  private Rx?: typeof RxJS;
+
   constructor(
     private readonly typeCheck: TypeCheck,
     private readonly pathResolver: PathResolver,
@@ -57,7 +60,17 @@ export default class ApiFactory {
     private readonly fetch: Fetch,
     private readonly cachePipe: CachePipe,
     private readonly template: Template,
-  ) {}
+  ) {
+    this.setObservable();
+  }
+
+  private async setObservable() {
+    try {
+      this.Rx = await import("rxjs");
+    } catch {
+      this.template.warn("Failed to load rxjs.");
+    }
+  }
 
   // 調用時還不會接收到完整的配置
   public createAPI<D, T extends ReqStrategyTypes, P extends PayloadDef>(apiConfig: ApiConfig<D, T, P>) {
@@ -77,7 +90,9 @@ export default class ApiFactory {
       this: Karman,
       payload: { [K in keyof P]: any },
       runtimeOptions?: RuntimeOptions<T2>,
-    ): [requestPromise: Promise<SelectRequestStrategy<T, D>>, abortController: () => void] {
+    ):
+      | [requestPromise: Promise<SelectRequestStrategy<T, D>>, abortController: () => void]
+      | RxJS.Observable<SelectRequestStrategy<T, D>> {
       const runtimeOptionsCopy = _af.runtimeOptionsParser(runtimeOptions);
       if (_af.typeCheck.isUndefinedOrNull(payload)) payload = {} as { [K in keyof P]: any };
 
@@ -101,7 +116,7 @@ export default class ApiFactory {
         interceptors,
       } = allConfigCache;
       const { requestStrategy = "xhr", headers } = requestConfig;
-      const { validation } = utilConfig ?? {};
+      const { validation, rx } = utilConfig ?? {};
       const { onBeforeValidate, onRebuildPayload, onBeforeRequest, onError, onFinally, onSuccess } = hooks ?? {};
       const { onRequest, onResponse } = interceptors ?? {};
 
@@ -174,6 +189,17 @@ export default class ApiFactory {
 
       const [requestPromise, abortController] = requestExecutor(true);
       const _requestPromise = _af.installHooks(this, requestPromise, { onSuccess, onError, onFinally, onResponse });
+
+      if (rx && !_af.typeCheck.isUndefinedOrNull(_af.Rx)) {
+        return new _af.Rx.Observable<Promise<SelectRequestStrategy<T, D>>>((subscriber) => {
+          _af.template.warn("gooooooo from RX!!!");
+          subscriber.next(requestPromise);
+
+          return () => abortController();
+        }).pipe(_af.Rx.concatAll());
+      }
+
+      console.warn("NO RX!!!", rx, _af.Rx);
 
       return [_requestPromise, abortController];
     }
@@ -331,6 +357,7 @@ export default class ApiFactory {
       cacheStrategy,
       // UtilConfig
       validation,
+      rx,
       // hooks
       onBeforeValidate,
       onRebuildPayload,
@@ -366,7 +393,7 @@ export default class ApiFactory {
       cacheStrategy,
     } as CacheConfig;
 
-    const $$$utilConfig = { validation } as UtilConfig;
+    const $$$utilConfig = { validation, rx } as UtilConfig;
 
     const $$$hooks = {
       onBeforeValidate,
@@ -417,6 +444,7 @@ export default class ApiFactory {
       // UtilConfig
       validation,
       scheduleInterval,
+      rx,
       // hooks
       onBeforeValidate,
       onRebuildPayload,
@@ -461,6 +489,7 @@ export default class ApiFactory {
     const $$utilConfig = {
       validation,
       scheduleInterval,
+      rx,
     } as UtilConfig;
 
     const $$hooks = {

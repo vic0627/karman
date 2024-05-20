@@ -15,6 +15,7 @@ export interface CacheConfig {
 export interface UtilConfig {
   validation?: boolean;
   scheduleInterval?: number;
+  rx?: boolean;
 }
 
 export interface KarmanConfig<A, R>

@@ -61,6 +61,7 @@ export default class Karman {
   }
   #inherited = false;
   readonly $schema: Map<string, SchemaType> = new Map();
+  $rx?: boolean;
   // #endregion
 
   constructor(config: KarmanInstanceConfig) {
@@ -69,6 +70,7 @@ export default class Karman {
       url,
       validation,
       scheduleInterval,
+      rx,
       cache,
       cacheExpireTime,
       cacheStrategy,
@@ -95,6 +97,7 @@ export default class Karman {
     this.$root = root;
     this.$validation = validation;
     this.$scheduleInterval = scheduleInterval;
+    this.$rx = rx;
     this.$cacheConfig = { cache, cacheExpireTime, cacheStrategy };
     this.$requestConfig = {
       headers,

@@ -24,6 +24,7 @@ export default class LayerBuilder {
       // util config
       validation,
       scheduleInterval,
+      rx,
       // cache config
       cache,
       cacheExpireTime,
@@ -57,6 +58,7 @@ export default class LayerBuilder {
       root,
       url,
       validation,
+      rx,
       cache,
       cacheExpireTime,
       cacheStrategy,
