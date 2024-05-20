@@ -7,10 +7,6 @@
 HTTP Client / API Centralized Management / API Abstraction Layer
 </div>
 
-<br>
-
-- [繁體中文](./assets/doc/zh-tw/README.md)
-
 ## Table of Contents
 
 - [Table of Contents](#table-of-contents)
@@ -29,7 +25,7 @@ HTTP Client / API Centralized Management / API Abstraction Layer
 - [Karman Tree](./assets/doc/en/karman-tree.md)
 - [Final API](./assets/doc/en/final-api.md)
 - [Validation Engine](./assets/doc/en/validation-engine.md)
-- :new: [Schema API](./assets/doc/en/schema-api.md)
+- [Schema API](./assets/doc/en/schema-api.md)
 - [Middleware](./assets/doc/en/middleware.md)
 - [Response Caching](./assets/doc/en/response-caching.md)
 - [Dynamic Type Annotation](./assets/doc/en/dynamic-type-annotation.md)
@@ -284,7 +280,7 @@ export const modifyProduct = defineAPI({
 });
 ```
 
-`defineAPI` takes the entire type of `payloadDef` as a generic parameter, allowing JSDoc to be added to the attributes of `payloadDef` to enforce type annotations for the attributes, facilitating correct type hints and auto-completion during API invocation:
+`defineAPI` treats the `payloadDef` object as a generic parameter. You can annotate the correct type of each parameter using the `PayloadDef[key].type` property. This helps ensure that the `payload` object displays the correct type for each attribute when calling the FinalAPI.
 
 ```js
 /**
@@ -296,26 +292,26 @@ export const modifyProduct = defineAPI({
     /**
      * Product ID
      * @description An integer greater than or equal to 1
-     * @type {number}
      */
     id: {
       // ...
+      type: 1, // equals to `type: number`
     },
     /**
      * Product name
      * @description String length less than 10
-     * @type {string | void}        // Use void to indicate non-required
      */
     name: {
       // ...
+      type: getType("", undefined), // equals to `type: string | undefined`
     },
     /**
      * Product price
      * @default 100
-     * @type {number}
      */
     price: {
       // ...
+      type: 1, // equals to `type: number`
     },
   },
   // ...

@@ -1,6 +1,6 @@
 # Final API
 
-The "Final API" is a method set within the `api` property of a karman node configured through `defineAPI`. It behaves similarly to the karman tree in terms of inheritance and overriding. The final API records the configuration provided by `defineAPI` during initialization and then references the configuration of the parent karman node at runtime before overriding it with the recorded configuration.
+The "FinalAPI" is a method set within the `api` property of a karman node configured through `defineAPI`. It behaves similarly to the karman tree in terms of inheritance and overriding. The FinalAPI records the configuration provided by `defineAPI` during initialization and then references the configuration of the parent karman node at runtime before overriding it with the recorded configuration.
 
 - [Final API](#final-api)
   - [Syntax](#syntax)
@@ -18,7 +18,7 @@ export default defineKarman({
   url: "https://karman.com/products",
   api: {
     getAll: defineAPI(),
-    // The URL for this final API is "https://karman.com/products/categories"
+    // The URL for this FinalAPI is "https://karman.com/products/categories"
     getCategories: defineAPI({
       url: "categories",
     }),
@@ -28,7 +28,7 @@ export default defineKarman({
 
 ## Syntax
 
-When calling a final API, unlike a typical HTTP client, the final API itself is a synchronous task. It first performs tasks such as parameter validation, parameter construction, initialization of request data and configuration, and then returns a Promise for the client to wait for the response result along with a method to cancel the request. The client needs to wait for the Promise to be fulfilled before getting the response result.
+When calling a FinalAPI, unlike a typical HTTP client, the FinalAPI itself is a synchronous task. It first performs tasks such as parameter validation, parameter construction, initialization of request data and configuration, and then returns a Promise for the client to wait for the response result along with a method to cancel the request. The client needs to wait for the Promise to be fulfilled before getting the response result.
 
 ```js
 const [resPromise, abort] = finalAPI(payload[, config])
@@ -36,8 +36,8 @@ const [resPromise, abort] = finalAPI(payload[, config])
 
 - `resPromise`: The response result, which is a Promise object. It can be used to retrieve data using async/await or Promise chaining.
 - `abort`: The method to cancel the request, which is a synchronous task.
-- `payload`: The main parameter object accepted by the final API. It should have the attributes determined by payloadDef when defining the final API. If the required parameters are not defined in payloadDef but there is a need to set config when calling the final API, payload can be passed as an empty object, `undefined`, `null`, or similar values.
-- `config`: The parameter to overwrite the final API configuration. However, it cannot overwrite initial configurations such as url, method, payloadDef, etc.
+- `payload`: The main parameter object accepted by the FinalAPI. It should have the attributes determined by payloadDef when defining the FinalAPI. If the required parameters are not defined in payloadDef but there is a need to set config when calling the FinalAPI, payload can be passed as an empty object, `undefined`, `null`, or similar values.
+- `config`: The parameter to overwrite the FinalAPI configuration. However, it cannot overwrite initial configurations such as url, method, payloadDef, etc.
 
 ## Flow
 
@@ -65,15 +65,15 @@ flowchart TB
 
 - Config Inheritance: The configuration inheritance and overwriting of Final API can be divided into several stages.
   1. defineAPI configuration: At this stage, the received configuration is temporarily stored to provide subsequent inheritance and overwriting.
-  1. Runtime configuration: When the final API is called, there is an opportunity to provide the final overwriting configuration. If a configuration is received, it will be temporarily stored first.
+  1. Runtime configuration: When the FinalAPI is called, there is an opportunity to provide the final overwriting configuration. If a configuration is received, it will be temporarily stored first.
   1. First-stage inheritance: At this stage, the runtime configuration is compared with the temporarily stored runtime configuration. If the configurations are the same between the two times, the inheritance behavior of this stage will be skipped; otherwise, the runtime configuration will overwrite the defineAPI configuration.
-  1. Second-stage inheritance: At this stage, the configuration of the karman node to which the final API belongs is referenced, and the configuration inherited from the first stage is used for overwriting, thus obtaining the final configuration of the final API.
+  1. Second-stage inheritance: At this stage, the configuration of the karman node to which the FinalAPI belongs is referenced, and the configuration inherited from the first stage is used for overwriting, thus obtaining the final configuration of the FinalAPI.
 - Parameter Builder: At this stage, the final request URL and payload will be constructed based on the payload of the Final API. The payload here will always maintain the type of `Record<string, any>`.
 - Transform Payload: At this stage, the payload will be transformed into the required type for the formal request, such as `string`, `FormData`, and so on.
 
 ## Request Strategy
 
-The requestStrategy attribute can determine the HTTP Client used by the final API. Currently, it supports "xhr" and "fetch" as parameters, with "xhr" being the default option.
+The requestStrategy attribute can determine the HTTP Client used by the FinalAPI. Currently, it supports "xhr" and "fetch" as parameters, with "xhr" being the default option.
 
 ```js
 import { defineKarman, defineAPI } from "@vic0627/karman";

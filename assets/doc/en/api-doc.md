@@ -10,6 +10,7 @@
   - [isValidationError](#isvalidationerror)
   - [defineSchemaType](#defineschematype)
   - [SchemaType](#schematype)
+  - [getType](#gettype)
 
 ## Additional Types
 
@@ -65,9 +66,10 @@ interface ParamDef {
   required?: boolean;
   position?: ParamPosition | ParamPosition[];
   defaultValue?: () => any;
+  type?: unknown;
 }
 
-type Schema = Record<string, ParamDef | null>
+type Schema = Record<string, ParamDef | null>;
 
 type PayloadDef = Schema | string[];
 ```
@@ -352,7 +354,7 @@ Validate whether the passed-in parameter is a `ValidationError`.
 Defines a specialized structure for object data, enhancing the flexibility and reusability of `payloadDef`. For usage, please refer to [Schema API](./schema-api.md).
 
 - Syntax
-  
+
   ```js
   function defineSchemaType<N extends string, D extends Schema>(name: N, def: D): SchemaType<N, D>;
   ```
@@ -378,7 +380,7 @@ The return value of `defineSchemaType`, allowing the use of a series of APIs to 
 - Properties
 
   - `name: string`
-  
+
     The name of the current schema, also the keyword used when the schema is used as a string rule type.
 
   - `scope?: Karman`
@@ -396,7 +398,7 @@ The return value of `defineSchemaType`, allowing the use of a series of APIs to 
   - `def: Schema`
 
     Same as `payloadDef`.
-  
+
 - Methods
 
   - `mutate(): this`
@@ -407,27 +409,50 @@ The return value of `defineSchemaType`, allowing the use of a series of APIs to 
     > These methods follow the design pattern of [Fluent Interface](https://en.wikipedia.org/wiki/Fluent_interface), gradually changing the schema configuration through chained calls.
 
   - `pick(...names: string[]): this`
-  
+
     Similar to TypeScript's `Pick<>`, it selects specific fields. It does not take effect when no values are passed. Only one of `pick` or `omit` can be used in the same method chain.
 
   - `omit(...names: string[]): this`
-  
+
     Similar to TypeScript's `Omit<>`, it excludes specific fields. It does not take effect when no values are passed. Only one of `pick` or `omit` can be used in the same method chain.
 
   - `setRequired(...names: string[]): this`
-  
+
     Specifies which fields are to be set as required parameters. When no values are passed, all fields are specified as required parameters.
 
   - `setOptional(...names: string[]): this`
-  
+
     Specifies which fields are to be set as optional parameters. When no values are passed, all fields are specified as optional parameters.
 
   - `setPosition(position: ParamPosition, ...names: string[]): this`
-  
+
     Specifies which fields FinalAPI should use for which parameter positions. The same field can be set to different positions repeatedly.
 
   - `setDefault(name: string, defaultValue: () => any): this`
-  
+
     Specifies the parameter default value for a field.
 
+## getType
 
+> [!WARNING]
+> This function does nothing but return a type.
+
+Analogous to TypeScript `typeof` operator, allowing to pass several parameters and returning a union type.
+
+- Syntax
+
+  ```ts
+  function getType<T>(...types: T[]): T;
+  ```
+
+- Parameters
+
+  - `types: T[]`
+
+    Accept any values, including `SchemaType.def`. If `SchemaType.def` is received, this function will automatically transform the parameter definition object into the correct type.
+
+- Returns
+
+  - `T`
+
+    Type of the input values.

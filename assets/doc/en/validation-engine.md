@@ -5,7 +5,7 @@ The validation engine handles the parameter validation mechanism for final APIs.
 - [Validation Engine](#validation-engine)
   - [Rules](#rules)
   - [Rule Set](#rule-set)
-  - :new: [String Rule - Array Syntax](#🆕-string-rule---array-syntax)
+  - [String Rule - Array Syntax](#string-rule---array-syntax)
 
 ## Rules
 
@@ -18,7 +18,7 @@ There are various types of validation rules available, ranging from those provid
   - `"number"`: Number
   - `"nan"`: NaN
   - `"boolean"`: Boolean
-  - `"object"`: Broad object, including `null`, `() => {}`, `{}`, or `[]`
+  - `"object"`: Broad object, including `() => {}`, `{}`, or `[]`
   - `"null"`: Null
   - `"function"`: Function
   - `"array"`: Array
@@ -125,7 +125,7 @@ karman.ruleSetTest({ param02: "foo" }); // Valid
 karman.ruleSetTest({ param03: false }); // Valid
 ```
 
-## :new: String Rule - Array Syntax
+## String Rule - Array Syntax
 
 An extension syntax for [String Rule](#rules), primarily used to validate arrays, array lengths, and the types of elements within arrays. The basic syntax is as follows:
 

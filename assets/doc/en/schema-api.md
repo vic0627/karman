@@ -8,12 +8,11 @@ Below is an example of defining a simple schema for product categories. This sch
 
 ```js
 // schema/category.js
-import { defineSchemaType, defineCustomValidator, ValidationError } from "@vic0627/karman"
+import { defineSchemaType, defineCustomValidator, ValidationError } from "@vic0627/karman";
 
 export default defineSchemaType("Category", {
   /**
    * category of products
-   * @type {"electronics" | "jewelery" | "men's clothing" | "women's clothing"}
    */
   category: {
     rules: [
@@ -23,12 +22,11 @@ export default defineSchemaType("Category", {
           throw new ValidationError("invalid category");
       }),
     ],
+    /** @type {"electronics" | "jewelery" | "men's clothing" | "women's clothing"} */
+    type: null,
   },
 });
 ```
-
-> [!NOTE]
-> In a schema, you can still use JSDoc's `@type` tag to enforce type annotations or provide additional parameter descriptions. This will be beneficial for later type inference of the `payload` object when calling FinalAPI.
 
 Next, you can use this schema in `payloadDef`, but you need to access the objects that `payloadDef` can use through the `def` property. Additionally, in this context, `category` will be used as a path parameter and must be a required parameter. Therefore, you can initialize additional information of the schema using `.mutate()` method, and then change the detailed definition inside the schema using `.setPosition()` and `.setRequired()` methods. Finally, obtain the edited schema through the `def` property:
 
@@ -52,7 +50,7 @@ Next, let's try defining a product information schema and include `category` as 
 ```js
 // schema/product.js
 // ...
-import category from "./category.js"
+import category from "./category.js";
 
 export default defineSchemaType("Product", {
   ...category.def,
@@ -60,37 +58,38 @@ export default defineSchemaType("Product", {
    * name of the product
    * @min 1
    * @max 20
-   * @type {string}
    */
   title: {
     rules: ["string", { min: 1, max: 20, measurement: "length" }],
+    type: "",
   },
   /**
    * price
    * @min 1
-   * @type {number}
    */
   price: {
     rules: ["number", { min: 1 }],
+    type: 1,
   },
   /**
    * description
    * @min 1
    * @max 100
-   * @type {string}
    */
   description: {
     rules: ["string", { min: 1, max: 100, measurement: "length" }],
+    type: "",
   },
   /**
    * image
    * @max 5MiB
-   * @type {File}
    */
   image: {
     rules: [File, { measurement: "size", max: 1024 * 1024 * 5 }],
+    /** @type {File} */
+    type: null,
   },
-})
+});
 ```
 
 ## Using Schema as String Rule
@@ -101,7 +100,7 @@ Suppose we register the above schema `product` on a Karman tree. In that case, i
 
 ```js
 // /product-management.js
-// ...
+import { defineKarman, defineAPI, getType } from "@vic0627/karman";
 import product from "./schema/product.js";
 
 export default defineKarman({
@@ -112,10 +111,10 @@ export default defineKarman({
     addProducts: defineAPI({
       method: "POST",
       payloadDef: {
-        /** @type {typeof product.def[]} */
         data: {
           rules: "Product[]",
           required: true,
+          type: getType([product.def]),
         },
       },
     }),

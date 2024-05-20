@@ -93,7 +93,7 @@ export default defineKarman({
 If a karman tree is not configured with a root node, the following considerations apply:
 
 - Although APIs can still be sent, the configuration obtained for that API will only reference the karman node at that layer. If the url of the node and the url configured for the API cannot form a valid URL, it may result in errors when sending requests.
-- Exclusive features of the root node cannot be used, such as setting scheduling task execution intervals or installing dependencies for the karman tree.
+- Exclusive features of the root node cannot be used, such as setting scheduling task execution intervals for the karman tree.
 
 > [!NOTE]
 > The scheduler manager's main task is to respond to data cache checks and clearances. The task execution interval can be set using the `scheduleInterval` property and can only be configured through the root node.
@@ -104,7 +104,10 @@ The inheritance event for each karman node is triggered only once. This means th
 
 In [Middleware](./middleware.md), Interceptors and Hooks configurations will be introduced. These types of configurations can access the properties or methods on the karman node through this inside functions. If there are constants or methods commonly used in Middleware, consider installing them on the karman node.
 
-Dependency installation needs to be executed through the root karman node using the `Karman.$use()` method. After installation, a similar inheritance event will be triggered again, making the entire karman tree reference the dependency. The dependency itself must be an object and must have an `install()` method.
+Dependency installation needs to be executed through the karman node using the `Karman.$use()` method. After installation, a similar inheritance event will be triggered again, making the entire karman tree reference the dependency. The dependency itself must be an object and must have an `install()` method.
+
+> [!WARNING]
+> Restriction of installing dependencies via root karman node has been removed in Karman v1.3.0, and the implementation of `install` method has changed either.
 
 In addition, Karman itself also provides built-in dependencies:
 
@@ -112,34 +115,32 @@ In addition, Karman itself also provides built-in dependencies:
 - `Karman._pathResolver`: Module used by karman to compose URLs, similar to the `path` module in node.js.
 
 ```js
-import { defineKarman } from "@vic0627/karman"
+import { defineKarman } from "@vic0627/karman";
 
 // Common method in hooks
-const add = (a, b) => a + b
+const add = (a, b) => a + b;
 // Define the `install()` method for `add()` first
 Object.defineProperty(add, "install", {
-    value: (karman) => {
-        // Define the implementation of the `install()` method
-        Object.defineProperty(karman, "_add", {
-            { value: add }
-        })
-    }
-})
+  value: (Karman) => {
+    // Define the implementation of the `install()` method
+    Karman.prototype._add = add;
+  },
+});
 
 const karman = defineKarman({
-    root: true,
-    onRequest() {
-        const isString = this._typeCheck.isString("")           // Built-in dependency
-        const paths = this._pathResolver.trim("//foo/bar///")   // Built-in dependency
-        const sum = this._add(2, 3)                             // Manually installed dependency
-        console.log(isString, paths, sum)
-    }
-    // ...
-})
+  root: true,
+  onRequest() {
+    const isString = this._typeCheck.isString(""); // Built-in dependency
+    const paths = this._pathResolver.trim("//foo/bar///"); // Built-in dependency
+    const sum = this._add(2, 3); // Manually installed dependency
+    console.log(isString, paths, sum);
+  },
+  // ...
+});
 
-karman.$use(_add) // Install dependencies using the root karman node
+karman.$use(_add); // Install dependencies using the root karman node
 
-karman.someAPI() // console output: true "foo/bar" 5
+karman.someAPI(); // console output: true "foo/bar" 5
 ```
 
 **Supplement: Making Dependencies Support Syntax Prompting**
@@ -152,8 +153,8 @@ const _constant = {
   second: 1000,
   minute: 1000 * 60,
   hour: 1000 * 60 * 60,
-  install(karman) {
-    Object.defineProperty(karman, "_constant", { value: this });
+  install(Karman) {
+    Karman.prototype._constant = this;
   },
 };
 export default _constant;
@@ -161,24 +162,24 @@ export default _constant;
 
 In the same directory, add a .d.ts declaration file with the same name:
 
-```js
+```ts
 // /src/karman/constant.d.ts
 interface Constant {
-    second: number;
-    minute: number;
-    hour: number;
+  second: number;
+  minute: number;
+  hour: number;
 }
-declare const _constant: Constant
-export default _constant
+declare const _constant: Constant;
+export default _constant;
 
 // ⚠️ Remember to write module extension declarations and declare dependencies in KarmanDependencies
 declare module "@vic0627/karman" {
-    interface KarmanDependencies {
-        /**
-         * You can also write comments for dependencies using block comments
-         */
-        _constant: Constant;
-    }
+  interface KarmanDependencies {
+    /**
+     * You can also write comments for dependencies using block comments
+     */
+    _constant: Constant;
+  }
 }
 ```
 

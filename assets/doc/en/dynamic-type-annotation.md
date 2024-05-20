@@ -3,7 +3,7 @@
 > [!TIP]
 > It is recommended to have prior knowledge of [JSDoc](https://jsdoc.app/) and [TypeScript](https://www.typescriptlang.org/) before reading this chapter.
 
-Another powerful feature provided by Karman is the ability to dynamically map configurations of defineKarman and defineAPI to Karman nodes in real-time through TypeScript generic parameters and IDE's [LSP](https://microsoft.github.io/language-server-protocol/) integration. This includes final APIs, subpaths, as well as inputs and outputs of final APIs.
+Another powerful feature provided by Karman is the ability to dynamically map configurations of `defineKarman` and `defineAPI` to Karman nodes in real-time through TypeScript generic parameters and IDE's [LSP](https://microsoft.github.io/language-server-protocol/) integration. This includes finalAPIs, subpaths, as well as inputs and outputs of finalAPIs.
 
 - [Dynamic Type Annotation](#dynamic-type-annotation)
   - [JSDoc](#jsdoc)
@@ -62,12 +62,12 @@ rootKarman.user.create(); // Create New User
 
 ## DTO of Input/Payload
 
-As mentioned in the [Parameter Definition](./final-api.md) section, the `payload` of the final API is mainly defined through the `payloadDef` property of `defineAPI` and mapped to the `payload` of the final API. However, the properties of `payloadDef` are objects, and in most cases, the mapped payload may not comply with the defined rules.
+As mentioned in the [Parameter Definition](./final-api.md) section, the `payload` of the FinalAPI is mainly defined through the `payloadDef` property of `defineAPI` and mapped to the `payload` of the FinalAPI. However, the properties of `payloadDef` are objects, and in most cases, the mapped payload may not comply with the defined rules.
 
-However, due to inherent limitations in language mechanisms, it's not feasible to directly convert parameter rules into corresponding types displayed in hover tooltips. Therefore, Karman uses JSDoc in conjunction with the `@type` tag to forcefully annotate the types of parameters, allowing the final API to display the correct required types for the `payload` property in hover tooltips, rather than a complete parameter definition object.
+Therefore, you can change the type of attributes displayed in the `payload` by setting the `type` property. The `type` itself is an optional parameter. If you need to call the FinalAPI and want the `payload` object to show the correct type hints for each attribute, you must set this parameter. Additionally, if the attribute is a composite type, you can use the `getType` API. `getType` will convert all passed parameters into a Union Type. `getType` also supports converting `SchemaType.def`, so you can use `getType` to obtain the correct type of a Schema.
 
-> [!NOTE]
-> Using the `@type` tag to force type annotations is to obtain more complete parameter hint messages when calling final APIs and does not affect the operation of Karman itself.
+> [!WARNING]
+> Type annotation on the keys of `PayloadDef` with JSDoc tag `@type` has been deprecated. Considering annotate types via `ParamDef.type` and `getType` which were introduced in Karman v1.3.0.
 
 ```js
 import { defineKarman, defineAPI } from "@vic0627/karman";
@@ -83,19 +83,19 @@ const rootKarman = defineKarman({
       payloadDef: {
         /**
          * Limit of returned records
-         * @type {number | void}
          */
         limit: {
           position: "query",
           rules: "int",
+          type: getType(1, undefined), // output => number | undefined
         },
         /**
          * Sorting strategy
-         * @type {"asc" | "desc" | void}
          */
         sort: {
           position: "query",
           rules: "string",
+          type: getType("asc", "desc", undefined), // output => "asc" | "desc" | undefined
         },
       },
     }),
@@ -109,16 +109,28 @@ rootKarman.getAll({
 });
 ```
 
-In the example above, because both parameters are optional properties, it's necessary to represent them as optional during mapping. However, in TypeScript's type mapping, it's not possible to perform overly complex operations to conditionally make properties optional (`{ [x: string]?: any; }`) or required. Therefore, another approach is needed to indicate that a parameter is optional.
-
-`undefined` is a subtype of all types. Therefore, annotations like `@type {string | number | undefined}` will be simplified to `string | number` in the final type display, thus losing the meaning of indicating that the parameter is optional. Meanwhile, `void` is originally used to describe the absence of a return value in functions and is not a subtype of other types. In this context, it can be used to represent optional parameters.
-
 ## DTO of Output/Response
 
-Output needs to be configured through the `dto` property in `defineAPI()`. `dto` does not affect program execution; it only affects the type of the final API's return result. Therefore, it can be assigned any value. There are many ways to configure `dto`, but to save memory space, it is recommended to use type files and JSDoc.
+Output needs to be configured through the `dto` property in `defineAPI()`. `dto` does not affect program execution; it only affects the type of the FinalAPI's return result. Therefore, it can be assigned any value. There are many ways to configure `dto`, but to save memory space, it is recommended to use type files and JSDoc.
 
 > [!WARNING]
 > There are many factors that can affect the return type, including `dto`, `onSuccess`, `onError`, etc. Therefore, the compiler may encounter type discrepancies due to environmental or contextual factors during parsing.
+
+- Schema + getType
+
+  ```js
+  import { defineKarman, defineAPi, getType } from "@vic0627/karman";
+  import productSchema from "./schema/product-schema.js";
+
+  export default defineKarman({
+    // ...
+    api: {
+      getProducts: defineAPI({
+        dto: getType([productSchema.def]),
+      }),
+    },
+  });
+  ```
 
 - Direct Assignment
 
