@@ -1,6 +1,6 @@
 {
   "name": "@vic0627/karman",
-  "version": "1.2.4",
+  "version": "1.3.0",
   "description": "API abstract layer / API centralized management builder",
   "main": "dist/karman",
   "scripts": {
