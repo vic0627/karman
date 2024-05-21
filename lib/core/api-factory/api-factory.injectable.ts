@@ -3,7 +3,7 @@ import Xhr from "../request-strategy/xhr.injectable";
 import TypeCheck from "@/utils/type-check.provider";
 import { RuntimeOptions } from "@/types/final-api.type";
 import Karman from "../karman/karman";
-import { ApiConfig, HttpBody, HttpConfig, ReqStrategyTypes, RequestConfig } from "@/types/http.type";
+import { ApiConfig, HttpBody, ReqStrategyTypes, RequestConfig } from "@/types/http.type";
 import PathResolver from "@/utils/path-resolver.provider";
 import { CacheConfig, UtilConfig } from "@/types/karman.type";
 import { AsyncHooks, KarmanInterceptors, SyncHooks } from "@/types/hooks.type";
@@ -15,7 +15,6 @@ import { PayloadDef } from "@/types/payload-def.type";
 import { isEqual, cloneDeep } from "lodash-es";
 import Fetch from "../request-strategy/fetch.injectable";
 import Template from "@/utils/template.provider";
-import type * as RxJSType from "rxjs";
 import { Observable, concatAll } from "rxjs";
 
 export type ApiReturns<D> = [resPromise: Promise<D>, abortFn: () => void];
