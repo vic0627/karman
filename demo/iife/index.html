@@ -6,19 +6,50 @@
     <title>Document</title>
     <!-- <script src="../../dist/karman.min.js"></script> -->
     <!-- <script src="https://unpkg.com/rxjs@^7/dist/bundles/rxjs.umd.min.js"></script> -->
-    <!-- <script type="importmap">
+    <script type="importmap">
       {
         "imports": {
-          "rxjs": "https://unpkg.com/rxjs@^7/dist/bundles/rxjs.umd.min.js"
+          "tslib": "https://unpkg.com/tslib@^2/tslib.es6.mjs",
+          "rxjs": "https://unpkg.com/rxjs@^7/dist/esm5/index.js",
+          "@vic0627/karman": "../../dist/karman.js"
         }
       }
-    </script> -->
+    </script>
   </head>
   <body>
     <div id="app">
       <button id="send">send</button>
       <button id="set">set something</button>
     </div>
-    <script type="module" src="./main.js"></script>
+    <!-- <script type="module" src="./main.js"></script> -->
+    <script type="module">
+      import { defineKarman, defineAPI } from "@vic0627/karman";
+
+      const $k = defineKarman({
+        root: true,
+        url: "https://fakestoreapi.com",
+        headers: {
+          "Content-Type": "application/json;",
+        },
+        validation: true,
+        api: {
+          getProductById: defineAPI({
+            url: "/products/:id",
+            payloadDef: {
+              id: {
+                position: "path",
+                required: true,
+                rules: ["int", { min: 1 }],
+              },
+            },
+            onSuccess(res) {
+              console.log(res.data);
+            },
+          }),
+        },
+      });
+
+      $k.getProductById({ id: 4 });
+    </script>
   </body>
 </html>
