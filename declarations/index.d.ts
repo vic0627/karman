@@ -13,6 +13,7 @@
  * See the Apache Version 2.0 License for specific language governing permissions
  * and limitations under the License.
  */
+import type { Observable } from "rxjs";
 
 // #region Utility Types
 type Primitive = string | number | boolean | bigint | symbol | undefined | object;
@@ -258,7 +259,7 @@ interface CacheConfig {
   cacheStrategy?: CacheStrategyTypes;
 }
 
-interface UtilConfig {
+interface UtilConfig<RX> {
   /**
    * activating the validation engine
    * @default false
@@ -269,6 +270,11 @@ interface UtilConfig {
    * @default 216000000 an hour
    */
   scheduleInterval?: number;
+  /**
+   * enabling returning a Observable while invoking FinalAPI
+   * @experimental
+   */
+  rx?: RX;
 }
 // #endregion
 
@@ -370,11 +376,11 @@ type SelectResponseForm<ST, D> = ST extends "xhr" ? XhrResponse<D, ST> : ST exte
 // #endregion
 
 // #region Final API Types
-interface RuntimeOptions<ST, ST2, P, D, S, E>
+interface RuntimeOptions<ST, ST2, P, D, S, E, RX>
   extends Hooks<SelectPrimitive2<ST, ST2>, P, D, S, E>,
     RequestConfig<SelectPrimitive2<ST, ST2>>,
     CacheConfig,
-    Omit<UtilConfig, "scheduleInterval"> {}
+    Omit<UtilConfig<RX>, "scheduleInterval"> {}
 
 type ConvertPayloadFromSchema<S> = {
   [K in keyof S]: ExtractFromUndefined<S[K]> extends ParamDef ? ExtractFromUndefined<S[K]>["type"] : any;
@@ -390,16 +396,20 @@ type ConvertPayload<P> = P extends string[]
 
 type FinalAPIRes<D, S, S2, E, E2> = SelectPrimitive2<E, E2, undefined> | SelectPrimitive3<D, S, S2, undefined>;
 
-type FinalAPI<ST, P, D, S, E> = <ST2 extends unknown, S2 extends unknown, E2 extends unknown>(
+type FinalAPI<ST, P, D, S, E, RX> = <ST2 extends unknown, S2 extends unknown, E2 extends unknown, RX2 extends unknown>(
   this: KarmanInstance,
   payload: ConvertPayload<P>,
-  runtimeOptions?: RuntimeOptions<ST, ST2, P, D, S2, E2>,
-) => [
-  requestPromise: Promise<FinalAPIRes<SelectResponseForm<SelectPrimitive2<ST, ST2>, D>, S, S2, E, E2>>,
-  abortController: () => void,
-];
+  runtimeOptions?: RuntimeOptions<ST, ST2, P, D, S2, E2, RX2>,
+) => SelectPrimitive2<RX, RX2, never> extends true
+  ? Observable<FinalAPIRes<SelectResponseForm<SelectPrimitive2<ST, ST2>, D>, S, S2, E, E2>>
+  :
+      | [
+          requestPromise: Promise<FinalAPIRes<SelectResponseForm<SelectPrimitive2<ST, ST2>, D>, S, S2, E, E2>>,
+          abortController: () => void,
+        ]
+      | Observable<FinalAPIRes<SelectResponseForm<SelectPrimitive2<ST, ST2>, D>, S, S2, E, E2>>;
 
-interface ApiOptions<ST, P, D, S, E> extends Hooks<ST, P, D, S, E>, UtilConfig, CacheConfig, RequestConfig<ST> {
+interface ApiOptions<ST, P, D, S, E, RX> extends Hooks<ST, P, D, S, E>, UtilConfig<RX>, CacheConfig, RequestConfig<ST> {
   /**
    * url fragment or complete url
    * @description
@@ -430,7 +440,8 @@ export function defineAPI<
   S extends unknown,
   E extends unknown,
   PARAMS extends string,
->(options: ApiOptions<ST, P, D, S, E>): FinalAPI<ST, P, D, S, E>;
+  RX extends boolean,
+>(options: ApiOptions<ST, P, D, S, E, RX>): FinalAPI<ST, P, D, S, E, RX>;
 // #endregion
 
 // #region Karman Types
@@ -529,7 +540,7 @@ interface KarmanOptions<A, R>
   extends KarmanInterceptors,
     CacheConfig,
     Omit<RequestConfig<ReqStrategyTypes>, "requestStrategy">,
-    UtilConfig {
+    UtilConfig<boolean> {
   /**
    * root layer of the whole Karman tree
    * @description this will notify the instance of Karman to invoke the inheritance function

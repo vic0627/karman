@@ -55,6 +55,7 @@ const licensePlugin = license({
 
 const baseFileName = "dist/karman";
 const name = "karman";
+const dir = getPath("dist");
 
 /** @type {import("rollup").OutputOptions[]} */
 const output = [

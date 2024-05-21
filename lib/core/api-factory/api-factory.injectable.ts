@@ -15,7 +15,8 @@ import { PayloadDef } from "@/types/payload-def.type";
 import { isEqual, cloneDeep } from "lodash-es";
 import Fetch from "../request-strategy/fetch.injectable";
 import Template from "@/utils/template.provider";
-import type * as RxJS from "rxjs";
+import type * as RxJSType from "rxjs";
+import { Observable, concatAll } from "rxjs";
 
 export type ApiReturns<D> = [resPromise: Promise<D>, abortFn: () => void];
 
@@ -50,7 +51,7 @@ export interface PreqBuilderOptions<D, T extends ReqStrategyTypes>
 
 @Injectable()
 export default class ApiFactory {
-  private Rx?: typeof RxJS;
+  // private Rx?: typeof RxJSType;
 
   constructor(
     private readonly typeCheck: TypeCheck,
@@ -61,16 +62,16 @@ export default class ApiFactory {
     private readonly cachePipe: CachePipe,
     private readonly template: Template,
   ) {
-    this.setObservable();
+    // this.setObservable();
   }
 
-  private async setObservable() {
-    try {
-      this.Rx = await import("rxjs");
-    } catch {
-      this.template.warn("Failed to load rxjs.");
-    }
-  }
+  // private async setObservable() {
+  //   try {
+  //     this.Rx = await import("rxjs");
+  //   } catch {
+  //     this.template.warn("Failed to load rxjs.");
+  //   }
+  // }
 
   // 調用時還不會接收到完整的配置
   public createAPI<D, T extends ReqStrategyTypes, P extends PayloadDef>(apiConfig: ApiConfig<D, T, P>) {
@@ -92,7 +93,7 @@ export default class ApiFactory {
       runtimeOptions?: RuntimeOptions<T2>,
     ):
       | [requestPromise: Promise<SelectRequestStrategy<T, D>>, abortController: () => void]
-      | RxJS.Observable<SelectRequestStrategy<T, D>> {
+      | Observable<SelectRequestStrategy<T, D>> {
       const runtimeOptionsCopy = _af.runtimeOptionsParser(runtimeOptions);
       if (_af.typeCheck.isUndefinedOrNull(payload)) payload = {} as { [K in keyof P]: any };
 
@@ -190,16 +191,13 @@ export default class ApiFactory {
       const [requestPromise, abortController] = requestExecutor(true);
       const _requestPromise = _af.installHooks(this, requestPromise, { onSuccess, onError, onFinally, onResponse });
 
-      if (rx && !_af.typeCheck.isUndefinedOrNull(_af.Rx)) {
-        return new _af.Rx.Observable<Promise<SelectRequestStrategy<T, D>>>((subscriber) => {
-          _af.template.warn("gooooooo from RX!!!");
+      if (rx && !_af.typeCheck.isUndefinedOrNull(Observable)) {
+        return new Observable<Promise<SelectRequestStrategy<T, D>>>((subscriber) => {
           subscriber.next(requestPromise);
 
           return () => abortController();
-        }).pipe(_af.Rx.concatAll());
-      }
-
-      console.warn("NO RX!!!", rx, _af.Rx);
+        }).pipe(concatAll());
+      } else if (rx) _af.template.warn("Dependency 'rxjs' is not installed.");
 
       return [_requestPromise, abortController];
     }
