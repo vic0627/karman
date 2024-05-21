@@ -53,7 +53,7 @@ const licensePlugin = license({
   },
 });
 
-const baseFileName = "dist/karman";
+const baseFileName = "./dist/karman";
 const name = "karman";
 const dir = getPath("dist");
 
@@ -62,22 +62,23 @@ const output = [
   {
     name,
     file: getPath(`${baseFileName}.js`),
-    format: "es",
-    exports: "named",
+    format: "esm",
   },
   {
     name,
     file: getPath(`${baseFileName}.min.js`),
-    format: "iife",
+    format: "umd",
     exports: "named",
     /** @todo fix terser option */
     plugins: [terser(terserOptions)],
+    globals: {
+      rxjs: "rxjs",
+    },
   },
   {
     name,
     file: getPath(`${baseFileName}.cjs`),
-    format: "commonjs",
-    exports: "named",
+    format: "cjs",
   },
 ];
 
@@ -88,4 +89,4 @@ const tsOption = {
 
 const plugins = [licensePlugin, babelPlugin, typescript(tsOption), nodeResolve(), cleanupPlugin];
 
-module.exports = { input, output, plugins, treeshake: false, external: ["rxjs"] };
+module.exports = { input, output, plugins, treeshake: true, external: ["rxjs"] };

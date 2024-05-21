@@ -1,16 +1,17 @@
 const { rollup } = require("rollup");
-// const { resolve } = require("path");
 const emptyDirectory = require("../utils/empty-directory.js");
 const timeLog = require("../utils/time-log.js");
 const emitDeclaration = require("../emit-declaration.js");
+// const { resolve } = require("path");
+// const copyFile = require("../utils/copy-file.js");
 
-const MANUAL_BUILD = process.argv[2] === "--manual";
+const MANUAL_BUILD = process.argv.includes("--manual");
 
 // const relativePathToRoot = "../../";
+// const ROOT_PATH = process.cwd();
+// const getPath = (...paths) => resolve(ROOT_PATH, ...paths);
 
-// const getPath = (...paths) => resolve(__dirname, relativePathToRoot, ...paths);
-
-const build = async (callback) => {
+const build = async (callback = () => timeLog("build process end")) => {
   /** @type {import('rollup').RollupBuild | undefined} */
   let bundle;
   let buildFailed = false;
@@ -22,20 +23,22 @@ const build = async (callback) => {
 
     if (!clean) throw new Error('failed to clean up "dist" dir');
 
-    const { input, output, plugins } = require("./rollup-config.js");
+    const config = require("./rollup-config.js");
 
     /** @param {import('rollup').RollupBuild} bundle  */
     const generateOutputs = async (bundle) => {
-      for (const outputOptions of output) {
+      for (const outputOptions of config.output) {
         await bundle.write(outputOptions);
       }
     };
 
     timeLog("start rollup...");
 
-    bundle = await rollup({ input, plugins });
+    bundle = await rollup(config);
 
     await generateOutputs(bundle);
+
+    // copyFile(getPath("./package.json"), getPath("./demo/iife/node_modules/@vic0627/karman/package.json"));
 
     if (typeof callback === "function") callback();
   } catch (error) {
