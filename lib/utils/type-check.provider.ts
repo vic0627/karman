@@ -1,6 +1,11 @@
+import KarmanDependency from "@/core/karman/karman-dependency";
 import { ObjectLiteral, Type } from "@/types/rules.type";
 
-export default class TypeCheck {
+export default class TypeCheck extends KarmanDependency {
+  constructor() {
+    super("_typeCheck");
+  }
+
   get CorrespondingMap(): Record<Type, keyof this> {
     return {
       char: "isChar",

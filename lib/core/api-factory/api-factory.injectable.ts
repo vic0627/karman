@@ -87,12 +87,17 @@ export default class ApiFactory {
     };
 
     function finalAPI<T2 extends ReqStrategyTypes>(
-      this: Karman,
+      this: Karman | undefined,
       payload: { [K in keyof P]: any },
       runtimeOptions?: RuntimeOptions<T2>,
     ):
       | [requestPromise: Promise<SelectRequestStrategy<T, D>>, abortController: () => void]
       | Observable<SelectRequestStrategy<T, D>> {
+      if (!this?.$inherited) {
+        this?.$inherit();
+        this?.$collectSchema();
+      }
+
       const runtimeOptionsCopy = _af.runtimeOptionsParser(runtimeOptions);
       if (_af.typeCheck.isUndefinedOrNull(payload)) payload = {} as { [K in keyof P]: any };
 
@@ -204,8 +209,8 @@ export default class ApiFactory {
     return finalAPI;
   }
 
-  private hooksInvocator<F extends (this: Karman, ...args: T[]) => R, T, R>(
-    k: Karman,
+  private hooksInvocator<F extends (this: Karman | undefined, ...args: T[]) => R, T, R>(
+    k: Karman | undefined,
     hooks?: F,
     ...args: T[]
   ): R | void {
@@ -213,7 +218,7 @@ export default class ApiFactory {
   }
 
   private configInheritance<D>(
-    this: Karman,
+    this: Karman | undefined,
     options: {
       allConfigCache: AllConfigCache<D, ReqStrategyTypes>;
       runtimeOptions: ParsedRuntimeOptions<ReqStrategyTypes>;
@@ -228,7 +233,7 @@ export default class ApiFactory {
     if (!isEqual(runtimeCache, runtimeOptions)) {
       setRuntimeCache(runtimeOptions);
       const { $$$requestConfig, $$$cacheConfig, $$$utilConfig, $$$hooks } = runtimeOptions;
-      const { $baseURL, $requestConfig, $cacheConfig, $interceptors } = this ?? {};
+      const { $baseURL = "", $requestConfig = {}, $cacheConfig = {}, $interceptors = {} } = this ?? {};
       const $utilConfig = { validation: this?.$validation ?? false } as UtilConfig;
       const requestConfig = configInherit($requestConfig, $$requestConfig, $$$requestConfig);
       const cacheConfig = configInherit($cacheConfig, $$cacheConfig, $$$cacheConfig);
@@ -293,7 +298,7 @@ export default class ApiFactory {
   }
 
   private installHooks<D, T extends ReqStrategyTypes>(
-    k: Karman,
+    k: Karman | undefined,
     reqPromise: Promise<SelectRequestStrategy<T, D>>,
     { onSuccess, onError, onFinally, onResponse }: AsyncHooks & Pick<KarmanInterceptors, "onResponse">,
   ) {

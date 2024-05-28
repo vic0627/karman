@@ -82,13 +82,10 @@ export default class LayerBuilder {
       onResponse,
     });
 
-    currentKarman.$setDependencies(this.typeCheck, this.pathResolver);
+    this.setBuiltInDeps(currentKarman);
 
     if (this.typeCheck.isObjectLiteral(route))
       Object.entries(route as Record<string, Karman>).forEach(([key, karman]) => {
-        if (karman.$root)
-          this.template.throw("Detected that the 'root' property is set to 'true' on a non-root Karman node.");
-
         karman.$parent = currentKarman;
         Object.defineProperty(currentKarman, key, { value: karman, enumerable: true });
       });
@@ -96,15 +93,10 @@ export default class LayerBuilder {
     if (this.typeCheck.isObjectLiteral(api))
       Object.entries(api as Record<string, Function>).forEach(([key, value]) => {
         Object.defineProperty(currentKarman, key, {
-          value: currentKarman.$requestGuard(value.bind(currentKarman)),
+          value: value.bind(currentKarman),
           enumerable: true,
         });
       });
-
-    if (root) {
-      this.scheduledTask.setInterval(scheduleInterval);
-      currentKarman.$inherit();
-    }
 
     this.setSchema(currentKarman, schema);
 
@@ -116,6 +108,11 @@ export default class LayerBuilder {
   }
 
   private setSchema(k: Karman, schema?: SchemaType[]) {
-    schema?.forEach((s) => k.$getRoot().$setSchema(s.name, s));
+    schema?.forEach((s) => k.$schema.set(s.name, s));
+  }
+
+  private setBuiltInDeps(k: Karman) {
+    k._pathResolver ??= this.pathResolver;
+    k._typeCheck ??= this.typeCheck;
   }
 }

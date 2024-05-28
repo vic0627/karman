@@ -1,8 +1,14 @@
+import KarmanDependency from "@/core/karman/karman-dependency";
+
 /**
  * 路徑模組
  * @description 處理所有路徑相關操作，包括判斷、拼接、建構等。
  */
-export default class PathResolver {
+export default class PathResolver extends KarmanDependency {
+  constructor() {
+    super("_pathResolver");
+  }
+
   get #dot() {
     return ".";
   }

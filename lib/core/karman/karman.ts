@@ -10,9 +10,9 @@ import SchemaType from "../validation-engine/schema-type/schema-type";
 const HOUR = 60 * 60 * 60 * 1000;
 
 export default class Karman {
-  // #region utils
-  protected _typeCheck!: TypeCheck;
-  protected _pathResolver!: PathResolver;
+  // #region deps
+  _typeCheck!: TypeCheck;
+  _pathResolver!: PathResolver;
   // #endregion
 
   // #region fields
@@ -60,6 +60,9 @@ export default class Karman {
     if (isNumber(value)) this.#scheduleInterval = value;
   }
   #inherited = false;
+  get $inherited() {
+    return this.#inherited;
+  }
   readonly $schema: Map<string, SchemaType> = new Map();
   $rx?: boolean;
   // #endregion
@@ -94,7 +97,7 @@ export default class Karman {
       onResponse,
     } = config ?? {};
     this.$baseURL = url ?? "";
-    this.$root = root;
+    // this.$root = root;
     this.$validation = validation;
     this.$scheduleInterval = scheduleInterval;
     this.$rx = rx;
@@ -118,6 +121,8 @@ export default class Karman {
       window,
     };
     this.$interceptors = { onRequest, onResponse };
+    // this._pathResolver = new PathResolver();
+    // this._typeCheck = new TypeCheck();
   }
 
   public $mount<O extends object>(o: O, name: string = "$karman") {
@@ -130,69 +135,58 @@ export default class Karman {
     plugin.install(Karman);
   }
 
-  /**
-   * Inheriting all configurations down to the whole Karman tree from root node.
-   * Only allows to be invoked once on root layer.
-   */
-  public $inherit(): void {
-    if (this.#inherited) return;
+  public $inherit(k: Karman = this.$getRoot()): void {
+    if (k.#inherited) return;
 
-    if (this.$parent) {
-      const { $baseURL, $requestConfig, $cacheConfig, $interceptors, $validation, $scheduleInterval } = this.$parent;
-      this.$baseURL = this._pathResolver.resolve($baseURL, this.$baseURL);
-      this.$requestConfig = configInherit($requestConfig, this.$requestConfig);
-      this.$cacheConfig = configInherit($cacheConfig, this.$cacheConfig);
-      this.$interceptors = configInherit($interceptors, this.$interceptors);
-      if (this._typeCheck.isUndefined(this.$validation)) this.$validation = $validation;
-      if (this._typeCheck.isUndefined(this.$scheduleInterval)) this.$scheduleInterval = $scheduleInterval;
+    if (k.$parent) {
+      const { $baseURL, $requestConfig, $cacheConfig, $interceptors, $validation, $scheduleInterval } = k.$parent;
+      k.$baseURL = k._pathResolver.resolve($baseURL, k.$baseURL);
+      k.$requestConfig = configInherit($requestConfig, k.$requestConfig);
+      k.$cacheConfig = configInherit($cacheConfig, k.$cacheConfig);
+      k.$interceptors = configInherit($interceptors, k.$interceptors);
+      if (k._typeCheck.isUndefined(k.$validation)) k.$validation = $validation;
+      if (k._typeCheck.isUndefined(k.$scheduleInterval)) k.$scheduleInterval = $scheduleInterval;
     }
 
-    this.$invokeChildrenInherit();
-  }
-
-  public $setDependencies(...deps: (TypeCheck | PathResolver)[]) {
-    deps.forEach((dep) => {
-      if (dep instanceof TypeCheck) this._typeCheck = dep;
-      else if (dep instanceof PathResolver) this._pathResolver = dep;
+    k.$traverseInstanceTree({
+      onTraverse: (prop) => {
+        if (prop instanceof Karman) prop.$inherit(prop);
+      },
+      onTraverseEnd: () => {
+        k.#inherited = true;
+      },
     });
-  }
-
-  public $requestGuard(request: Function) {
-    return (...args: any[]) => {
-      if (!this.#inherited)
-        console.warn(
-          // eslint-disable-next-line @stylistic/max-len
-          "[karman warn] Inherit event on Karman tree hasn't been triggered, please make sure you have specified the root Karman layer.",
-        );
-
-      return request(...args);
-    };
   }
 
   public $getRoot() {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     let node: Karman = this;
 
-    while (!node.$root && node.$parent) node = node.$parent;
+    while (node.$parent) node = node.$parent;
+
+    if (!node.$root) node.$root = true;
 
     return node;
   }
 
-  public $setSchema(name: string, schema: SchemaType) {
-    if (this.$schema.has(name)) return console.warn(`[karman warn] duplicate SchemaType '${name}'`);
+  private $setSchema(name: string, schema: SchemaType) {
+    const root = this.$getRoot();
 
-    this.$schema.set(name, schema);
-    schema.$setScope(this);
+    if (root.$schema.has(name)) return console.warn(`[karman warn] duplicate SchemaType '${name}'`);
+
+    root.$schema.set(name, schema);
+    schema.$setScope(root);
     schema.circularRefCheck();
   }
 
-  private $invokeChildrenInherit(): void {
-    this.$traverseInstanceTree({
+  public $collectSchema(node: Karman = this.$getRoot()) {
+    node.$traverseInstanceTree({
       onTraverse: (prop) => {
-        if (prop instanceof Karman) prop.$inherit();
-      },
-      onTraverseEnd: () => {
-        this.#inherited = true;
+        if (!(prop instanceof Karman) || !prop.$schema.size) return;
+
+        prop.$schema.forEach((schema, name) => node.$setSchema(name, schema));
+        prop.$schema.clear();
+        prop.$collectSchema(node);
       },
     });
   }
@@ -202,7 +196,7 @@ export default class Karman {
       onTraverse,
       onTraverseEnd,
     }: {
-      onTraverse: (value: any, index: number, array: any[]) => void;
+      onTraverse: (value: unknown, index: number, array: unknown[]) => void;
       onTraverseEnd?: () => void;
     },
     instance = this,

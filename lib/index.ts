@@ -2,6 +2,7 @@ import "reflect-metadata";
 import core from "@/core";
 import ValidationError from "./core/validation-engine/validation-error/validation-error";
 import getType from "./core/out-of-paradigm/get-type";
+import KarmanDependency from "./core/karman/karman-dependency";
 
 const facade = new core();
 
@@ -14,6 +15,7 @@ const defineSchemaType = facade.ValidationEngine.defineSchemaType.bind(facade.Va
 const defineUnionRules = facade.ValidationEngine.defineUnionRules.bind(facade.ValidationEngine);
 
 export {
+  KarmanDependency,
   defineKarman,
   defineAPI,
   isValidationError,

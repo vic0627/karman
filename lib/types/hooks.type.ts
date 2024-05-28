@@ -4,21 +4,21 @@ import { PayloadDef } from "./payload-def.type";
 import { SelectRequestStrategy } from "@/abstract/request-strategy.abstract";
 
 export interface ValidationHooks {
-  onBeforeValidate?(this: Karman, payloadDef: PayloadDef, payload: Record<string, any>): void;
+  onBeforeValidate?(this: Karman | undefined, payloadDef: PayloadDef, payload: Record<string, any>): void;
 }
 
 export interface SyncHooks extends ValidationHooks {
-  onRebuildPayload?<T extends Record<string, any>>(this: Karman, payload: T): T | void;
-  onBeforeRequest?(this: Karman, requestURL: string, payload: Record<string, any>): HttpBody | void;
+  onRebuildPayload?<T extends Record<string, any>>(this: Karman | undefined, payload: T): T | void;
+  onBeforeRequest?(this: Karman | undefined, requestURL: string, payload: Record<string, any>): HttpBody | void;
 }
 
 export interface AsyncHooks {
-  onSuccess?(this: Karman, res: SelectRequestStrategy<ReqStrategyTypes, any>): any;
-  onError?(this: Karman, err: Error): unknown;
-  onFinally?(this: Karman): void;
+  onSuccess?(this: Karman | undefined, res: SelectRequestStrategy<ReqStrategyTypes, any>): any;
+  onError?(this: Karman | undefined, err: Error): unknown;
+  onFinally?(this: Karman | undefined): void;
 }
 
 export interface KarmanInterceptors {
-  onRequest?(this: Karman, req: HttpConfig<ReqStrategyTypes>): void;
-  onResponse?(this: Karman, res: SelectRequestStrategy<ReqStrategyTypes, any>): boolean | void;
+  onRequest?(this: Karman | undefined, req: HttpConfig<ReqStrategyTypes>): void;
+  onResponse?(this: Karman | undefined, res: SelectRequestStrategy<ReqStrategyTypes, any>): boolean | void;
 }
