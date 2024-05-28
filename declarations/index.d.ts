@@ -565,6 +565,18 @@ interface KarmanOptions<A, R>
   route?: R;
 }
 
+interface Dependency {
+  install(karman: typeof Karman): void;
+}
+
+export class KarmanDependency implements Dependency {
+  private depName: string;
+
+  constructor(depName: string);
+
+  static define<D>(depName: string, dep: D): D & Dependency;
+}
+
 interface KarmanDependencies {
   _typeCheck: TypeCheck;
   _pathResolver: PathResolver;
