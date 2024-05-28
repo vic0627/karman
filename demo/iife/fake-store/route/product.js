@@ -5,6 +5,7 @@ import productInfoSchema from "../schema/product-info-schema.js";
 
 export default defineKarman({
   url: "products",
+  schema: [productInfoSchema],
   api: {
     /**
      * ### get all products

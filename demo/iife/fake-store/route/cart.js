@@ -1,11 +1,12 @@
 import { defineKarman, defineAPI, getType } from "../../../../dist/karman.js";
 import limitAndSortSchema from "../schema/limit-and-sort-schema.js";
 import idSchema from "../schema/id-schema.js";
-import cartSchema from "../schema/cart-schema.js";
+import cartSchema, { productsInCarSchema } from "../schema/cart-schema.js";
 import dateRangeSchema from "../schema/date-range-schema.js";
 
 export default defineKarman({
   url: "carts",
+  schema: [cartSchema, productsInCarSchema],
   api: {
     /**
      * ### Get all carts

@@ -2,30 +2,16 @@ import { defineAPI, defineKarman } from "../../../dist/karman.js";
 import product from "./route/product.js";
 import cart from "./route/cart.js";
 import user from "./route/user.js";
-import userSchema, { addressSchema, geoSchema, nameSchema } from "./schema/user-schema.js";
-import productInfoSchema from "./schema/product-info-schema.js";
 import limitAndSortSchema from "./schema/limit-and-sort-schema.js";
 import idSchema from "./schema/id-schema.js";
 import dateRangeSchema from "./schema/date-range-schema.js";
-import cartSchema, { productsInCarSchema } from "./schema/cart-schema.js";
+import Time from "./deps/time.js";
 
 const fakeStore = defineKarman({
-  root: true,
   headerMap: true,
   validation: true,
   scheduleInterval: 1000 * 10,
-  schema: [
-    userSchema,
-    geoSchema,
-    addressSchema,
-    nameSchema,
-    productInfoSchema,
-    limitAndSortSchema,
-    idSchema,
-    dateRangeSchema,
-    productsInCarSchema,
-    cartSchema,
-  ],
+  schema: [limitAndSortSchema, idSchema, dateRangeSchema],
   // cache: true,
   cacheExpireTime: 5000,
   // timeout: 100,
@@ -34,6 +20,9 @@ const fakeStore = defineKarman({
   headers: {
     "Content-Type": "application/json; charset=utf-8",
     from: "parent",
+  },
+  onResponse() {
+    console.log(this._time.now);
   },
   api: {
     /**
@@ -70,5 +59,8 @@ const fakeStore = defineKarman({
     user,
   },
 });
+
+fakeStore.$mount(window);
+fakeStore.$use(new Time());
 
 export default fakeStore;

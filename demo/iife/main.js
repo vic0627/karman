@@ -17,21 +17,45 @@ const getProducts = defineAPI({
   dto: getType([productInfoSchema.def]),
 });
 
-const subscription = getProducts({ sort: "desc" })
-  .pipe(
-    mergeMap((arr) => arr.data),
-    map((value) => {
-      const img = document.createElement("img");
-      img.style.width = "20px";
-      img.setAttribute("src", value.image);
-      return img;
-    }),
-  )
-  .subscribe((img) => app.appendChild(img));
+let subscription;
 
-// send.addEventListener("click", () => {
-// });
+const [res] = fakeStore.user.add({
+  email: "karman@yahoo.com",
+  username: "karman",
+  password: "adsfouaihg",
+  name: {
+    firstname: "whtasdf",
+    lastname: "123",
+  },
+  address: {
+    city: "hello",
+    street: "jello",
+    number: 12345,
+    zipcode: "wow",
+    geolocation: {
+      lat: "123",
+      long: "321",
+    },
+  },
+  phone: "asdf",
+});
+
+res.then((data) => console.log(data));
+
+send.addEventListener("click", async () => {
+  // subscription = getProducts({ sort: "desc" })
+  //   .pipe(
+  //     mergeMap((arr) => arr.data),
+  //     map((value) => {
+  //       const img = document.createElement("img");
+  //       img.style.width = "20px";
+  //       img.setAttribute("src", value.image);
+  //       return img;
+  //     }),
+  //   )
+  //   .subscribe((img) => app.appendChild(img));
+});
 
 set.addEventListener("click", () => {
-  subscription.unsubscribe();
+  // subscription.unsubscribe();
 });

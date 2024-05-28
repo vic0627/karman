@@ -1,7 +1,7 @@
 import { defineAPI, defineKarman, getType } from "../../../../dist/karman.js";
 import limitAndSortSchema from "../schema/limit-and-sort-schema.js";
 import idSchema from "../schema/id-schema.js";
-import userSchema from "../schema/user-schema.js";
+import userSchema, { addressSchema, geoSchema, nameSchema } from "../schema/user-schema.js";
 
 /**
  * @typedef {typeof userSchema.def & typeof idSchema.def} User
@@ -9,6 +9,7 @@ import userSchema from "../schema/user-schema.js";
 
 export default defineKarman({
   url: "users",
+  schema: [userSchema, addressSchema, geoSchema, nameSchema],
   api: {
     /**
      * ### get all user info
